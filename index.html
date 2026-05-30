@@ -522,8 +522,18 @@ function renderCurrentView() {
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
 function renderOverview() {
-  // Newest assignments on the left
-  const games = Object.keys(dashData).reverse();
+  // Newest assignments on the left — sort by most recent submission timestamp
+  const games = Object.keys(dashData).sort((a, b) => {
+    const latestA = (dashData[a] || []).reduce((max, s) => {
+      const t = s.sessions.reduce((m, sess) => Math.max(m, new Date(sess.timestamp||0).getTime()), 0);
+      return Math.max(max, t);
+    }, 0);
+    const latestB = (dashData[b] || []).reduce((max, s) => {
+      const t = s.sessions.reduce((m, sess) => Math.max(m, new Date(sess.timestamp||0).getTime()), 0);
+      return Math.max(max, t);
+    }, 0);
+    return latestB - latestA;
+  });
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
