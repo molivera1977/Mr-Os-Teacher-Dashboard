@@ -130,13 +130,36 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .time-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--accent));}
 .time-bar-val{font-size:.68rem;color:var(--muted);font-weight:700;min-width:28px;text-align:right;}
 
-/* ── OVERVIEW GRID (all assignments) ── */
-.overview-table-wrap{background:var(--surface);border:2px solid var(--border);border-radius:16px;overflow:auto;box-shadow:var(--shadow);margin-bottom:24px;}
-.overview-table{width:100%;border-collapse:collapse;min-width:500px;}
-.overview-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;}
-.overview-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;vertical-align:middle;}
-.overview-table tr:last-child td{border-bottom:none;}
-.overview-table tr:hover td{background:var(--surface2);}
+/* ── ASSIGNMENT CARDS ── */
+.assignment-cards{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;}
+.asgn-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;min-width:170px;flex:1 1 170px;max-width:220px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,border-color .15s;}
+.asgn-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+.asgn-card-title{font-size:.78rem;font-weight:800;color:var(--text);margin-bottom:10px;line-height:1.3;}
+.asgn-card-avg{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--accent);line-height:1;}
+.asgn-card-avg-label{font-size:.65rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.asgn-card-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px;}
+.asgn-card-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .4s;}
+.asgn-card-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.asgn-pill{font-size:.62rem;font-weight:800;padding:2px 6px;border-radius:8px;border:1px solid;}
+.asgn-pill.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.asgn-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.asgn-pill.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+
+/* ── STUDENT DOT GRID ── */
+.dot-grid-wrap{background:var(--surface);border:2px solid var(--border);border-radius:16px;overflow:auto;box-shadow:var(--shadow);margin-bottom:24px;padding:4px 0;}
+.dot-grid-table{border-collapse:collapse;width:100%;}
+.dot-grid-table th{background:var(--surface2);font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;text-align:center;border-bottom:2px solid var(--border);white-space:nowrap;}
+.dot-grid-table th.name-col{text-align:left;position:sticky;left:0;z-index:2;background:var(--surface2);}
+.dot-grid-table td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;}
+.dot-grid-table td.name-col{font-size:.82rem;font-weight:800;text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;white-space:nowrap;}
+.dot-grid-table tr:last-child td{border-bottom:none;}
+.dot-grid-table tr:hover td{background:var(--surface2);}
+.dot-grid-table tr:hover td.name-col{background:var(--surface2);}
+.status-dot{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;border:2px solid;cursor:pointer;transition:transform .15s;}
+.status-dot:hover{transform:scale(1.2);}
+.status-dot.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.status-dot.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.status-dot.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
 .mini-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:800;border:1px solid;}
 
 /* ── REFRESH / LAST UPDATED ── */
@@ -204,13 +227,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <!-- Stats row -->
       <div class="stats-row" id="overviewStats"></div>
 
-      <!-- Class overview table -->
-      <div class="section-title">👥 All Students — All Assignments</div>
-      <div class="overview-table-wrap">
-        <table class="overview-table" id="overviewTable">
-          <thead id="overviewHead"></thead>
-          <tbody id="overviewBody"></tbody>
-        </table>
+      <!-- Assignment cards -->
+      <div class="section-title">📋 Assignments</div>
+      <div class="assignment-cards" id="assignmentCards"></div>
+
+      <!-- Student dot grid -->
+      <div class="section-title" style="margin-top:24px;">👥 Student Progress</div>
+      <div class="dot-grid-wrap">
+        <div id="dotGrid"></div>
       </div>
     </div>
 
@@ -498,54 +522,90 @@ function renderCurrentView() {
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
 function renderOverview() {
-  const games = Object.keys(dashData);
+  // Newest assignments on the left
+  const games = Object.keys(dashData).reverse();
 
-  // Stats
+  // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
   let totalStudents = ROSTER.length;
-  let totalComplete = 0, totalInProgress = 0, totalNotStarted = 0;
+  let totalComplete = 0, totalInProgress = 0;
   games.forEach(game => {
-    const data = (dashData[game] || []).filter(s => ROSTER.includes(s.name));
-    data.forEach(s => {
+    (dashData[game] || []).filter(s => ROSTER.includes(s.name)).forEach(s => {
       if (s.status === 'complete')   totalComplete++;
       if (s.status === 'inprogress') totalInProgress++;
     });
   });
-  totalNotStarted = (totalStudents * games.length) - totalComplete - totalInProgress;
+  const totalNotStarted = Math.max(0, (totalStudents * games.length) - totalComplete - totalInProgress);
   statsEl.innerHTML = `
     <div class="stat-card"><div class="stat-num">${totalStudents}</div><div class="stat-label">Students</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${totalComplete}</div><div class="stat-label">Completions</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${totalInProgress}</div><div class="stat-label">In Progress</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${Math.max(0,totalNotStarted)}</div><div class="stat-label">Not Started</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${totalNotStarted}</div><div class="stat-label">Not Started</div></div>
     <div class="stat-card"><div class="stat-num">${games.length}</div><div class="stat-label">Assignments</div></div>
   `;
 
-  // Overview table
-  const head = document.getElementById('overviewHead');
-  const body = document.getElementById('overviewBody');
-  head.innerHTML = `<tr><th>Student</th>${games.map(g=>`<th>${GAME_LABELS[g]||g}</th>`).join('')}</tr>`;
-  body.innerHTML = '';
+  // ── Assignment cards ──
+  const cardsEl = document.getElementById('assignmentCards');
+  cardsEl.innerHTML = '';
+  games.forEach(game => {
+    const data     = (dashData[game] || []).filter(s => ROSTER.includes(s.name));
+    const complete = data.filter(s => s.status === 'complete').length;
+    const inprog   = data.filter(s => s.status === 'inprogress').length;
+    const notstart = totalStudents - complete - inprog;
+    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
+    const max      = MAX_SCORES[game] || 100;
+    const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
+    const label    = GAME_LABELS[game] || game.toUpperCase();
 
+    const card = document.createElement('div');
+    card.className = 'asgn-card';
+    card.onclick = () => { currentGame = game; toggleView('assignment'); };
+    card.innerHTML = `
+      <div class="asgn-card-title">${label}</div>
+      <div class="asgn-card-avg">${scores.length ? avgPct + '%' : '—'}</div>
+      <div class="asgn-card-avg-label">Class Avg</div>
+      <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${avgPct}%"></div></div>
+      <div class="asgn-card-pills">
+        <span class="asgn-pill complete">✅ ${complete}</span>
+        <span class="asgn-pill inprogress">🔄 ${inprog}</span>
+        <span class="asgn-pill notstarted">⬜ ${notstart}</span>
+      </div>`;
+    cardsEl.appendChild(card);
+  });
+
+  // ── Student dot grid ──
+  const dotEl = document.getElementById('dotGrid');
+  dotEl.innerHTML = '';
+  const table = document.createElement('table');
+  table.className = 'dot-grid-table';
+
+  // Header
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr>
+    <th class="name-col">Student</th>
+    ${games.map(g => `<th title="${GAME_LABELS[g]||g}">${(GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').substring(0,8)}</th>`).join('')}
+  </tr>`;
+  table.appendChild(thead);
+
+  // Rows
+  const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
     const tr = document.createElement('tr');
-    let cells = `<td style="font-weight:800;">${name}</td>`;
+    let cells = `<td class="name-col">${name}</td>`;
     games.forEach(game => {
-      const data   = dashData[game] || [];
-      const student = data.find(s => s.name === name);
-      if (!student) {
-        cells += `<td><span class="mini-pill notstarted" style="background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);">⬜ Not Started</span></td>`;
-      } else if (student.status === 'complete') {
-        const best = student.bestScore;
-        const max  = MAX_SCORES[game] || 100;
-        const pct  = Math.round((best/max)*100);
-        cells += `<td><span class="mini-pill complete" style="background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);">✅ ${best} pts (${pct}%)</span></td>`;
-      } else {
-        cells += `<td><span class="mini-pill inprogress" style="background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);">🔄 In Progress</span></td>`;
-      }
+      const student = (dashData[game]||[]).find(s => s.name === name);
+      const status  = student ? student.status : 'notstarted';
+      const max     = MAX_SCORES[game] || 100;
+      const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
+      const icon    = status==='complete' ? '✓' : status==='inprogress' ? '…' : '';
+      const tip     = status==='complete' ? `${pct}%` : status==='inprogress' ? 'In Progress' : 'Not Started';
+      cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span></td>`;
     });
     tr.innerHTML = cells;
-    body.appendChild(tr);
+    tbody.appendChild(tr);
   });
+  table.appendChild(tbody);
+  dotEl.appendChild(table);
 }
 
 // ═══════════════════════════════════════════════════
