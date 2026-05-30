@@ -254,6 +254,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
               <th>Student</th>
               <th>Status</th>
               <th>Score</th>
+              <th>% / Grade</th>
               <th>Time</th>
               <th>Sessions</th>
               <th>Tab Sw.</th>
@@ -643,26 +644,37 @@ function buildAssignmentTabs() {
 // ═══════════════════════════════════════════════════
 //  ASSIGNMENT VIEW
 // ═══════════════════════════════════════════════════
+function letterGrade(pct) {
+  if (pct >= 90) return 'A';
+  if (pct >= 80) return 'B';
+  if (pct >= 70) return 'C';
+  if (pct >= 60) return 'D';
+  return 'F';
+}
+
 function renderAssignment() {
   if (!currentGame) return;
-  const data    = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
+  const data     = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
   const maxScore = MAX_SCORES[currentGame] || 100;
 
-  // Stats
-  const complete   = data.filter(s => s.status === 'complete').length;
-  const inprogress = data.filter(s => s.status === 'inprogress').length;
-  const notstarted = ROSTER.length - complete - inprogress;
-  const scores     = data.filter(s => s.bestScore > 0).map(s => s.bestScore);
-  const avg        = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
-  const high       = scores.length ? Math.max(...scores) : 0;
-  const flagged    = data.filter(s => isFlagged(s)).length;
+  // Exclude teacher from class stats
+  const studentData = data.filter(s => s.name !== 'Mr. O (Teacher)');
+  const complete    = studentData.filter(s => s.status === 'complete').length;
+  const inprogress  = studentData.filter(s => s.status === 'inprogress').length;
+  const notstarted  = (ROSTER.length - 1) - complete - inprogress; // -1 excludes teacher
+  const scores      = studentData.filter(s => s.bestScore > 0).map(s => s.bestScore);
+  const avgRaw      = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
+  const avgPct      = scores.length ? Math.round(avgRaw/maxScore*100) : 0;
+  const high        = scores.length ? Math.max(...scores) : 0;
+  const highPct     = scores.length ? Math.round(high/maxScore*100) : 0;
+  const flagged     = studentData.filter(s => isFlagged(s)).length;
 
   document.getElementById('assignmentStats').innerHTML = `
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${complete}</div><div class="stat-label">Complete</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
-    <div class="stat-card"><div class="stat-num">${avg}</div><div class="stat-label">Class Avg</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${high}</div><div class="stat-label">High Score</div></div>
+    <div class="stat-card"><div class="stat-num">${scores.length ? avgPct+'%' : '—'}</div><div class="stat-label">Class Avg</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${scores.length ? highPct+'%' : '—'}</div><div class="stat-label">High Score</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
   `;
 
@@ -682,11 +694,13 @@ function renderAssignment() {
     } else {
       const best     = student.bestScore;
       const pct      = Math.round((best/maxScore)*100);
+      const grade    = student.status === 'complete' ? letterGrade(pct) : '—';
       const sessions = student.sessions.length;
       const tabSw    = student.sessions.reduce((t,s) => t + (s.tabSwitches||0), 0);
       const bestSess = student.sessions.reduce((b,s) => s.score > (b?.score||0) ? s : b, null);
       const elapsed  = bestSess?.elapsed;
       const flagBadge = isFlagged(student) ? `<span class="flag-badge">⚑ Review</span>` : '';
+      const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
 
       tr.innerHTML = `
         <td style="font-weight:800;">${name}${flagBadge}</td>
@@ -697,6 +711,7 @@ function renderAssignment() {
             <div class="score-num">${best}/${maxScore}</div>
           </div>
         </td>
+        <td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
         <td style="color:${tabSw>3?'var(--red)':'var(--muted)'};">${tabSw}${tabSw>3?' ⚑':''}</td>
