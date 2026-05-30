@@ -626,7 +626,8 @@ function renderOverview() {
 //  ASSIGNMENT TABS
 // ═══════════════════════════════════════════════════
 function buildAssignmentTabs() {
-  const games = Object.keys(dashData);
+  const allGames = Object.keys(dashData);
+  const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
