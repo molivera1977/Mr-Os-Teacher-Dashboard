@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>📊 Mr. O's Teacher Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ── THEME VARIABLES ── */
+:root {
+  --bg:#f0f4f0;--surface:#ffffff;--surface2:#f7faf7;
+  --border:#d0e0d0;--text:#1a2e1a;--muted:#5a7a5a;
+  --accent:#2a8a3a;--accent2:#1a6a2a;
+  --yellow:#e6a800;--red:#cc3333;--blue:#1a6aaa;
+  --green:#2a8a3a;--orange:#cc6600;--teal:#00a88a;
+  --complete:#d4f0d4;--complete-text:#1a6a1a;--complete-border:#5aaa5a;
+  --inprogress:#fff3cc;--inprogress-text:#8a5a00;--inprogress-border:#ccaa00;
+  --notstarted:#f0f0f0;--notstarted-text:#888;--notstarted-border:#ccc;
+  --flagged:#ffe0e0;--flagged-text:#aa2222;--flagged-border:#cc4444;
+  --shadow:0 2px 12px rgba(0,0,0,.08);
+}
+[data-theme="dark"] {
+  --bg:#0d1b0f;--surface:#152019;--surface2:#1c2d22;
+  --border:#2a3e2e;--text:#e0f5e4;--muted:#6a9e72;
+  --accent:#5ddb6f;--accent2:#3ab34a;
+  --yellow:#ffd84f;--red:#ff5252;--blue:#4fbfff;
+  --green:#5ddb6f;--orange:#ff8c2a;--teal:#2affcc;
+  --complete:#1a3a1a;--complete-text:#5ddb6f;--complete-border:#3a6a3a;
+  --inprogress:#3a2a00;--inprogress-text:#ffd84f;--inprogress-border:#6a5a00;
+  --notstarted:#1a1a1a;--notstarted-text:#666;--notstarted-border:#333;
+  --flagged:#3a0000;--flagged-text:#ff5252;--flagged-border:#6a2222;
+  --shadow:0 2px 12px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;transition:background .3s,color .3s;}
+
+/* ── PIN SCREEN ── */
+#screen-pin{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.pin-card{background:var(--surface);border:2px solid var(--border);border-radius:24px;padding:40px 36px;max-width:380px;width:100%;text-align:center;box-shadow:var(--shadow);}
+.pin-card h1{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--accent);margin-bottom:6px;}
+.pin-card p{color:var(--muted);font-size:.9rem;margin-bottom:24px;font-weight:600;}
+.pin-input{width:100%;padding:14px;background:var(--surface2);border:2px solid var(--border);border-radius:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.4rem;font-weight:800;text-align:center;letter-spacing:.4em;outline:none;margin-bottom:8px;}
+.pin-input:focus{border-color:var(--accent);}
+.pin-error{color:var(--red);font-size:.82rem;font-weight:700;min-height:20px;margin-bottom:12px;}
+
+/* ── MAIN LAYOUT ── */
+#screen-main{display:none;}
+.top-bar{background:var(--surface);border-bottom:2px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:50;box-shadow:var(--shadow);}
+.top-bar-title{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);flex:1;}
+.top-bar-sub{font-size:.75rem;color:var(--muted);font-weight:700;}
+.main-content{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 18px;border:none;border-radius:50px;font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;cursor:pointer;transition:all .18s;}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 3px 0 var(--accent2);}
+.btn-primary:hover{transform:translateY(-1px);}
+.btn-ghost{background:transparent;border:2px solid var(--border);color:var(--muted);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:5px 12px;font-size:.75rem;}
+
+/* ── ASSIGNMENT TABS ── */
+.assignment-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.tab-btn{padding:8px 18px;border:2px solid var(--border);border-radius:50px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;cursor:pointer;transition:all .2s;}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent2);}
+.tab-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow);}
+.stat-num{font-family:'Fredoka One',cursive;font-size:2rem;color:var(--accent);line-height:1;}
+.stat-label{font-size:.72rem;color:var(--muted);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── CLASS GRID ── */
+.section-title{font-family:'Fredoka One',cursive;font-size:1.1rem;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.grid-wrap{background:var(--surface);border:2px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:24px;}
+.grid-table{width:100%;border-collapse:collapse;}
+.grid-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);}
+.grid-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:.88rem;font-weight:700;vertical-align:middle;}
+.grid-table tr:last-child td{border-bottom:none;}
+.grid-table tr:hover td{background:var(--surface2);}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:800;border:1px solid;}
+.status-pill.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.status-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.status-pill.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+.flag-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);margin-left:6px;}
+.score-bar-wrap{display:flex;align-items:center;gap:8px;}
+.score-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);min-width:60px;}
+.score-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .4s;}
+.score-num{font-size:.82rem;font-weight:800;color:var(--accent);min-width:48px;text-align:right;}
+.detail-btn{padding:4px 10px;font-size:.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;transition:all .15s;}
+.detail-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── HEATMAP ── */
+.heatmap-wrap{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;}
+.heatmap-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.heat-cell{width:44px;height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;cursor:pointer;transition:transform .15s;border:1px solid transparent;}
+.heat-cell:hover{transform:scale(1.15);}
+.heat-cell .q-num{font-size:.7rem;opacity:.8;}
+.heat-cell .q-pct{font-size:.78rem;font-weight:800;}
+.heat-0{background:#d4f0d4;color:#1a6a1a;border-color:#5aaa5a;}
+.heat-1{background:#b8e8b8;color:#1a5a1a;border-color:#4a9a4a;}
+.heat-2{background:#fff3cc;color:#8a5a00;border-color:#ccaa00;}
+.heat-3{background:#ffe0b2;color:#8a3a00;border-color:#cc7a00;}
+.heat-4{background:#ffcdd2;color:#aa1a1a;border-color:#cc4444;}
+[data-theme="dark"] .heat-0{background:#1a3a1a;color:#5ddb6f;border-color:#3a6a3a;}
+[data-theme="dark"] .heat-1{background:#1a3020;color:#4dc85e;border-color:#2a5a2a;}
+[data-theme="dark"] .heat-2{background:#3a2a00;color:#ffd84f;border-color:#6a5a00;}
+[data-theme="dark"] .heat-3{background:#3a1a00;color:#ff8c2a;border-color:#6a3a00;}
+[data-theme="dark"] .heat-4{background:#3a0000;color:#ff5252;border-color:#6a2222;}
+.heatmap-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--muted);}
+.legend-dot{width:12px;height:12px;border-radius:3px;}
+
+/* ── STUDENT DETAIL PANEL ── */
+.detail-panel{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
+.detail-panel.open{display:block;}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.detail-name{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent);}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.detail-stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
+.detail-stat-num{font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--accent);}
+.detail-stat-label{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.wrong-q-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.wrong-q-chip{padding:4px 10px;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);border-radius:20px;font-size:.75rem;font-weight:800;}
+.time-bars{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+.time-bar-row{display:flex;align-items:center;gap:8px;}
+.time-bar-label{font-size:.68rem;color:var(--muted);font-weight:700;min-width:36px;}
+.time-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.time-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--accent));}
+.time-bar-val{font-size:.68rem;color:var(--muted);font-weight:700;min-width:28px;text-align:right;}
+
+/* ── OVERVIEW GRID (all assignments) ── */
+.overview-table-wrap{background:var(--surface);border:2px solid var(--border);border-radius:16px;overflow:auto;box-shadow:var(--shadow);margin-bottom:24px;}
+.overview-table{width:100%;border-collapse:collapse;min-width:500px;}
+.overview-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;}
+.overview-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.85rem;font-weight:700;vertical-align:middle;}
+.overview-table tr:last-child td{border-bottom:none;}
+.overview-table tr:hover td{background:var(--surface2);}
+.mini-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:800;border:1px solid;}
+
+/* ── REFRESH / LAST UPDATED ── */
+.refresh-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.last-updated{font-size:.75rem;color:var(--muted);font-weight:700;}
+.auto-refresh-label{font-size:.75rem;color:var(--muted);font-weight:700;}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:40px;color:var(--muted);font-weight:700;}
+.loading-spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:10px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .main-content{padding:14px 10px 60px;}
+  .top-bar{padding:10px 14px;}
+  .grid-table th,.grid-table td{padding:8px 10px;}
+  .heat-cell{width:36px;height:36px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ PIN SCREEN ═══ -->
+<div id="screen-pin">
+  <div class="pin-card">
+    <div style="font-size:3rem;margin-bottom:10px;">📊</div>
+    <h1>Teacher Dashboard</h1>
+    <p>Mr. O's Classroom · Jettie S. Tisdale Elementary</p>
+    <input type="password" class="pin-input" id="pinInput" placeholder="• • • •" maxlength="8" autocomplete="off"/>
+    <div class="pin-error" id="pinError"></div>
+    <button class="btn btn-primary" onclick="checkPin()" style="width:100%;padding:12px;">🔓 Enter Dashboard</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN DASHBOARD ═══ -->
+<div id="screen-main">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div>
+      <div class="top-bar-title">📊 Mr. O's Dashboard</div>
+      <div class="top-bar-sub">Jettie S. Tisdale Elementary · 4th Grade</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('overview')" id="tabOverview">🏠 Overview</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('assignment')" id="tabAssignment">📋 Assignment</button>
+    <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+    <button class="btn btn-ghost btn-sm" onclick="lockDashboard()" style="color:var(--red);">🔒 Lock</button>
+  </div>
+
+  <div class="main-content">
+
+    <!-- OVERVIEW VIEW -->
+    <div id="view-overview">
+      <div class="refresh-bar">
+        <span class="last-updated" id="lastUpdated">Loading...</span>
+        <label class="auto-refresh-label">
+          <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()" style="margin-right:4px;"/>
+          Auto-refresh every 30s
+        </label>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="overviewStats"></div>
+
+      <!-- Class overview table -->
+      <div class="section-title">👥 All Students — All Assignments</div>
+      <div class="overview-table-wrap">
+        <table class="overview-table" id="overviewTable">
+          <thead id="overviewHead"></thead>
+          <tbody id="overviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ASSIGNMENT VIEW -->
+    <div id="view-assignment" style="display:none;">
+      <div class="assignment-tabs" id="assignmentTabs"></div>
+
+      <!-- Assignment stats -->
+      <div class="stats-row" id="assignmentStats"></div>
+
+      <!-- Student list for this assignment -->
+      <div class="section-title">📋 Student Results</div>
+      <div class="grid-wrap">
+        <table class="grid-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Time</th>
+              <th>Sessions</th>
+              <th>Tab Sw.</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="assignmentBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Question heatmap -->
+      <div class="heatmap-wrap" id="heatmapWrap">
+        <div class="section-title">🔥 Question Difficulty Heatmap
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;">% of students who got each question wrong</span>
+        </div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="heatmap-legend">
+          <span style="font-size:.72rem;font-weight:700;color:var(--muted);">Wrong rate:</span>
+          <div class="legend-item"><div class="legend-dot heat-0" style="background:#d4f0d4;"></div>0–20%</div>
+          <div class="legend-item"><div class="legend-dot heat-1" style="background:#b8e8b8;"></div>21–40%</div>
+          <div class="legend-item"><div class="legend-dot heat-2" style="background:#fff3cc;"></div>41–60%</div>
+          <div class="legend-item"><div class="legend-dot heat-3" style="background:#ffe0b2;"></div>61–80%</div>
+          <div class="legend-item"><div class="legend-dot heat-4" style="background:#ffcdd2;"></div>81–100%</div>
+        </div>
+      </div>
+
+      <!-- Student detail panel -->
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+          <div class="detail-name" id="detailName"></div>
+          <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕ Close</button>
+        </div>
+        <div class="detail-grid" id="detailGrid"></div>
+        <div id="detailWrongQs" style="margin-bottom:14px;"></div>
+        <div id="detailTimePerQ"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════
+const TEACHER_PIN = '9377';
+const SHEET_URL   = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
+const INACTIVITY_MS = 5 * 60 * 1000; // 5 min auto-lock
+
+// ⚠️ ROSTER SYNC — When adding/removing students, update BOTH this file
+// AND the ROSTER array in every student-facing activity file. No single
+// source of truth yet — both must stay identical.
+const ROSTER = [
+  'Aquino-Perez, Steven','Camas-Alvarez, Mike','Earle, Jeremiah',
+  'Felix, Chloe','Flores Marcos, Cornelio',"Gardner, Zy'iere",
+  'Giraldo, Layla','Lawrence, Lennox','Michael, Mulan','Millet, Zion',
+  'Murillo Estrada, Kevin','Romaniello, Kaylib','Sanango-Quizhpi, Anthony',
+  'Santos-Bautista, Scarlet','Simpson, Jordyn','Torres, Aryana',
+  'Towns, Micah','Ulerio-Jimenez, Adrian',
+  'Mr. O (Teacher)'
+];
+
+// ⚠️ GAME KEY RULE — Each activity's POST body must include game:'key' where
+// 'key' matches exactly one of the keys below (e.g. game:'cloze', game:'monsters').
+// Mismatched keys will cause that activity to be invisible in the dashboard.
+// ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
+// Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
+const GAME_LABELS = {
+  cloze:       '🌴 CLOZE Reading',
+  monsters:    '🧟 Math Monsters',
+  mod16review: '✖️ Mod 16 Review',
+  dj_vocab:    '⚖️ DeliverJustice — Vocab',
+  dj_comp:     '⚖️ DeliverJustice — Comp',
+  dj_cloze:    '⚖️ DeliverJustice — Cloze',
+};
+const MAX_SCORES = {
+  cloze:       400,
+  monsters:    500,
+  mod16review: 17,
+  dj_vocab:    30,
+  dj_comp:     24,
+  dj_cloze:    30,
+};
+
+// ── Question bank for Mod 16 Review — keyed by question ID ──
+// Used by heatmap tooltip and student detail panel to show full question text
+const MOD16_QUESTIONS = {
+  A01:"Which of these is the product of 5 × 2/5?",
+  A02:"Which of these is the product of 3 × 1/8?",
+  A03:"Aidan spent 1/2 hour each day practicing basketball. He practiced 5 days. How many hours did Aidan practice?",
+  A04:"A business plants trees on 2/4 acre each month for 7 months. How many acres after 7 months?",
+  A05:"Stefanie has 6 strands of yarn. She colors 1/2 foot of each strand yellow. How many feet total?",
+  A06:"Find the product: 8 × 2 1/5",
+  A07:"Find the product: 9 × 1 1/4",
+  A08:"Pedro uses 3/5 cup per batch. On Monday he used 9/5 cups. How many batches?",
+  A09:"Pedro uses 3/5 cup per batch. On Tuesday he used 15/5 cups. How many batches?",
+  A10:"Pedro uses 3/5 cup per batch. On Wednesday he used 30/5 cups. How many batches?",
+  A11:"Greg reads 2/3 hour each day. How many hours after 6 days?",
+  A12:"Diane uses 4/10 of a package per copy. She prints 3 copies. How many packages?",
+  A13:"Carmen has 4 pencils, each 7 1/2 inches long. How long are all pencils?",
+  A14:"David uses 3/8 cup of chocolate sauce per batch. He makes 5 batches. How many cups?",
+  A15:"Tricia rakes leaves 3 days. Each day she rakes 1 1/3 hours. How many hours total?",
+  A16:"Steve spends 1/4 hour brushing his dog each day. How much time after 6 days?",
+  A17:"Steve brushes his dog 6 days/week for 3 weeks at 1/4 hour each. How many hours total?",
+  B01:"Which of these is the product of 6 × 3/4?",
+  B02:"Which of these is the product of 8 × 1/2?",
+  B03:"Miguel walked 1/5 mile each day for 6 days. How many miles total?",
+  B04:"Henry paints boards 2/3 yard long. How many yards after 4 boards?",
+  B05:"Namiko visits 5 exhibits, spending 3/4 hour each. How many hours total?",
+  B06:"Find the product: 5 × 2 2/3",
+  B07:"Find the product: 2 × 3 4/10",
+  B08:"Wan uses 2/3 oz per poster. On Wednesday he used 6/3 oz. How many posters?",
+  B09:"Wan uses 2/3 oz per poster. On Thursday he used 12/3 oz. How many posters?",
+  B10:"Wan uses 2/3 oz per poster. On Saturday he used 18/3 oz. How many posters?",
+  B11:"Sarah plays piano 3/5 hour each day. How many hours after 3 days?",
+  B12:"Larry uses 3/6 pound of seeds per section. He plants 4 sections. How many pounds?",
+  B13:"Lynn has 8 baseballs, each 5 1/4 oz. What is the total weight?",
+  B14:"Vidal uses 2/4 cup of milk per batch. He makes 4 batches. How many cups?",
+  B15:"Fredrick collects 3 rocks, each 1 1/8 pounds. How many pounds total?",
+  B16:"Brooke practiced 1/4 hour each day for band. How much time after 5 days?",
+  B17:"Brooke practiced 5 days/week for 4 weeks at 1/4 hour each. How many hours total?",
+  C01:"Which of these is the product of 4 × 3/7?",
+  C02:"Which of these is the product of 7 × 1/3?",
+  C03:"Mia jogs 1/3 mile each morning. She jogged 4 mornings. How many miles?",
+  C04:"A farmer plants flowers on 3/8 acre each week. How many acres after 5 weeks?",
+  C05:"Owen fills 1/4 of a bucket each trip. He makes 6 trips. How much total?",
+  C06:"Find the product: 6 × 2 1/4",
+  C07:"Find the product: 4 × 3 2/5",
+  C08:"Rosa uses 2/4 cup per batch. On Friday she used 8/4 cups. How many batches?",
+  C09:"Rosa uses 2/4 cup per batch. On Saturday she used 12/4 cups. How many batches?",
+  C10:"Rosa uses 2/4 cup per batch. On Sunday she used 20/4 cups. How many batches?",
+  C11:"James drinks 3/4 cup of juice each morning. How many cups after 5 mornings?",
+  C12:"Nina uses 5/6 yard of ribbon per gift. She wraps 6 gifts. How many yards?",
+  C13:"Leo has 3 shelves, each holding 6 1/2 feet of books. How many feet total?",
+  C14:"Keisha runs 2/5 mile per lap. She runs 4 laps. How many miles?",
+  C15:"Marco volunteers 1 2/3 hours per visit. He visits 5 times. How many hours?",
+  C16:"Chloe waters plants 1/3 hour each day. How much time after 7 days?",
+  C17:"Chloe waters plants 7 days/week for 4 weeks at 1/3 hour each. How many hours total?",
+};
+
+// ── Minimum realistic completion time per game ──
+const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, mod16review: 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240 };
+let dashData      = {};
+let currentView   = 'overview';
+let currentGame   = null;
+let autoRefreshInterval = null;
+let inactivityTimer     = null;
+let isDark = localStorage.getItem('dashTheme') === 'dark';
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+window.onload = () => {
+  if (isDark) applyTheme('dark');
+  document.getElementById('pinInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPin();
+  });
+  resetInactivity();
+  document.addEventListener('click', resetInactivity);
+  document.addEventListener('keydown', resetInactivity);
+};
+
+function resetInactivity() {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(lockDashboard, INACTIVITY_MS);
+}
+
+// ═══════════════════════════════════════════════════
+//  PIN
+// ═══════════════════════════════════════════════════
+let pinAttempts = 0;
+function checkPin() {
+  const val = document.getElementById('pinInput').value.trim();
+  if (val === TEACHER_PIN) {
+    pinAttempts = 0;
+    document.getElementById('screen-pin').style.display = 'none';
+    document.getElementById('screen-main').style.display = 'block';
+    refreshData();
+  } else {
+    pinAttempts++;
+    if (pinAttempts >= 3) {
+      document.getElementById('pinError').textContent = '⛔ Too many wrong attempts. Wait 30 seconds.';
+      document.getElementById('pinInput').disabled = true;
+      document.getElementById('pinInput').value = '';
+      setTimeout(() => {
+        document.getElementById('pinInput').disabled = false;
+        document.getElementById('pinError').textContent = '';
+        pinAttempts = 0;
+      }, 30000);
+    } else {
+      document.getElementById('pinError').textContent = `Wrong PIN — try again. (${3 - pinAttempts} attempt${3 - pinAttempts !== 1 ? 's' : ''} left)`;
+      document.getElementById('pinInput').value = '';
+    }
+  }
+}
+
+function lockDashboard() {
+  document.getElementById('screen-main').style.display = 'none';
+  document.getElementById('screen-pin').style.display = 'flex';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('pinInput').disabled = false;
+  document.getElementById('pinError').textContent = '';
+  pinAttempts = 0;
+  clearInterval(autoRefreshInterval);
+  autoRefreshInterval = null;
+  document.getElementById('autoRefresh').checked = false;
+}
+
+// ═══════════════════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════════════════
+function toggleTheme() {
+  isDark = !isDark;
+  applyTheme(isDark ? 'dark' : 'light');
+  localStorage.setItem('dashTheme', isDark ? 'dark' : 'light');
+}
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+}
+
+// ═══════════════════════════════════════════════════
+//  DATA FETCH
+// ═══════════════════════════════════════════════════
+async function refreshData() {
+  document.getElementById('lastUpdated').textContent = '⏳ Loading...';
+  try {
+    const res  = await fetch(`${SHEET_URL}?action=dashboard`, { cache: 'no-store' });
+    dashData   = await res.json();
+    const now  = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
+    buildAssignmentTabs();
+    renderCurrentView();
+  } catch(e) {
+    document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
+  }
+}
+
+function toggleAutoRefresh() {
+  if (document.getElementById('autoRefresh').checked) {
+    autoRefreshInterval = setInterval(refreshData, 30000);
+  } else {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  VIEW ROUTING
+// ═══════════════════════════════════════════════════
+function toggleView(view) {
+  currentView = view;
+  document.getElementById('view-overview').style.display   = view === 'overview'   ? 'block' : 'none';
+  document.getElementById('view-assignment').style.display = view === 'assignment' ? 'block' : 'none';
+  document.getElementById('tabOverview').className   = 'btn btn-sm ' + (view==='overview'   ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('tabAssignment').className = 'btn btn-sm ' + (view==='assignment' ? 'btn-primary' : 'btn-ghost');
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  if (currentView === 'overview')   renderOverview();
+  if (currentView === 'assignment') renderAssignment();
+}
+
+// ═══════════════════════════════════════════════════
+//  OVERVIEW VIEW
+// ═══════════════════════════════════════════════════
+function renderOverview() {
+  const games = Object.keys(dashData);
+
+  // Stats
+  const statsEl = document.getElementById('overviewStats');
+  let totalStudents = ROSTER.length;
+  let totalComplete = 0, totalInProgress = 0, totalNotStarted = 0;
+  games.forEach(game => {
+    const data = (dashData[game] || []).filter(s => ROSTER.includes(s.name));
+    data.forEach(s => {
+      if (s.status === 'complete')   totalComplete++;
+      if (s.status === 'inprogress') totalInProgress++;
+    });
+  });
+  totalNotStarted = (totalStudents * games.length) - totalComplete - totalInProgress;
+  statsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${totalStudents}</div><div class="stat-label">Students</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${totalComplete}</div><div class="stat-label">Completions</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${totalInProgress}</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${Math.max(0,totalNotStarted)}</div><div class="stat-label">Not Started</div></div>
+    <div class="stat-card"><div class="stat-num">${games.length}</div><div class="stat-label">Assignments</div></div>
+  `;
+
+  // Overview table
+  const head = document.getElementById('overviewHead');
+  const body = document.getElementById('overviewBody');
+  head.innerHTML = `<tr><th>Student</th>${games.map(g=>`<th>${GAME_LABELS[g]||g}</th>`).join('')}</tr>`;
+  body.innerHTML = '';
+
+  ROSTER.forEach(name => {
+    const tr = document.createElement('tr');
+    let cells = `<td style="font-weight:800;">${name}</td>`;
+    games.forEach(game => {
+      const data   = dashData[game] || [];
+      const student = data.find(s => s.name === name);
+      if (!student) {
+        cells += `<td><span class="mini-pill notstarted" style="background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);">⬜ Not Started</span></td>`;
+      } else if (student.status === 'complete') {
+        const best = student.bestScore;
+        const max  = MAX_SCORES[game] || 100;
+        const pct  = Math.round((best/max)*100);
+        cells += `<td><span class="mini-pill complete" style="background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);">✅ ${best} pts (${pct}%)</span></td>`;
+      } else {
+        cells += `<td><span class="mini-pill inprogress" style="background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);">🔄 In Progress</span></td>`;
+      }
+    });
+    tr.innerHTML = cells;
+    body.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  ASSIGNMENT TABS
+// ═══════════════════════════════════════════════════
+function buildAssignmentTabs() {
+  const games = Object.keys(dashData);
+  if (!currentGame && games.length) currentGame = games[0];
+  const tabsEl = document.getElementById('assignmentTabs');
+  tabsEl.innerHTML = '';
+  games.forEach(game => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (game === currentGame ? ' active' : '');
+    btn.textContent = GAME_LABELS[game] || game;
+    btn.onclick = () => { currentGame = game; buildAssignmentTabs(); renderAssignment(); };
+    tabsEl.appendChild(btn);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  ASSIGNMENT VIEW
+// ═══════════════════════════════════════════════════
+function renderAssignment() {
+  if (!currentGame) return;
+  const data    = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
+  const maxScore = MAX_SCORES[currentGame] || 100;
+
+  // Stats
+  const complete   = data.filter(s => s.status === 'complete').length;
+  const inprogress = data.filter(s => s.status === 'inprogress').length;
+  const notstarted = ROSTER.length - complete - inprogress;
+  const scores     = data.filter(s => s.bestScore > 0).map(s => s.bestScore);
+  const avg        = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const high       = scores.length ? Math.max(...scores) : 0;
+  const flagged    = data.filter(s => isFlagged(s)).length;
+
+  document.getElementById('assignmentStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${complete}</div><div class="stat-label">Complete</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
+    <div class="stat-card"><div class="stat-num">${avg}</div><div class="stat-label">Class Avg</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${high}</div><div class="stat-label">High Score</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
+  `;
+
+  // Student rows
+  const body = document.getElementById('assignmentBody');
+  body.innerHTML = '';
+
+  ROSTER.forEach(name => {
+    const student = data.find(s => s.name === name);
+    const tr = document.createElement('tr');
+
+    if (!student) {
+      tr.innerHTML = `
+        <td style="font-weight:800;">${name}</td>
+        <td><span class="status-pill notstarted">⬜ Not Started</span></td>
+        <td colspan="5" style="color:var(--muted);font-size:.8rem;">—</td>`;
+    } else {
+      const best     = student.bestScore;
+      const pct      = Math.round((best/maxScore)*100);
+      const sessions = student.sessions.length;
+      const tabSw    = student.sessions.reduce((t,s) => t + (s.tabSwitches||0), 0);
+      const bestSess = student.sessions.reduce((b,s) => s.score > (b?.score||0) ? s : b, null);
+      const elapsed  = bestSess?.elapsed;
+      const flagBadge = isFlagged(student) ? `<span class="flag-badge">⚑ Review</span>` : '';
+
+      tr.innerHTML = `
+        <td style="font-weight:800;">${name}${flagBadge}</td>
+        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
+            <div class="score-num">${best}/${maxScore}</div>
+          </div>
+        </td>
+        <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
+        <td style="color:var(--muted);">${sessions}</td>
+        <td style="color:${tabSw>3?'var(--red)':'var(--muted)'};">${tabSw}${tabSw>3?' ⚑':''}</td>
+        <td><button class="detail-btn" onclick="openDetail('${name}')">View →</button></td>`;
+    }
+    body.appendChild(tr);
+  });
+
+  // Heatmap
+  buildHeatmap(data);
+}
+
+// ═══════════════════════════════════════════════════
+//  HEATMAP
+// ═══════════════════════════════════════════════════
+function buildHeatmap(data) {
+  const wrongCounts = {};   // id/num → count of students who got it wrong
+  const wrongStudents = {}; // id/num → array of student names who missed it
+  let totalStudents = 0;
+
+  data.forEach(student => {
+    student.sessions.forEach(sess => {
+      if (!sess.wrongQuestions) return;
+      // Parse both formats:
+      //   New format: "[A06] Find the product..." separated by " | "
+      //   Old format: "1,2,3" comma-separated numbers
+      let entries = [];
+      if (sess.wrongQuestions.includes('[') ) {
+        // New ID-based format
+        entries = sess.wrongQuestions.split(' | ').map(e => {
+          const m = e.match(/^\[([A-Z]\d+)\]/);
+          return m ? m[1] : null;
+        }).filter(Boolean);
+      } else {
+        // Old numeric format
+        entries = sess.wrongQuestions.split(',').map(n => n.trim()).filter(Boolean);
+      }
+      entries.forEach(id => {
+        wrongCounts[id]   = (wrongCounts[id]||0) + 1;
+        wrongStudents[id] = wrongStudents[id] || [];
+        if (!wrongStudents[id].includes(student.name)) wrongStudents[id].push(student.name);
+      });
+    });
+    if (student.status === 'complete') totalStudents++;
+  });
+
+  if (!totalStudents || !Object.keys(wrongCounts).length) {
+    document.getElementById('heatmapWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('heatmapWrap').style.display = 'block';
+
+  const grid = document.getElementById('heatmapGrid');
+  grid.innerHTML = '';
+
+  // Check if we're using ID-based or numeric keys
+  const keys = Object.keys(wrongCounts);
+  const isIdBased = keys.some(k => /^[A-Z]\d+$/.test(k));
+
+  if (isIdBased) {
+    // Sort by ID: A01, A02... B01, B02... C01...
+    keys.sort((a,b) => a.localeCompare(b));
+    keys.forEach(id => {
+      const wrong = wrongCounts[id] || 0;
+      const pct   = Math.round((wrong/totalStudents)*100);
+      const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
+      const qText = MOD16_QUESTIONS[id] || id;
+      const cell  = document.createElement('div');
+      cell.className = `heat-cell heat-${heat}`;
+      cell.innerHTML = `<span class="q-num">${id}</span><span class="q-pct">${pct}%</span>`;
+      cell.title = `${id}: ${qText}\n${wrong}/${totalStudents} students missed this (${pct}%)`;
+      cell.style.position = 'relative';
+      // Click to show question panel
+      cell.onclick = () => showHeatmapDetail(id, qText, wrong, totalStudents, pct, wrongStudents[id]||[]);
+      grid.appendChild(cell);
+    });
+  } else {
+    // Old numeric format — original behaviour
+    const maxQ = Math.max(...keys.map(Number).filter(n=>!isNaN(n)), 0);
+    for (let i = 1; i <= maxQ; i++) {
+      const wrong = wrongCounts[String(i)] || 0;
+      const pct   = Math.round((wrong/totalStudents)*100);
+      const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
+      const cell  = document.createElement('div');
+      cell.className = `heat-cell heat-${heat}`;
+      cell.title = `Q${i}: ${wrong}/${totalStudents} wrong (${pct}%)`;
+      cell.innerHTML = `<span class="q-num">Q${i}</span><span class="q-pct">${pct}%</span>`;
+      grid.appendChild(cell);
+    }
+  }
+}
+
+// ── Heatmap question detail popup ──
+function showHeatmapDetail(id, qText, wrong, total, pct, studentNames) {
+  // Remove any existing popup
+  const existing = document.getElementById('heatmapDetailPopup');
+  if (existing) existing.remove();
+
+  const studentList = studentNames.length
+    ? studentNames.map(n=>`<span class="wrong-q-chip">${n}</span>`).join('')
+    : '<span style="color:var(--muted);font-size:.8rem;">None</span>';
+
+  const heat = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
+  const heatColors = ['#d4f0d4','#b8e8b8','#fff3cc','#ffe0b2','#ffcdd2'];
+  const heatTextColors = ['#1a6a1a','#1a5a1a','#8a5a00','#8a3a00','#aa1a1a'];
+
+  const popup = document.createElement('div');
+  popup.id = 'heatmapDetailPopup';
+  popup.style.cssText = `
+    background:var(--surface);border:2px solid var(--border);border-radius:16px;
+    padding:18px 20px;margin-top:14px;box-shadow:var(--shadow);
+    border-left:6px solid ${heatColors[heat]};
+  `;
+  popup.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;">
+      <div>
+        <span style="font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Question ${id}</span>
+        <div style="font-size:.95rem;font-weight:800;color:var(--text);margin-top:4px;line-height:1.5;">${qText}</div>
+      </div>
+      <button onclick="document.getElementById('heatmapDetailPopup').remove()"
+        style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;white-space:nowrap;flex-shrink:0;">✕ Close</button>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="background:${heatColors[heat]};color:${heatTextColors[heat]};border-radius:10px;padding:8px 16px;font-family:'Fredoka One',cursive;font-size:1.6rem;font-weight:800;">${pct}%</div>
+      <div style="color:var(--muted);font-size:.85rem;font-weight:700;">${wrong} of ${total} students missed this question</div>
+    </div>
+    <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Students Who Missed It</div>
+    <div class="wrong-q-list">${studentList}</div>
+  `;
+
+  // Insert popup right after the heatmap grid
+  const grid = document.getElementById('heatmapGrid');
+  grid.parentNode.insertBefore(popup, grid.nextSibling);
+  popup.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ═══════════════════════════════════════════════════
+//  STUDENT DETAIL
+// ═══════════════════════════════════════════════════
+function openDetail(name) {
+  if (!currentGame) return;
+  const data    = dashData[currentGame] || [];
+  const student = data.find(s => s.name === name);
+  if (!student) return;
+
+  const panel    = document.getElementById('detailPanel');
+  const maxScore = MAX_SCORES[currentGame] || 100;
+  const bestSess = student.sessions.reduce((b,s) => s.score > (b?.score||0) ? s : b, null);
+
+  document.getElementById('detailName').textContent = `👤 ${name}`;
+
+  // Stats grid
+  const totalTabSw = student.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0);
+  document.getElementById('detailGrid').innerHTML = `
+    <div class="detail-stat"><div class="detail-stat-num" style="color:var(--accent)">${student.bestScore}</div><div class="detail-stat-label">Best Score</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${maxScore}</div><div class="detail-stat-label">Max Possible</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${Math.round((student.bestScore/maxScore)*100)}%</div><div class="detail-stat-label">Score %</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
+    <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Best Time</div></div>
+    <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
+    <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
+  `;
+
+  // Wrong questions
+  const wrongEl = document.getElementById('detailWrongQs');
+  const allWrong = new Set();
+  student.sessions.forEach(s => {
+    if (!s.wrongQuestions) return;
+    if (s.wrongQuestions.includes('[')) {
+      // New ID-based format: "[A06] Full question text | [A15] ..."
+      s.wrongQuestions.split(' | ').forEach(entry => {
+        if (entry.trim()) allWrong.add(entry.trim());
+      });
+    } else {
+      // Old numeric format
+      s.wrongQuestions.split(',').map(n=>n.trim()).filter(Boolean).forEach(n=>allWrong.add(n));
+    }
+  });
+  if (allWrong.size) {
+    const isIdBased = [...allWrong][0].startsWith('[');
+    let chipsHtml;
+    if (isIdBased) {
+      // Show as readable rows: ID badge + full question text
+      chipsHtml = [...allWrong].sort().map(entry => {
+        const m = entry.match(/^\[([A-Z]\d+)\]\s*(.*)/);
+        if (m) {
+          const id = m[1];
+          const text = MOD16_QUESTIONS[id] || m[2] || id;
+          return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--flagged);border:1px solid var(--flagged-border);border-radius:10px;margin-bottom:5px;">
+            <span style="background:var(--flagged-border);color:var(--flagged-text);border-radius:6px;padding:2px 7px;font-size:.7rem;font-weight:800;white-space:nowrap;flex-shrink:0;">${id}</span>
+            <span style="font-size:.78rem;font-weight:700;color:var(--flagged-text);line-height:1.4;">${text}</span>
+          </div>`;
+        }
+        return `<span class="wrong-q-chip">${entry}</span>`;
+      }).join('');
+    } else {
+      // Old format — numbered chips
+      chipsHtml = `<div class="wrong-q-list">${[...allWrong].sort((a,b)=>Number(a)-Number(b)).map(n=>`<span class="wrong-q-chip">Q${n}</span>`).join('')}</div>`;
+    }
+    wrongEl.innerHTML = `<div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">❌ Questions Missed</div>${chipsHtml}`;
+  } else {
+    wrongEl.innerHTML = '';
+  }
+
+  // Time per question
+  const timeEl = document.getElementById('detailTimePerQ');
+  if (bestSess?.timePerQuestion) {
+    const times = bestSess.timePerQuestion.split(',').map(Number).filter(n=>!isNaN(n));
+    if (times.length) {
+      const maxT = Math.max(...times, 1);
+      const bars = times.map((t,i)=>`
+        <div class="time-bar-row">
+          <div class="time-bar-label">Q${i+1}</div>
+          <div class="time-bar-track"><div class="time-bar-fill" style="width:${Math.round((t/maxT)*100)}%"></div></div>
+          <div class="time-bar-val">${t}s</div>
+        </div>`).join('');
+      timeEl.innerHTML = `<div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">⏱ Time Per Question (best session)</div><div class="time-bars">${bars}</div>`;
+    } else timeEl.innerHTML = '';
+  } else timeEl.innerHTML = '';
+
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function isFlagged(student) {
+  const totalTabSw = student.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0);
+  if (totalTabSw > 3) return true;
+  // Flag if completed suspiciously fast for this assignment type
+  const minSecs = MIN_COMPLETION_SECS[currentGame] || 120;
+  const hasFastComplete = student.sessions.some(s => s.status==='complete' && s.elapsed!=null && s.elapsed < minSecs);
+  if (hasFastComplete) return true;
+  // Flag if more than 3 sessions
+  if (student.sessions.length > 3) return true;
+  return false;
+}
+
+function statusIcon(s)  { return s==='complete'?'✅':s==='inprogress'?'🔄':'⬜'; }
+function statusLabel(s) { return s==='complete'?'Complete':s==='inprogress'?'In Progress':'Not Started'; }
+
+function formatTime(s) {
+  if (s==null||isNaN(s)) return '—';
+  const m=Math.floor(s/60),sec=Math.floor(s%60);
+  return m>0?`${m}m ${sec}s`:`${sec}s`;
+}
+</script>
+</body>
+</html>
