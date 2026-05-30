@@ -316,6 +316,16 @@ const ROSTER = [
   'Mr. O (Teacher)'
 ];
 
+// ⚠️ ASSIGNMENT ORDER — Newest assignment first (leftmost in overview).
+// Add new game keys to the FRONT of this array when you deploy a new activity.
+// Any game key not listed here will appear after the listed ones.
+const GAME_ORDER = [
+  'dj_vocab', 'dj_comp', 'dj_cloze',
+  'mod16review',
+  'cloze',
+  'monsters',
+];
+
 // ⚠️ GAME KEY RULE — Each activity's POST body must include game:'key' where
 // 'key' matches exactly one of the keys below (e.g. game:'cloze', game:'monsters').
 // Mismatched keys will cause that activity to be invisible in the dashboard.
@@ -522,18 +532,12 @@ function renderCurrentView() {
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
 function renderOverview() {
-  // Newest assignments on the left — sort by most recent submission timestamp
-  const games = Object.keys(dashData).sort((a, b) => {
-    const latestA = (dashData[a] || []).reduce((max, s) => {
-      const t = s.sessions.reduce((m, sess) => Math.max(m, new Date(sess.timestamp||0).getTime()), 0);
-      return Math.max(max, t);
-    }, 0);
-    const latestB = (dashData[b] || []).reduce((max, s) => {
-      const t = s.sessions.reduce((m, sess) => Math.max(m, new Date(sess.timestamp||0).getTime()), 0);
-      return Math.max(max, t);
-    }, 0);
-    return latestB - latestA;
-  });
+  // Newest assignments on the left — ordered by GAME_ORDER config array
+  const allGames = Object.keys(dashData);
+  const games = [
+    ...GAME_ORDER.filter(g => allGames.includes(g)),
+    ...allGames.filter(g => !GAME_ORDER.includes(g))
+  ];
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
