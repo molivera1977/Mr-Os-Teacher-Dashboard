@@ -953,13 +953,12 @@ function closeDetail() {
 //  HELPERS
 // ═══════════════════════════════════════════════════
 function isFlagged(student) {
+  if (student.name === 'Mr. O (Teacher)') return false;
   const totalTabSw = student.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0);
   if (totalTabSw > 3) return true;
-  // Flag if completed suspiciously fast for this assignment type
   const minSecs = MIN_COMPLETION_SECS[currentGame] || 120;
   const hasFastComplete = student.sessions.some(s => s.status==='complete' && s.elapsed!=null && s.elapsed < minSecs);
   if (hasFastComplete) return true;
-  // Flag if more than 3 sessions
   if (student.sessions.length > 3) return true;
   return false;
 }
