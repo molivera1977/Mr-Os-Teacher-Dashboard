@@ -567,7 +567,7 @@ function renderOverview() {
     const complete = data.filter(s => s.status === 'complete').length;
     const inprog   = data.filter(s => s.status === 'inprogress').length;
     const notstart = totalStudents - complete - inprog;
-    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
+    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0 && s.name !== 'Mr. O (Teacher)').map(s => s.bestScore);
     const max      = MAX_SCORES[game] || 100;
     const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
     const label    = GAME_LABELS[game] || game.toUpperCase();
