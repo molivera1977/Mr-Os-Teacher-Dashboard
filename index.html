@@ -322,7 +322,7 @@ const ROSTER = [
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
   'dj_vocab', 'dj_comp', 'dj_cloze',
-  'mod16review',
+  'mod16_a', 'mod16_b', 'mod16_c',
   'cloze',
   'monsters',
 ];
@@ -335,7 +335,9 @@ const GAME_ORDER = [
 const GAME_LABELS = {
   cloze:       '🌴 CLOZE Reading',
   monsters:    '🧟 Math Monsters',
-  mod16review: '✖️ Mod 16 Review',
+  mod16_a:     '✖️ Mod 16 — Form A',
+  mod16_b:     '✖️ Mod 16 — Form B',
+  mod16_c:     '✖️ Mod 16 — Form C',
   dj_vocab:    '⚖️ DJ-Review — Vocab',
   dj_comp:     '⚖️ DJ-Review — Comp',
   dj_cloze:    '⚖️ DJ-Review — Cloze',
@@ -343,7 +345,9 @@ const GAME_LABELS = {
 const MAX_SCORES = {
   cloze:       400,
   monsters:    500,
-  mod16review: 17,
+  mod16_a:     17,
+  mod16_b:     17,
+  mod16_c:     17,
   dj_vocab:    30,
   dj_comp:     24,
   dj_cloze:    30,
@@ -499,7 +503,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, mod16review: 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240 };
+const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, mod16_a: 180, mod16_b: 180, mod16_c: 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1058,7 +1062,9 @@ function isFlagged(student) {
 
 function getQuestionText(id) {
   const banks = {
-    mod16review: MOD16_QUESTIONS,
+    mod16_a:     MOD16_QUESTIONS,
+    mod16_b:     MOD16_QUESTIONS,
+    mod16_c:     MOD16_QUESTIONS,
     dj_vocab:    DJ_VOCAB_QUESTIONS,
     dj_comp:     DJ_COMP_QUESTIONS,
     dj_cloze:    DJ_CLOZE_QUESTIONS,
