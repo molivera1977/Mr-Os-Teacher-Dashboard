@@ -327,6 +327,9 @@ const GAME_ORDER = [
   'monsters',
 ];
 
+// Game keys that have been retired — hide them even if sheet data still exists
+const HIDDEN_GAMES = new Set(['mod16review']);
+
 // ⚠️ GAME KEY RULE — Each activity's POST body must include game:'key' where
 // 'key' matches exactly one of the keys below (e.g. game:'cloze', game:'monsters').
 // Mismatched keys will cause that activity to be invisible in the dashboard.
@@ -634,7 +637,7 @@ function renderOverview() {
   const allGames = Object.keys(dashData);
   const games = [
     ...GAME_ORDER.filter(g => allGames.includes(g)),
-    ...allGames.filter(g => !GAME_ORDER.includes(g))
+    ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
   ];
 
   // ── Stats row ──
