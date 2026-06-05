@@ -321,6 +321,7 @@ const ROSTER = [
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'djt_vocab', 'djt_comp', 'djt_cloze',
   'dj_vocab', 'dj_comp', 'dj_cloze',
   'mod16a-review', 'mod16b-review', 'mod16c-review',
   'cloze',
@@ -341,6 +342,9 @@ const GAME_LABELS = {
   'mod16a-review': '✖️ Mod 16A — Review',
   'mod16b-review': '✖️ Mod 16B — Review',
   'mod16c-review': '✖️ Mod 16C — Review',
+  djt_vocab:   '⚖️ DJ-Test — Vocab',
+  djt_comp:    '⚖️ DJ-Test — Comp',
+  djt_cloze:   '⚖️ DJ-Test — Cloze',
   dj_vocab:    '⚖️ DJ-Review — Vocab',
   dj_comp:     '⚖️ DJ-Review — Comp',
   dj_cloze:    '⚖️ DJ-Review — Cloze',
@@ -351,6 +355,9 @@ const MAX_SCORES = {
   'mod16a-review': 17,
   'mod16b-review': 17,
   'mod16c-review': 17,
+  djt_vocab:   30,
+  djt_comp:    25,
+  djt_cloze:   30,
   dj_vocab:    30,
   dj_comp:     24,
   dj_cloze:    30,
@@ -506,7 +513,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240 };
+const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -714,7 +721,13 @@ function renderOverview() {
       const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
       const icon    = status==='complete' ? '✓' : status==='inprogress' ? '…' : '';
       const tip     = status==='complete' ? `${pct}%` : status==='inprogress' ? 'In Progress' : 'Not Started';
-      cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span></td>`;
+      // Written response badge for djt_comp
+      const writtenBadge = (game === 'djt_comp' && status === 'complete')
+        ? ((dashData['djt_comp_written'] || []).some(r => r.name === name)
+            ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:2px;">✍️</span>'
+            : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:2px;opacity:0.4;">✍️</span>')
+        : '';
+      cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span>${writtenBadge}</td>`;
     });
     tr.innerHTML = cells;
     tbody.appendChild(tr);
@@ -982,6 +995,14 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
+    ${currentGame === 'djt_comp' ? (() => {
+      const writtenData = dashData['djt_comp_written'] || [];
+      const hasWritten  = writtenData.some(r => r.name === name);
+      return `<div class="detail-stat" style="grid-column:1/-1;background:${hasWritten?'#d4edda':'#fff3cd'};border-radius:10px;padding:10px;border:2px solid ${hasWritten?'#28a745':'#ffc107'};">
+        <div class="detail-stat-num" style="color:${hasWritten?'#155724':'#856404'};font-size:1rem;">${hasWritten?'✅ Submitted':'⏳ Not yet submitted'}</div>
+        <div class="detail-stat-label">Written Response</div>
+      </div>`;
+    })() : ''}
   `;
 
   // Wrong questions
