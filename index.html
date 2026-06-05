@@ -997,10 +997,21 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
     ${currentGame === 'djt_comp' ? (() => {
       const writtenData = dashData['djt_comp_written'] || [];
-      const hasWritten  = writtenData.some(r => r.name === name);
-      return `<div class="detail-stat" style="grid-column:1/-1;background:${hasWritten?'#d4edda':'#fff3cd'};border-radius:10px;padding:10px;border:2px solid ${hasWritten?'#28a745':'#ffc107'};">
-        <div class="detail-stat-num" style="color:${hasWritten?'#155724':'#856404'};font-size:1rem;">${hasWritten?'✅ Submitted':'⏳ Not yet submitted'}</div>
+      const wr = writtenData.find(r => r.name === name);
+      if (!wr) return `<div class="detail-stat" style="grid-column:1/-1;background:#fff3cd;border-radius:10px;padding:10px;border:2px solid #ffc107;">
+        <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
         <div class="detail-stat-label">Written Response</div>
+      </div>`;
+      const PROMPTS = ['Extended Response','Evidence-Based Response','Argument / Opinion'];
+      const answers = [wr.w1||'', wr.w2||'', wr.w3||''];
+      const cards = answers.map((text, i) => `
+        <div style="margin-bottom:12px;">
+          <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
+          <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
+        </div>`).join('');
+      return `<div style="grid-column:1/-1;background:#f3e8ff;border:2px solid #9b59b6;border-radius:10px;padding:14px 16px;margin-top:4px;">
+        <div style="font-weight:800;color:#6c3483;margin-bottom:12px;font-size:0.95rem;">✍️ Written Responses — submitted</div>
+        ${cards}
       </div>`;
     })() : ''}
   `;
