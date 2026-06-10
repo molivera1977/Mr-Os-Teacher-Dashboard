@@ -334,7 +334,7 @@ const GAME_ORDER = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written']);
+const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'mod16-test-written']);
 
 // ⚠️ GAME KEY RULE — Each activity's POST body must include game:'key' where
 // 'key' matches exactly one of the keys below (e.g. game:'cloze', game:'monsters').
@@ -737,10 +737,13 @@ function renderOverview() {
       const icon    = status==='complete' ? '✓' : status==='inprogress' ? '…' : '';
       const tip     = status==='complete' ? `${pct}%` : status==='inprogress' ? 'In Progress' : 'Not Started';
       // Written response badge for djt_comp
-      const writtenBadge = (game === 'djt_comp' && status === 'complete')
-        ? ((dashData['djt_comp_written'] || []).some(r => r.name === name)
-            ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:2px;">✍️</span>'
-            : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:2px;opacity:0.4;">✍️</span>')
+      const writtenBadge = ((game === 'djt_comp' || game === 'mod16-test') && status === 'complete')
+        ? (() => {
+            const writtenKey = game === 'mod16-test' ? 'mod16-test-written' : 'djt_comp_written';
+            return (dashData[writtenKey] || []).some(r => r.name === name)
+              ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:2px;">✍️</span>'
+              : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:2px;opacity:0.4;">✍️</span>';
+          })()
         : '';
       cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span>${writtenBadge}</td>`;
     });
