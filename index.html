@@ -253,13 +253,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
         <table class="grid-table">
           <thead>
             <tr>
-              <th>Student</th>
-              <th>Status</th>
-              <th>Score</th>
-              <th>% / Grade</th>
-              <th>Time</th>
-              <th>Sessions</th>
-              <th>Tab Sw.</th>
+              <th onclick="sortAssignment('name')"    style="cursor:pointer;" id="sort-name">Student</th>
+              <th onclick="sortAssignment('status')"  style="cursor:pointer;" id="sort-status">Status</th>
+              <th onclick="sortAssignment('score')"   style="cursor:pointer;" id="sort-score">Score</th>
+              <th onclick="sortAssignment('pct')"     style="cursor:pointer;" id="sort-pct">% / Grade</th>
+              <th onclick="sortAssignment('time')"    style="cursor:pointer;" id="sort-time">Time</th>
+              <th onclick="sortAssignment('sessions')" style="cursor:pointer;" id="sort-sessions">Sessions</th>
+              <th onclick="sortAssignment('tabsw')"   style="cursor:pointer;" id="sort-tabsw">Tab Sw.</th>
               <th>Detail</th>
             </tr>
           </thead>
@@ -815,7 +815,7 @@ function renderAssignment() {
   const body = document.getElementById('assignmentBody');
   body.innerHTML = '';
 
-  ROSTER.forEach(name => {
+  getSortedRoster(data, maxScore).forEach(name => {
     const student = data.find(s => s.name === name);
     const tr = document.createElement('tr');
 
@@ -1118,6 +1118,49 @@ function isFlagged(student) {
   if (hasFastComplete) return true;
   if (student.sessions.length > 3) return true;
   return false;
+}
+
+let sortCol = null, sortAsc = true;
+function sortAssignment(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = false; }
+  // Update header indicators
+  ['name','status','score','pct','time','sessions','tabsw'].forEach(c => {
+    const el = document.getElementById('sort-' + c);
+    if (!el) return;
+    const base = el.textContent.replace(/ [▲▼]$/,'');
+    el.textContent = c === col ? base + (sortAsc ? ' ▲' : ' ▼') : base;
+  });
+  renderAssignment();
+}
+
+function getSortedRoster(data, maxScore) {
+  if (!sortCol) return ROSTER;
+  const statusOrder = { complete:0, inprogress:1, notstarted:2 };
+  return [...ROSTER].sort((a, b) => {
+    const sa = data.find(s => s.name === a);
+    const sb = data.find(s => s.name === b);
+    let va, vb;
+    if (sortCol === 'name') { va = a; vb = b; }
+    else if (sortCol === 'status') {
+      va = statusOrder[sa?.status ?? 'notstarted'] ?? 2;
+      vb = statusOrder[sb?.status ?? 'notstarted'] ?? 2;
+    } else if (sortCol === 'score' || sortCol === 'pct') {
+      va = sa?.bestScore ?? -1; vb = sb?.bestScore ?? -1;
+    } else if (sortCol === 'time') {
+      const ta = sa?.sessions.reduce((b,s)=>s.score>(b?.score||0)?s:b,null);
+      const tb = sb?.sessions.reduce((b,s)=>s.score>(b?.score||0)?s:b,null);
+      va = ta?.elapsed ?? 999999; vb = tb?.elapsed ?? 999999;
+    } else if (sortCol === 'sessions') {
+      va = sa?.sessions.length ?? 0; vb = sb?.sessions.length ?? 0;
+    } else if (sortCol === 'tabsw') {
+      va = sa?.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0) ?? 0;
+      vb = sb?.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0) ?? 0;
+    }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
 }
 
 function getQuestionText(id) {
