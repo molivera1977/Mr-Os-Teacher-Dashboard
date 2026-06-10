@@ -337,6 +337,13 @@ const GAME_ORDER = [
 // Game keys that have been retired — hide them even if sheet data still exists
 const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'mod16-test-written']);
 
+// Games with a written component → their written sheet key.
+// Add an entry here whenever a new assignment has a written section.
+const WRITTEN_GAME_MAP = {
+  djt_comp:       'djt_comp_written',
+  'mod16-test':   'mod16-test-written',
+};
+
 // ⚠️ GAME KEY RULE — Each activity's POST body must include game:'key' where
 // 'key' matches exactly one of the keys below (e.g. game:'cloze', game:'monsters').
 // Mismatched keys will cause that activity to be invisible in the dashboard.
@@ -653,6 +660,17 @@ function renderCurrentView() {
 }
 
 // ═══════════════════════════════════════════════════
+//  WRITTEN BADGE HELPER
+// ═══════════════════════════════════════════════════
+function getWrittenBadge(game, name) {
+  const writtenKey = WRITTEN_GAME_MAP[game];
+  if (!writtenKey) return '';
+  return (dashData[writtenKey] || []).some(r => r.name === name)
+    ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:4px;">✍️</span>'
+    : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
+}
+
+// ═══════════════════════════════════════════════════
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
 function renderOverview() {
@@ -737,15 +755,7 @@ function renderOverview() {
       const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
       const icon    = status==='complete' ? '✓' : status==='inprogress' ? '…' : '';
       const tip     = status==='complete' ? `${pct}%` : status==='inprogress' ? 'In Progress' : 'Not Started';
-      // Written response badge for djt_comp
-      const writtenBadge = ((game === 'djt_comp' || game === 'mod16-test') && status === 'complete')
-        ? (() => {
-            const writtenKey = game === 'mod16-test' ? 'mod16-test-written' : 'djt_comp_written';
-            return (dashData[writtenKey] || []).some(r => r.name === name)
-              ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:2px;">✍️</span>'
-              : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:2px;opacity:0.4;">✍️</span>';
-          })()
-        : '';
+      const writtenBadge = status === 'complete' ? getWrittenBadge(game, name) : '';
       cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span>${writtenBadge}</td>`;
     });
     tr.innerHTML = cells;
@@ -841,14 +851,7 @@ function renderAssignment() {
       const elapsed  = bestSess?.elapsed;
       const flagBadge = isFlagged(student) ? `<span class="flag-badge">⚑ Review</span>` : '';
       const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
-      const writtenBadge = ((currentGame === 'djt_comp' || currentGame === 'mod16-test') && student.status === 'complete')
-        ? (() => {
-            const writtenKey = currentGame === 'mod16-test' ? 'mod16-test-written' : 'djt_comp_written';
-            return (dashData[writtenKey] || []).some(r => r.name === name)
-              ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:4px;">✍️</span>'
-              : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
-          })()
-        : '';
+      const writtenBadge = student.status === 'complete' ? getWrittenBadge(currentGame, name) : '';
 
       tr.innerHTML = `
         <td style="font-weight:800;">${name}${flagBadge}${writtenBadge}</td>
