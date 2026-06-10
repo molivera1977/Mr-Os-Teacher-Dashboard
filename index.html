@@ -352,6 +352,7 @@ const GAME_LABELS = {
   dj_vocab:    '⚖️ DJ-Review — Vocab',
   dj_comp:     '⚖️ DJ-Review — Comp',
   dj_cloze:    '⚖️ DJ-Review — Cloze',
+  'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
   cloze:       400,
@@ -365,6 +366,7 @@ const MAX_SCORES = {
   dj_vocab:    30,
   dj_comp:     24,
   dj_cloze:    30,
+  'mod16-test': 25,
 };
 
 // ── Question bank for Mod 16 Review — keyed by question ID ──
@@ -517,7 +519,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240 };
+const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
