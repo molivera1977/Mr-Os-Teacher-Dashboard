@@ -1021,8 +1021,9 @@ function openDetail(name) {
           <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
           <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
         </div>`).join('');
+      const timeSpent = wr.elapsed ? `<span style="margin-left:10px;font-weight:400;color:#888;font-size:0.82rem;">⏱ ${wr.elapsed}</span>` : '';
       return `<div style="grid-column:1/-1;background:#f3e8ff;border:2px solid #9b59b6;border-radius:10px;padding:14px 16px;margin-top:4px;">
-        <div style="font-weight:800;color:#6c3483;margin-bottom:12px;font-size:0.95rem;">✍️ Written Responses — submitted</div>
+        <div style="font-weight:800;color:#6c3483;margin-bottom:12px;font-size:0.95rem;">✍️ Written Responses — submitted${timeSpent}</div>
         ${cards}
       </div>`;
     })() : ''}
