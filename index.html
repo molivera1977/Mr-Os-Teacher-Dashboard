@@ -284,7 +284,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <!-- Student detail panel -->
       <div class="detail-panel" id="detailPanel">
         <div class="detail-header">
+          <button class="btn btn-ghost btn-sm" onclick="stepDetail(-1)">◀ Prev</button>
           <div class="detail-name" id="detailName"></div>
+          <button class="btn btn-ghost btn-sm" onclick="stepDetail(1)">Next ▶</button>
           <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕ Close</button>
         </div>
         <div class="detail-grid" id="detailGrid"></div>
@@ -1079,6 +1081,18 @@ function openDetail(name) {
 
 function closeDetail() {
   document.getElementById('detailPanel').classList.remove('open');
+}
+
+function stepDetail(dir) {
+  const data = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
+  const currentName = document.getElementById('detailName').textContent.replace('👤 ', '').trim();
+  const rosterInGame = ROSTER.filter(name => data.find(s => s.name === name) || true);
+  const idx = rosterInGame.indexOf(currentName);
+  if (idx === -1) return;
+  let next = idx + dir;
+  if (next < 0) next = rosterInGame.length - 1;
+  if (next >= rosterInGame.length) next = 0;
+  openDetail(rosterInGame[next]);
 }
 
 // ═══════════════════════════════════════════════════
