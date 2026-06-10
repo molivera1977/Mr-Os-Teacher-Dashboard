@@ -292,6 +292,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕ Close</button>
         </div>
         <div class="detail-grid" id="detailGrid"></div>
+        <div id="detailSessionBreak" style="margin-bottom:14px;"></div>
         <div id="detailWrongQs" style="margin-bottom:14px;"></div>
         <div id="detailTimePerQ"></div>
       </div>
@@ -1038,6 +1039,41 @@ function openDetail(name) {
       </div>`;
     })() : ''}
   `;
+
+  // Session breakdown (show when more than 1 session)
+  const sessBreakEl = document.getElementById('detailSessionBreak');
+  if (student.sessions.length > 1) {
+    const rows = student.sessions.map((s, i) => {
+      const label   = s.form ? s.form : (i === 0 ? 'Original' : `Attempt ${i + 1}`);
+      const pct     = maxScore > 0 ? Math.round((s.score / maxScore) * 100) : 0;
+      const timeStr = s.elapsed != null ? formatTime(s.elapsed) : '—';
+      const done    = s.status === 'complete'
+        ? '<span style="color:var(--green);font-weight:800;">✅ Complete</span>'
+        : '<span style="color:var(--orange);font-weight:800;">🔄 In Progress</span>';
+      const isRetake = label.toLowerCase().includes('retake');
+      return `<tr style="${isRetake ? 'background:var(--inprogress-bg,#fff8e1);' : ''}">
+        <td style="padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--text);">${label}</td>
+        <td style="padding:7px 10px;font-size:.88rem;font-weight:800;color:var(--accent);">${s.score}/${maxScore}</td>
+        <td style="padding:7px 10px;font-size:.82rem;font-weight:700;">${pct}%</td>
+        <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);">${timeStr}</td>
+        <td style="padding:7px 10px;">${done}</td>
+      </tr>`;
+    }).join('');
+    sessBreakEl.innerHTML = `
+      <div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">📋 All Attempts</div>
+      <table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <thead><tr style="background:var(--header-bg,var(--border));">
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Attempt</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Score</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">%</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Time</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Status</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } else {
+    sessBreakEl.innerHTML = '';
+  }
 
   // Wrong questions
   const wrongEl = document.getElementById('detailWrongQs');
