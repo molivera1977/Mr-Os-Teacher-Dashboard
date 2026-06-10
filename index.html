@@ -208,6 +208,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <button class="btn btn-ghost btn-sm" onclick="toggleView('overview')" id="tabOverview">🏠 Overview</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('assignment')" id="tabAssignment">📋 Assignment</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
+    <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
+    <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
     <button class="btn btn-ghost btn-sm" onclick="lockDashboard()" style="color:var(--red);">🔒 Lock</button>
   </div>
@@ -585,6 +587,14 @@ function lockDashboard() {
 // ═══════════════════════════════════════════════════
 //  THEME
 // ═══════════════════════════════════════════════════
+let fontSize = parseFloat(localStorage.getItem('dashFontSize')) || 1;
+function changeFontSize(dir) {
+  fontSize = Math.min(1.4, Math.max(0.7, fontSize + dir * 0.1));
+  document.documentElement.style.fontSize = fontSize + 'rem';
+  localStorage.setItem('dashFontSize', fontSize);
+}
+(function(){ if(fontSize !== 1) document.documentElement.style.fontSize = fontSize + 'rem'; })();
+
 function toggleTheme() {
   isDark = !isDark;
   applyTheme(isDark ? 'dark' : 'light');
