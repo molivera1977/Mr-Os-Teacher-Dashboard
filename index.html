@@ -759,7 +759,7 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════
 function buildAssignmentTabs() {
   const allGames = Object.keys(dashData);
-  const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
+  const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))];
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
