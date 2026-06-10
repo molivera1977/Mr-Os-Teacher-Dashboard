@@ -841,9 +841,17 @@ function renderAssignment() {
       const elapsed  = bestSess?.elapsed;
       const flagBadge = isFlagged(student) ? `<span class="flag-badge">⚑ Review</span>` : '';
       const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
+      const writtenBadge = ((currentGame === 'djt_comp' || currentGame === 'mod16-test') && student.status === 'complete')
+        ? (() => {
+            const writtenKey = currentGame === 'mod16-test' ? 'mod16-test-written' : 'djt_comp_written';
+            return (dashData[writtenKey] || []).some(r => r.name === name)
+              ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:4px;">✍️</span>'
+              : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
+          })()
+        : '';
 
       tr.innerHTML = `
-        <td style="font-weight:800;">${name}${flagBadge}</td>
+        <td style="font-weight:800;">${name}${flagBadge}${writtenBadge}</td>
         <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
         <td>
           <div class="score-bar-wrap">
