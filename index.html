@@ -1195,42 +1195,46 @@ function openDetail(name) {
 }
 
 function openProfile(name) {
-  const allGames = Object.keys(dashData);
-  const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
+  try {
+    const allGames = Object.keys(dashData);
+    const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
 
-  document.getElementById('profileName').textContent = '👤 ' + name;
-  const tbody = document.getElementById('profileBody');
-  tbody.innerHTML = '';
+    document.getElementById('profileName').textContent = '👤 ' + name;
+    const tbody = document.getElementById('profileBody');
+    tbody.innerHTML = '';
 
-  games.forEach(game => {
-    const student = (dashData[game] || []).find(s => s.name === name);
-    const max = MAX_SCORES[game] || 100;
-    const label = GAME_LABELS[game] || game;
-    const tr = document.createElement('tr');
+    games.forEach(game => {
+      const student = (dashData[game] || []).find(s => s.name === name);
+      const max = MAX_SCORES[game] || 100;
+      const label = GAME_LABELS[game] || game;
+      const tr = document.createElement('tr');
 
-    if (!student) {
-      tr.innerHTML = `<td>${label}</td><td><span class="status-pill notstarted">⬜ Not Started</span></td><td colspan="5" style="color:var(--muted);">—</td>`;
-    } else {
-      const pct = Math.round((student.bestScore / max) * 100);
-      const grade = student.status === 'complete' ? letterGrade(pct) : '—';
-      const bestSess = student.sessions.reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
-      const elapsed = bestSess?.elapsed;
-      const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
-      tr.innerHTML = `
-        <td>${label}</td>
-        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
-        <td>${student.bestScore}/${max}</td>
-        <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
-        <td style="color:${gradeColor};font-weight:800;">${grade}</td>
-        <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
-        <td style="color:var(--muted);">${student.sessions.length}</td>`;
-    }
-    tbody.appendChild(tr);
-  });
+      if (!student) {
+        tr.innerHTML = `<td>${label}</td><td><span class="status-pill notstarted">⬜ Not Started</span></td><td colspan="5" style="color:var(--muted);">—</td>`;
+      } else {
+        const pct = Math.round((student.bestScore / max) * 100);
+        const grade = student.status === 'complete' ? letterGrade(pct) : '—';
+        const bestSess = student.sessions.reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
+        const elapsed = bestSess?.elapsed;
+        const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
+        tr.innerHTML = `
+          <td>${label}</td>
+          <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
+          <td>${student.bestScore}/${max}</td>
+          <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
+          <td style="color:${gradeColor};font-weight:800;">${grade}</td>
+          <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
+          <td style="color:var(--muted);">${student.sessions.length}</td>`;
+      }
+      tbody.appendChild(tr);
+    });
 
-  const panel = document.getElementById('studentProfile');
-  panel.classList.add('open');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const panel = document.getElementById('studentProfile');
+    panel.classList.add('open');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(err) {
+    alert('Profile error: ' + err.message);
+  }
 }
 
 function closeProfile() {
