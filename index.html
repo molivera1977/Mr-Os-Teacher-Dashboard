@@ -1212,7 +1212,7 @@ function openProfile(name) {
       } else {
         const pct = Math.round((student.bestScore / max) * 100);
         const grade = student.status === 'complete' ? letterGrade(pct) : '—';
-        const bestSess = student.sessions.reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
+        const bestSess = (student.sessions||[]).reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
         const elapsed = bestSess?.elapsed;
         const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
         tr.innerHTML = `
