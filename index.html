@@ -577,7 +577,11 @@ window.onload = () => {
     if (e.key === 'Enter') checkPin();
   });
   resetInactivity();
-  document.addEventListener('click', resetInactivity);
+  document.addEventListener('click', e => {
+    resetInactivity();
+    const link = e.target.closest('.profile-link');
+    if (link) openProfile(link.dataset.name);
+  });
   document.addEventListener('keydown', resetInactivity);
 };
 
@@ -779,7 +783,7 @@ function renderOverview() {
   const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
     const tr = document.createElement('tr');
-    let cells = `<td class="name-col" onclick="openProfile('${name.replace(/'/g, "\\'")}');" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
+    let cells = `<td class="name-col profile-link" data-name="${name.replace(/"/g,'&quot;')}" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       const status  = student ? student.status : 'notstarted';
@@ -1147,7 +1151,7 @@ function openDetail(name) {
         const m = entry.match(/^\[([A-Z]\d+)\]\s*(.*)/);
         if (m) {
           const id = m[1];
-          const text = getQuestionText(id) || m[2] || id;
+          const text = m[2] || getQuestionText(id) || id;
           return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--flagged);border:1px solid var(--flagged-border);border-radius:10px;margin-bottom:5px;">
             <span style="background:var(--flagged-border);color:var(--flagged-text);border-radius:6px;padding:2px 7px;font-size:.7rem;font-weight:800;white-space:nowrap;flex-shrink:0;">${id}</span>
             <span style="font-size:.78rem;font-weight:700;color:var(--flagged-text);line-height:1.4;">${text}</span>
