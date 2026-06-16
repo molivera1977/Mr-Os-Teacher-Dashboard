@@ -780,13 +780,16 @@ function renderOverview() {
   table.appendChild(thead);
 
   // Rows
-  window._dotGridNames = [];
   const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
-    const idx = window._dotGridNames.length;
-    window._dotGridNames.push(name);
     const tr = document.createElement('tr');
-    let cells = `<td class="name-col" onclick="openProfile(window._dotGridNames[${idx}])" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
+    const nameTd = document.createElement('td');
+    nameTd.className = 'name-col';
+    nameTd.textContent = name;
+    nameTd.style.cssText = 'cursor:pointer;color:var(--accent);text-decoration:underline dotted;';
+    nameTd.addEventListener('click', () => openProfile(name));
+    tr.appendChild(nameTd);
+    let cells = '';
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       const status  = student ? student.status : 'notstarted';
@@ -797,7 +800,7 @@ function renderOverview() {
       const writtenBadge = status === 'complete' ? getWrittenBadge(game, name) : '';
       cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span>${writtenBadge}</td>`;
     });
-    tr.innerHTML = cells;
+    tr.insertAdjacentHTML('beforeend', cells);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
