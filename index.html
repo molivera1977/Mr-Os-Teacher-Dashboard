@@ -1222,7 +1222,7 @@ function openProfile(name) {
           <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
           <td style="color:${gradeColor};font-weight:800;">${grade}</td>
           <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
-          <td style="color:var(--muted);">${student.sessions.length}</td>`;
+          <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       }
       tbody.appendChild(tr);
     });
