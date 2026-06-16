@@ -253,7 +253,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <!-- Student profile panel -->
       <div class="student-profile" id="studentProfile">
         <div class="profile-header">
+          <button class="btn btn-ghost btn-sm" onclick="stepProfile(-1)">◀ Prev</button>
           <div class="profile-name" id="profileName"></div>
+          <button class="btn btn-ghost btn-sm" onclick="stepProfile(1)">Next ▶</button>
           <button class="btn btn-ghost btn-sm" onclick="closeProfile()">✕ Close</button>
         </div>
         <div class="grid-wrap">
@@ -1237,6 +1239,16 @@ function openProfile(name) {
 
 function closeProfile() {
   document.getElementById('studentProfile').classList.remove('open');
+}
+
+function stepProfile(dir) {
+  const currentName = document.getElementById('profileName').textContent.replace('👤 ', '').trim();
+  const idx = ROSTER.indexOf(currentName);
+  if (idx === -1) return;
+  let next = idx + dir;
+  if (next < 0) next = ROSTER.length - 1;
+  if (next >= ROSTER.length) next = 0;
+  openProfile(ROSTER[next]);
 }
 
 function closeDetail() {
