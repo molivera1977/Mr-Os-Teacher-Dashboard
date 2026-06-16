@@ -888,6 +888,7 @@ function renderAssignment() {
 function buildHeatmap(data) {
   const wrongCounts = {};   // id/num → count of students who got it wrong
   const wrongStudents = {}; // id/num → array of student names who missed it
+  const questionTexts = {}; // id → full question text extracted from wrongQuestions string
   let totalStudents = 0;
 
   data.forEach(student => {
@@ -898,10 +899,14 @@ function buildHeatmap(data) {
       //   Old format: "1,2,3" comma-separated numbers
       let entries = [];
       if (sess.wrongQuestions.includes('[') ) {
-        // New ID-based format
+        // New ID-based format — also capture question text from the string itself
         entries = sess.wrongQuestions.split(' | ').map(e => {
-          const m = e.match(/^\[([A-Z]\d+)\]/);
-          return m ? m[1] : null;
+          const m = e.match(/^\[([A-Z]\d+)\]\s*(.*)/);
+          if (m) {
+            if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2];
+            return m[1];
+          }
+          return null;
         }).filter(Boolean);
       } else {
         // Old numeric format
@@ -936,7 +941,7 @@ function buildHeatmap(data) {
       const wrong = (wrongStudents[id] || []).length;
       const pct   = Math.round((wrong/totalStudents)*100);
       const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
-      const qText = getQuestionText(id);
+      const qText = questionTexts[id] || getQuestionText(id);
       const cell  = document.createElement('div');
       cell.className = `heat-cell heat-${heat}`;
       cell.innerHTML = `<span class="q-num">${id}</span><span class="q-pct">${pct}%</span>`;
