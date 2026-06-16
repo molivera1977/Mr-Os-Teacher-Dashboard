@@ -130,6 +130,17 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .time-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--accent));}
 .time-bar-val{font-size:.68rem;color:var(--muted);font-weight:700;min-width:28px;text-align:right;}
 
+/* ── STUDENT PROFILE PANEL ── */
+.student-profile{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
+.student-profile.open{display:block;}
+.profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.profile-name{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);}
+.profile-table{width:100%;border-collapse:collapse;}
+.profile-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);}
+.profile-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem;font-weight:700;vertical-align:middle;}
+.profile-table tr:last-child td{border-bottom:none;}
+.profile-table tr:hover td{background:var(--surface2);}
+
 /* ── ASSIGNMENT CARDS ── */
 .assignment-cards{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:8px;}
 .asgn-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;min-width:170px;flex:1 1 170px;max-width:220px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,border-color .15s;}
@@ -237,6 +248,20 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="section-title" style="margin-top:24px;">👥 Student Progress</div>
       <div class="dot-grid-wrap">
         <div id="dotGrid"></div>
+      </div>
+
+      <!-- Student profile panel -->
+      <div class="student-profile" id="studentProfile">
+        <div class="profile-header">
+          <div class="profile-name" id="profileName"></div>
+          <button class="btn btn-ghost btn-sm" onclick="closeProfile()">✕ Close</button>
+        </div>
+        <div class="grid-wrap">
+          <table class="profile-table">
+            <thead><tr><th>Assignment</th><th>Status</th><th>Score</th><th>%</th><th>Grade</th><th>Time</th><th>Sessions</th></tr></thead>
+            <tbody id="profileBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -754,7 +779,7 @@ function renderOverview() {
   const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
     const tr = document.createElement('tr');
-    let cells = `<td class="name-col">${name}</td>`;
+    let cells = `<td class="name-col" onclick="openProfile('${name.replace(/'/g, "\\'")}');" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       const status  = student ? student.status : 'notstarted';
@@ -1157,6 +1182,49 @@ function openDetail(name) {
 
   panel.classList.add('open');
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function openProfile(name) {
+  const allGames = Object.keys(dashData);
+  const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
+
+  document.getElementById('profileName').textContent = '👤 ' + name;
+  const tbody = document.getElementById('profileBody');
+  tbody.innerHTML = '';
+
+  games.forEach(game => {
+    const student = (dashData[game] || []).find(s => s.name === name);
+    const max = MAX_SCORES[game] || 100;
+    const label = GAME_LABELS[game] || game;
+    const tr = document.createElement('tr');
+
+    if (!student) {
+      tr.innerHTML = `<td>${label}</td><td><span class="status-pill notstarted">⬜ Not Started</span></td><td colspan="5" style="color:var(--muted);">—</td>`;
+    } else {
+      const pct = Math.round((student.bestScore / max) * 100);
+      const grade = student.status === 'complete' ? letterGrade(pct) : '—';
+      const bestSess = student.sessions.reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
+      const elapsed = bestSess?.elapsed;
+      const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
+      tr.innerHTML = `
+        <td>${label}</td>
+        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
+        <td>${student.bestScore}/${max}</td>
+        <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
+        <td style="color:${gradeColor};font-weight:800;">${grade}</td>
+        <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
+        <td style="color:var(--muted);">${student.sessions.length}</td>`;
+    }
+    tbody.appendChild(tr);
+  });
+
+  const panel = document.getElementById('studentProfile');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeProfile() {
+  document.getElementById('studentProfile').classList.remove('open');
 }
 
 function closeDetail() {
