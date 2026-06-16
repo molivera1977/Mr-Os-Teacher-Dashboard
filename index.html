@@ -1194,8 +1194,11 @@ function openDetail(name) {
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+let currentProfileName = null;
+
 function openProfile(name) {
   try {
+    currentProfileName = name;
     const allGames = Object.keys(dashData);
     const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
 
@@ -1242,8 +1245,7 @@ function closeProfile() {
 }
 
 function stepProfile(dir) {
-  const currentName = document.getElementById('profileName').textContent.replace('👤 ', '').trim();
-  const idx = ROSTER.indexOf(currentName);
+  const idx = ROSTER.indexOf(currentProfileName);
   if (idx === -1) return;
   let next = idx + dir;
   if (next < 0) next = ROSTER.length - 1;
