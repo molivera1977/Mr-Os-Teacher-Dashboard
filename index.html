@@ -783,7 +783,7 @@ function renderOverview() {
   const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
     const tr = document.createElement('tr');
-    let cells = `<td class="name-col profile-link" data-name="${name.replace(/"/g,'&quot;')}" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
+    let cells = `<td class="name-col" data-name="${name.replace(/"/g,'&quot;')}" onclick="openProfile(this.dataset.name)" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;">${name}</td>`;
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       const status  = student ? student.status : 'notstarted';
