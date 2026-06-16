@@ -933,7 +933,7 @@ function buildHeatmap(data) {
     // Sort by ID: A01, A02... B01, B02... C01...
     keys.sort((a,b) => a.localeCompare(b));
     keys.forEach(id => {
-      const wrong = wrongCounts[id] || 0;
+      const wrong = (wrongStudents[id] || []).length;
       const pct   = Math.round((wrong/totalStudents)*100);
       const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
       const qText = getQuestionText(id);
