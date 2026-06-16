@@ -326,6 +326,7 @@ const ROSTER = [
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'wwr_vocab', 'wwr_comp', 'wwr_cloze',
   'mod16-test',
   'djt_vocab', 'djt_comp', 'djt_cloze',
   'dj_vocab', 'dj_comp', 'dj_cloze',
@@ -350,6 +351,9 @@ const WRITTEN_GAME_MAP = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  wwr_vocab:   '🏛️ WWR-Review — Vocab',
+  wwr_comp:    '🏛️ WWR-Review — Comp',
+  wwr_cloze:   '🏛️ WWR-Review — Cloze',
   cloze:       '🌴 CLOZE Reading',
   monsters:    '🧟 Math Monsters',
   'mod16a-review': '✖️ Mod 16A — Review',
@@ -364,6 +368,9 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  wwr_vocab:   24,
+  wwr_comp:    24,
+  wwr_cloze:   24,
   cloze:       400,
   monsters:    500,
   'mod16a-review': 17,
