@@ -783,13 +783,7 @@ function renderOverview() {
   const tbody = document.createElement('tbody');
   ROSTER.forEach(name => {
     const tr = document.createElement('tr');
-    const nameTd = document.createElement('td');
-    nameTd.className = 'name-col';
-    nameTd.textContent = name;
-    nameTd.style.cssText = 'cursor:pointer;color:var(--accent);text-decoration:underline dotted;';
-    nameTd.addEventListener('click', () => openProfile(name));
-    tr.appendChild(nameTd);
-    let cells = '';
+    let cells = `<td class="name-col" style="cursor:pointer;color:var(--accent);text-decoration:underline dotted;" data-profile="${name.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${name}</td>`;
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       const status  = student ? student.status : 'notstarted';
@@ -800,8 +794,12 @@ function renderOverview() {
       const writtenBadge = status === 'complete' ? getWrittenBadge(game, name) : '';
       cells += `<td><span class="status-dot ${status}" title="${tip}" onclick="currentGame='${game}';toggleView('assignment')">${icon}</span>${writtenBadge}</td>`;
     });
-    tr.insertAdjacentHTML('beforeend', cells);
+    tr.innerHTML = cells;
     tbody.appendChild(tr);
+  });
+  table.addEventListener('click', e => {
+    const td = e.target.closest('td[data-profile]');
+    if (td) openProfile(td.dataset.profile);
   });
   table.appendChild(tbody);
   dotEl.appendChild(table);
