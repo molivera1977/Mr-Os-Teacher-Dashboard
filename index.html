@@ -713,7 +713,15 @@ function renderCurrentView() {
 function getWrittenBadge(game, name) {
   const writtenKey = WRITTEN_GAME_MAP[game];
   if (!writtenKey) return '';
-  return (dashData[writtenKey] || []).some(r => r.name === name)
+  const writtenData = dashData[writtenKey] || [];
+  // Try direct name match first, then session-ID cross-reference
+  let found = writtenData.some(r => r.name === name);
+  if (!found) {
+    const scoreEntry = (dashData[game] || []).find(r => r.name === name);
+    const sid = scoreEntry?.sessions?.[0]?.sessionId;
+    if (sid) found = writtenData.some(r => r.name === sid + '-written');
+  }
+  return found
     ? '<span title="Written submitted" style="font-size:0.7rem;margin-left:4px;">✍️</span>'
     : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
 }
@@ -1087,21 +1095,36 @@ function openDetail(name) {
       const isDJT  = g === 'djt_comp';
       const isWWRT = g === 'wwrt_comp';
       const writtenKey = isDJT ? 'djt_comp_written' : isWWRT ? 'wwrt_comp_written' : 'mod16-test-written';
-      const writtenData = dashData[writtenKey] || dashData[writtenKey.toUpperCase()] || [];
-      const wr = writtenData.find(r => r.name.trim() === name.trim());
+      const writtenData = dashData[writtenKey] || [];
+      // Deployed Apps Script stores session IDs as name — cross-reference via student's session
+      const sid = student.sessions?.[0]?.sessionId;
+      let wr = sid ? writtenData.find(r => r.name === sid + '-written') : null;
+      if (!wr) wr = writtenData.find(r => r.name.trim() === name.trim());
       if (!wr) return `<div class="detail-stat" style="grid-column:1/-1;background:#fff3cd;border-radius:10px;padding:10px;border:2px solid #ffc107;">
         <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
         <div class="detail-stat-label">Written Response</div>
       </div>`;
+      // Response text is stored as the key inside formStatus (deployed Apps Script format)
+      const formKeys = Object.keys(wr.formStatus || {});
+      const hasFormStatus = formKeys.length > 0 && !wr.w1;
       const PROMPTS = (isDJT || isWWRT)
         ? ['Extended Response','Evidence-Based Response','Argument / Opinion']
         : ['Error Analysis','Compare Student Work'];
-      const answers = (isDJT || isWWRT) ? [wr.w1||'', wr.w2||'', wr.w3||''] : [wr.w1||'', wr.w2||''];
-      const cards = answers.map((text, i) => `
-        <div style="margin-bottom:12px;">
-          <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
-          <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
-        </div>`).join('');
+      let cards;
+      if (hasFormStatus) {
+        cards = formKeys.map((text, i) => `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i] || 'Written Response'}</div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
+          </div>`).join('');
+      } else {
+        const answers = (isDJT || isWWRT) ? [wr.w1||'', wr.w2||'', wr.w3||''] : [wr.w1||'', wr.w2||''];
+        cards = answers.map((text, i) => `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
+          </div>`).join('');
+      }
       const timeSpent = wr.elapsed ? `<span style="margin-left:10px;font-weight:400;color:#888;font-size:0.82rem;">⏱ ${wr.elapsed}</span>` : '';
       return `<div style="grid-column:1/-1;background:#f3e8ff;border:2px solid #9b59b6;border-radius:10px;padding:14px 16px;margin-top:4px;">
         <div style="font-weight:800;color:#6c3483;margin-bottom:12px;font-size:0.95rem;">✍️ Written Responses — submitted${timeSpent}</div>
