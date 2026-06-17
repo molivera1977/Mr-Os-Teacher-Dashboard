@@ -669,7 +669,9 @@ async function refreshData() {
   document.getElementById('lastUpdated').textContent = '⏳ Loading...';
   try {
     const res  = await fetch(`${SHEET_URL}?action=dashboard`, { cache: 'no-store' });
-    dashData   = await res.json();
+    const raw  = await res.json();
+    dashData   = {};
+    Object.entries(raw).forEach(([k, v]) => { dashData[k.toLowerCase()] = v; });
     const now  = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
     document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
     buildAssignmentTabs();
