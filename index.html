@@ -1191,7 +1191,13 @@ function openDetail(name) {
   } else timeEl.innerHTML = '';
 
   panel.classList.add('open');
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => {
+    const barHeight = document.querySelector('.top-bar')?.offsetHeight || 60;
+    const rect = panel.getBoundingClientRect();
+    if (rect.top < barHeight + 8) {
+      window.scrollTo({ top: window.scrollY + rect.top - barHeight - 12, behavior: 'smooth' });
+    }
+  }, 50);
 }
 
 let currentProfileName = null;
@@ -1235,10 +1241,12 @@ function openProfile(name) {
     const panel = document.getElementById('studentProfile');
     panel.classList.add('open');
     setTimeout(() => {
-      const top = panel.getBoundingClientRect().top + window.scrollY;
       const barHeight = document.querySelector('.top-bar')?.offsetHeight || 60;
-      window.scrollTo({ top: top - barHeight - 12, behavior: 'smooth' });
-    }, 10);
+      const rect = panel.getBoundingClientRect();
+      if (rect.top < barHeight + 8) {
+        window.scrollTo({ top: window.scrollY + rect.top - barHeight - 12, behavior: 'smooth' });
+      }
+    }, 50);
   } catch(err) {
     alert('Profile error: ' + err.message);
   }
