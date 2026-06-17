@@ -1087,7 +1087,8 @@ function openDetail(name) {
       const isWWRT = currentGame === 'wwrt_comp';
       const writtenKey = isDJT ? 'djt_comp_written' : isWWRT ? 'wwrt_comp_written' : 'mod16-test-written';
       const writtenData = dashData[writtenKey] || [];
-      const wr = writtenData.find(r => r.name === name);
+      console.log('[Written Debug] key:', writtenKey, '| found rows:', writtenData.length, '| names:', writtenData.map(r=>r.name), '| looking for:', name);
+      const wr = writtenData.find(r => r.name.trim() === name.trim());
       if (!wr) return `<div class="detail-stat" style="grid-column:1/-1;background:#fff3cd;border-radius:10px;padding:10px;border:2px solid #ffc107;">
         <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
         <div class="detail-stat-label">Written Response</div>
