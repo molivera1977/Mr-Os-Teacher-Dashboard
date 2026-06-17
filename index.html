@@ -1080,19 +1080,20 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
-    ${(currentGame === 'djt_comp' || currentGame === 'mod16-test') ? (() => {
-      const isDJT = currentGame === 'djt_comp';
-      const writtenKey = isDJT ? 'djt_comp_written' : 'mod16-test-written';
+    ${(currentGame === 'djt_comp' || currentGame === 'wwrt_comp' || currentGame === 'mod16-test') ? (() => {
+      const isDJT  = currentGame === 'djt_comp';
+      const isWWRT = currentGame === 'wwrt_comp';
+      const writtenKey = isDJT ? 'djt_comp_written' : isWWRT ? 'wwrt_comp_written' : 'mod16-test-written';
       const writtenData = dashData[writtenKey] || [];
       const wr = writtenData.find(r => r.name === name);
       if (!wr) return `<div class="detail-stat" style="grid-column:1/-1;background:#fff3cd;border-radius:10px;padding:10px;border:2px solid #ffc107;">
         <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
         <div class="detail-stat-label">Written Response</div>
       </div>`;
-      const PROMPTS = isDJT
+      const PROMPTS = (isDJT || isWWRT)
         ? ['Extended Response','Evidence-Based Response','Argument / Opinion']
         : ['Error Analysis','Compare Student Work'];
-      const answers = isDJT ? [wr.w1||'', wr.w2||'', wr.w3||''] : [wr.w1||'', wr.w2||''];
+      const answers = (isDJT || isWWRT) ? [wr.w1||'', wr.w2||'', wr.w3||''] : [wr.w1||'', wr.w2||''];
       const cards = answers.map((text, i) => `
         <div style="margin-bottom:12px;">
           <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
