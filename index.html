@@ -115,7 +115,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 /* ── STUDENT DETAIL PANEL ── */
 .detail-panel{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
 .detail-panel.open{display:block;}
-.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;scroll-margin-top:80px;}
 .detail-name{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent);}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
 .detail-stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
@@ -133,7 +133,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 /* ── STUDENT PROFILE PANEL ── */
 .student-profile{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
 .student-profile.open{display:block;}
-.profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;scroll-margin-top:80px;}
 .profile-name{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);}
 .profile-table{width:100%;border-collapse:collapse;}
 .profile-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);}
@@ -1192,11 +1192,8 @@ function openDetail(name) {
 
   panel.classList.add('open');
   setTimeout(() => {
-    const barHeight = document.querySelector('.top-bar')?.offsetHeight || 60;
-    const rect = panel.getBoundingClientRect();
-    if (rect.top < barHeight + 8) {
-      window.scrollTo({ top: window.scrollY + rect.top - barHeight - 12, behavior: 'smooth' });
-    }
+    const header = panel.querySelector('.detail-header');
+    if (header) header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 50);
 }
 
@@ -1241,11 +1238,8 @@ function openProfile(name) {
     const panel = document.getElementById('studentProfile');
     panel.classList.add('open');
     setTimeout(() => {
-      const barHeight = document.querySelector('.top-bar')?.offsetHeight || 60;
-      const rect = panel.getBoundingClientRect();
-      if (rect.top < barHeight + 8) {
-        window.scrollTo({ top: window.scrollY + rect.top - barHeight - 12, behavior: 'smooth' });
-      }
+      const header = panel.querySelector('.profile-header');
+      if (header) header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 50);
   } catch(err) {
     alert('Profile error: ' + err.message);
