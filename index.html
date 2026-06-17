@@ -353,6 +353,7 @@ const ROSTER = [
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'wwrt_vocab', 'wwrt_comp', 'wwrt_cloze',
   'wwr_vocab', 'wwr_comp', 'wwr_cloze',
   'mod16-test',
   'djt_vocab', 'djt_comp', 'djt_cloze',
@@ -363,11 +364,12 @@ const GAME_ORDER = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'mod16-test-written']);
+const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written']);
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
 const WRITTEN_GAME_MAP = {
+  wwrt_comp:      'wwrt_comp_written',
   djt_comp:       'djt_comp_written',
   'mod16-test':   'mod16-test-written',
 };
@@ -378,6 +380,9 @@ const WRITTEN_GAME_MAP = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  wwrt_vocab:  '🏛️ WWR-Test — Vocab',
+  wwrt_comp:   '🏛️ WWR-Test — Comp',
+  wwrt_cloze:  '🏛️ WWR-Test — Cloze',
   wwr_vocab:   '🏛️ WWR-Review — Vocab',
   wwr_comp:    '🏛️ WWR-Review — Comp',
   wwr_cloze:   '🏛️ WWR-Review — Cloze',
@@ -395,6 +400,9 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  wwrt_vocab:  24,
+  wwrt_comp:   25,
+  wwrt_cloze:  24,
   wwr_vocab:   24,
   wwr_comp:    24,
   wwr_cloze:   24,
@@ -562,7 +570,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
