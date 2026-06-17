@@ -1082,12 +1082,12 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
-    ${(currentGame === 'djt_comp' || currentGame === 'wwrt_comp' || currentGame === 'mod16-test') ? (() => {
-      const isDJT  = currentGame === 'djt_comp';
-      const isWWRT = currentGame === 'wwrt_comp';
+    ${(()=>{const g=currentGame.toLowerCase();return g==='djt_comp'||g==='wwrt_comp'||g==='mod16-test';})() ? (() => {
+      const g = currentGame.toLowerCase();
+      const isDJT  = g === 'djt_comp';
+      const isWWRT = g === 'wwrt_comp';
       const writtenKey = isDJT ? 'djt_comp_written' : isWWRT ? 'wwrt_comp_written' : 'mod16-test-written';
-      const writtenData = dashData[writtenKey] || [];
-      console.log('[Written Debug] key:', writtenKey, '| found rows:', writtenData.length, '| names:', writtenData.map(r=>r.name), '| looking for:', name);
+      const writtenData = dashData[writtenKey] || dashData[writtenKey.toUpperCase()] || [];
       const wr = writtenData.find(r => r.name.trim() === name.trim());
       if (!wr) return `<div class="detail-stat" style="grid-column:1/-1;background:#fff3cd;border-radius:10px;padding:10px;border:2px solid #ffc107;">
         <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
