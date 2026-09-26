@@ -339,13 +339,16 @@ const INACTIVITY_MS = 60 * 60 * 1000; // 60 min auto-lock
 // ⚠️ ROSTER SYNC — When adding/removing students, update BOTH this file
 // AND the ROSTER array in every student-facing activity file. No single
 // source of truth yet — both must stay identical.
+// 2026-2027 class (from Class_Checklist_2026-2027.docx)
 const ROSTER = [
-  'Aquino-Perez, Steven','Camas-Alvarez, Mike','Earle, Jeremiah',
-  'Felix, Chloe','Flores Marcos, Cornelio',"Gardner, Zy'iere",
-  'Giraldo, Layla','Lawrence, Lennox','Michael, Mulan','Millet, Zion',
-  'Murillo Estrada, Kevin','Romaniello, Kaylib','Sanango-Quizhpi, Anthony',
-  'Santos-Bautista, Scarlet','Simpson, Jordyn','Torres, Aryana',
-  'Towns, Micah','Ulerio-Jimenez, Adrian',
+  "Avery, Jo'Von",'Belasquez Bonilla, Eduin','Castaneda, Kelvin',
+  'Chicas-Santos, Allison','Collado, Roniel','Dejesus, Michael',
+  'Dock, Fakeem','Douglas, Iyana','Dumphrey, Christopher',
+  'Flores, Kiara','Garcia, Ariana','Johnson, Destiny',
+  'Jones, Tahji','Lawrence, Eric','Madero, Jovany',
+  'Pettway, Lanaura','Polanco Soriano, Thiara','Rivera, Adrianna',
+  'Roberts, Robyn','Rojas, Alanie','Sanchez Rodriguez, Johanelyz',
+  'Vega, Taishmara','Watts, Autumn','Zelaya-Osorto, Nazareth',
   'Mr. O (Teacher)'
 ];
 
@@ -353,6 +356,11 @@ const ROSTER = [
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'mod1a-review', 'mod1b-review', 'mod1c-review',
+];
+
+// 2025-2026 assignments — data is still in the Google Sheet, just hidden here.
+const LAST_YEAR_GAMES = [
   'wwrt_vocab', 'wwrt_comp', 'wwrt_cloze',
   'wwr_vocab', 'wwr_comp', 'wwr_cloze',
   'mod16-test',
@@ -364,7 +372,7 @@ const GAME_ORDER = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written']);
+const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', ...LAST_YEAR_GAMES]);
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
@@ -380,6 +388,9 @@ const WRITTEN_GAME_MAP = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'mod1a-review': '🔢 Mod 1A — Review',
+  'mod1b-review': '🔢 Mod 1B — Review',
+  'mod1c-review': '🔢 Mod 1C — Review',
   wwrt_vocab:  '🏛️ WWR-Test — Vocab',
   wwrt_comp:   '🏛️ WWR-Test — Comp',
   wwrt_cloze:  '🏛️ WWR-Test — Cloze',
@@ -400,6 +411,9 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  'mod1a-review': 17,
+  'mod1b-review': 17,
+  'mod1c-review': 17,
   wwrt_vocab:  24,
   wwrt_comp:   25,
   wwrt_cloze:  24,
@@ -418,6 +432,61 @@ const MAX_SCORES = {
   dj_comp:     24,
   dj_cloze:    30,
   'mod16-test': 25,
+};
+
+// ── Question bank for Mod 1 Review — keyed by question ID ──
+const MOD1_QUESTIONS = {
+  A01:"How many times greater is the value of the digit 9 in 90,000 than the value of the digit 9 in 9,000?",
+  A02:"What is 364,872 rounded to the nearest thousand?",
+  A03:"What is 500,000 + 9,000 + 300 + 8 written in word form?",
+  A04:"In which number is the value of the digit 7 ten times the value of the digit 7 in 948,736?",
+  A05:"Which number is greater than 37,481 and less than 38,697?",
+  A06:"A number rounded to the nearest hundred thousand is 600,000. The same number rounded to the nearest ten thousand is 650,000. Which of these could be the number?",
+  A07:"Which is a correct way to rename 720,000?",
+  A08:"Which comparison is true?",
+  A09:"Which is equal to 8,090?",
+  A10:"What is 36,142 rounded to the nearest thousand?",
+  A11:"25,000 is the same as how many hundreds?",
+  A12:"What is 400,000 + 20,000 + 80 + 5 written in standard form?",
+  A13:"Max rolls four number cubes and gets 3, 5, 1, and 4. What is the GREATEST 4-digit number he can make?",
+  A14:"Max rolls four number cubes and gets 3, 5, 1, and 4. What is the LEAST 4-digit number he can make?",
+  A15:"In the number 2,488, how many times greater is the value of the 8 in the tens place than the value of the 8 in the ones place?",
+  A16:"A baseball team sold 234,887 tickets in June, 229,531 in July, and 256,832 in August. Which list orders the numbers from GREATEST to LEAST?",
+  A17:"The baseball team sold 234,887 tickets in June and 256,832 tickets in August. Which statement is true?",
+  B01:"How many times greater is the value of the digit 2 in 20,000 than the value of the digit 2 in 2,000?",
+  B02:"What is 21,842 rounded to the nearest hundred?",
+  B03:"What is 90,000 + 2,000 + 500 + 60 written in word form?",
+  B04:"In which number is the value of the digit 6 ten times the value of the digit 6 in 251,687?",
+  B05:"Which number is greater than 42,572 and less than 43,895?",
+  B06:"A number rounded to the nearest hundred thousand is 800,000. The same number rounded to the nearest ten thousand is 850,000. Which of these could be the number?",
+  B07:"Which is a correct way to rename 340,000?",
+  B08:"Which is equal to 2,090?",
+  B09:"Which comparison is true?",
+  B10:"Compare six thousand, fifty-one and six thousand, fifteen. Which statement is true?",
+  B11:"What is 204,875 rounded to the nearest hundred?",
+  B12:"3,700 is the same as how many tens?",
+  B13:"What is 200,000 + 9,000 + 600 + 40 + 8 written in standard form?",
+  B14:"Emily used the digits 6, 3, and 7 to make the GREATEST number possible. What number did she make?",
+  B15:"Jayson used the digits 6, 3, and 7 to make the LEAST number possible. What number did he make?",
+  B16:"In the number 5,512, how many times greater is the value of the 5 in the thousands place than the value of the 5 in the hundreds place?",
+  B17:"A water park sold 193,148 tickets in June, 174,453 in July, and 147,056 in August. Which list orders the numbers from LEAST to GREATEST?",
+  C01:"How do the numbers 360 and 3,600 compare?",
+  C02:"What is 53,894 rounded to the nearest hundred?",
+  C03:"What is 68,215 rounded to the nearest thousand?",
+  C04:"What is 787,347 rounded to the nearest ten thousand?",
+  C05:"Which number rounds to 32,000 when it is rounded to the nearest thousand?",
+  C06:"What number is 5 hundreds + 7 ones + 9 thousands?",
+  C07:"Which is equal to 709?",
+  C08:"What number is 20 tens + 20 ones?",
+  C09:"The number 67,_37 is missing its hundreds digit. What is the smallest digit that makes the number greater than 67,737?",
+  C10:"Vinny rounded 5,931 to the nearest thousand and got 6,000. Linda rounded 5,931 to the nearest hundred and got 5,900. Vinny says a number rounded to the nearest thousand is ALWAYS greater than the same number rounded to the nearest hundred. Which number proves Vinny is wrong?",
+  C11:"What number is 100 + 50 + 3,000 + 6?",
+  C12:"What number is 2 thousands + 11 hundreds + 5 tens + 6 ones?",
+  C13:"How is three hundred six thousand, forty-two written in standard form?",
+  C14:"Which shows 58,309 in expanded form?",
+  C15:"4,600 is the same as how many hundreds?",
+  C16:"Three schools collected 405,218 cans, 450,128 cans, and 405,812 cans. Which list orders the numbers from GREATEST to LEAST?",
+  C17:"What is the value of the digit 4 in 742,915?",
 };
 
 // ── Question bank for Mod 16 Review — keyed by question ID ──
@@ -570,7 +639,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1238,7 +1307,7 @@ function openProfile(name) {
   try {
     currentProfileName = name;
     const allGames = Object.keys(dashData);
-    const games = [...GAME_ORDER.filter(g => allGames.includes(g)), ...allGames.filter(g => !GAME_ORDER.includes(g))];
+    const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))];
 
     document.getElementById('profileName').textContent = '👤 ' + name;
     const tbody = document.getElementById('profileBody');
@@ -1369,6 +1438,9 @@ function getSortedRoster(data, maxScore) {
 
 function getQuestionText(id) {
   const banks = {
+    'mod1a-review': MOD1_QUESTIONS,
+    'mod1b-review': MOD1_QUESTIONS,
+    'mod1c-review': MOD1_QUESTIONS,
     'mod16a-review': MOD16_QUESTIONS,
     'mod16b-review': MOD16_QUESTIONS,
     'mod16c-review': MOD16_QUESTIONS,
