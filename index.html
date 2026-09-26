@@ -751,6 +751,8 @@ async function refreshData() {
     const raw  = await res.json();
     dashData   = {};
     Object.entries(raw).forEach(([k, v]) => { dashData[k.toLowerCase()] = v; });
+    // Show every current assignment, even before its first submission creates a sheet tab
+    GAME_ORDER.forEach(g => { if (!dashData[g] && !HIDDEN_GAMES.has(g)) dashData[g] = []; });
     const now  = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
     document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
     buildAssignmentTabs();
@@ -874,7 +876,7 @@ function renderOverview() {
   const thead = document.createElement('thead');
   thead.innerHTML = `<tr>
     <th class="name-col">Student</th>
-    ${games.map(g => `<th title="${GAME_LABELS[g]||g}">${(GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').substring(0,8)}</th>`).join('')}
+    ${games.map(g => `<th title="${GAME_LABELS[g]||g}">${(GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').substring(0,11)}</th>`).join('')}
   </tr>`;
   table.appendChild(thead);
 
