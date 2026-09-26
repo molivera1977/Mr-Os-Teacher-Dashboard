@@ -361,6 +361,8 @@ const ROSTER = [
   'Vega, Taishmara','Watts, Autumn','Zelaya-Osorto, Nazareth',
   'Mr. O (Teacher)'
 ];
+// Class counts and averages use students only — teacher test runs still show in the tables.
+const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 
 // ⚠️ ASSIGNMENT ORDER — Newest assignment first (leftmost in overview).
 // Add new game keys to the FRONT of this array when you deploy a new activity.
@@ -820,10 +822,10 @@ function renderOverview() {
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
-  let totalStudents = ROSTER.length;
+  let totalStudents = STUDENT_ROSTER.length;
   let totalComplete = 0, totalInProgress = 0;
   games.forEach(game => {
-    (dashData[game] || []).filter(s => ROSTER.includes(s.name)).forEach(s => {
+    (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name)).forEach(s => {
       if (s.status === 'complete')   totalComplete++;
       if (s.status === 'inprogress') totalInProgress++;
     });
@@ -841,11 +843,11 @@ function renderOverview() {
   const cardsEl = document.getElementById('assignmentCards');
   cardsEl.innerHTML = '';
   games.forEach(game => {
-    const data     = (dashData[game] || []).filter(s => ROSTER.includes(s.name));
+    const data     = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name));
     const complete = data.filter(s => s.status === 'complete').length;
     const inprog   = data.filter(s => s.status === 'inprogress').length;
     const notstart = totalStudents - complete - inprog;
-    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0 && s.name !== 'Mr. O (Teacher)').map(s => s.bestScore);
+    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
     const max      = MAX_SCORES[game] || 100;
     const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
     const label    = GAME_LABELS[game] || game.toUpperCase();
@@ -952,7 +954,7 @@ function renderAssignment() {
   const studentData = data.filter(s => s.name !== 'Mr. O (Teacher)');
   const complete    = studentData.filter(s => s.status === 'complete').length;
   const inprogress  = studentData.filter(s => s.status === 'inprogress').length;
-  const notstarted  = (ROSTER.length - 1) - complete - inprogress; // -1 excludes teacher
+  const notstarted  = STUDENT_ROSTER.length - complete - inprogress;
   const scores      = studentData.filter(s => s.bestScore > 0).map(s => s.bestScore);
   const avgRaw      = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
   const avgPct      = scores.length ? Math.round(avgRaw/maxScore*100) : 0;
