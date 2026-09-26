@@ -108,6 +108,12 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 [data-theme="dark"] .heat-2{background:#3a2a00;color:#ffd84f;border-color:#6a5a00;}
 [data-theme="dark"] .heat-3{background:#3a1a00;color:#ff8c2a;border-color:#6a3a00;}
 [data-theme="dark"] .heat-4{background:#3a0000;color:#ff5252;border-color:#6a2222;}
+.heat-cell .q-was{font-size:.55rem;font-weight:700;opacity:.75;}
+.heat-cell.heat-tall{width:56px;height:58px;}
+.heat-toggle{display:inline-flex;gap:4px;margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;}
+.heat-toggle button{border:none;background:none;border-radius:8px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer;}
+.heat-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
+.heat-toggle button:disabled{opacity:.4;cursor:not-allowed;}
 .heatmap-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;font-weight:700;color:var(--muted);}
 .legend-dot{width:12px;height:12px;border-radius:3px;}
@@ -297,7 +303,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <!-- Question heatmap -->
       <div class="heatmap-wrap" id="heatmapWrap">
         <div class="section-title">🔥 Question Difficulty Heatmap
-          <span style="font-size:.72rem;color:var(--muted);font-weight:700;">% of students who got each question wrong</span>
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="heatmapSubtitle">% of students who got each question wrong</span>
+        </div>
+        <div class="heat-toggle" id="heatToggle">
+          <button type="button" data-attempt="1" onclick="setHeatmapAttempt(1)">1st Try</button>
+          <button type="button" data-attempt="2" onclick="setHeatmapAttempt(2)">2nd Try</button>
         </div>
         <div class="heatmap-grid" id="heatmapGrid"></div>
         <div class="heatmap-legend">
@@ -1007,86 +1017,119 @@ function renderAssignment() {
 // ═══════════════════════════════════════════════════
 //  HEATMAP
 // ═══════════════════════════════════════════════════
-function buildHeatmap(data) {
-  const wrongCounts = {};   // id/num → count of students who got it wrong
-  const wrongStudents = {}; // id/num → array of student names who missed it
-  const questionTexts = {}; // id → full question text extracted from wrongQuestions string
-  let totalStudents = 0;
+// Which attempt the heatmap shows: 1 = each student's first finished attempt,
+// 2 = each student's latest finished attempt (only students who retook).
+let heatmapAttempt = 1;
+let lastHeatmapData = [];
 
-  data.forEach(student => {
-    student.sessions.forEach(sess => {
-      if (!sess.wrongQuestions) return;
-      // Parse both formats:
-      //   New format: "[A06] Find the product..." separated by " | "
-      //   Old format: "1,2,3" comma-separated numbers
-      let entries = [];
-      if (sess.wrongQuestions.includes('[') ) {
-        // New ID-based format — also capture question text from the string itself
-        entries = sess.wrongQuestions.split(' | ').map(e => {
-          const m = e.match(/^\[([A-Z]\d+)\]\s*(.*)/);
-          if (m) {
-            if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2];
-            return m[1];
-          }
-          return null;
-        }).filter(Boolean);
-      } else {
-        // Old numeric format
-        entries = sess.wrongQuestions.split(',').map(n => n.trim()).filter(Boolean);
-      }
-      entries.forEach(id => {
-        wrongCounts[id]   = (wrongCounts[id]||0) + 1;
-        wrongStudents[id] = wrongStudents[id] || [];
-        if (!wrongStudents[id].includes(student.name)) wrongStudents[id].push(student.name);
-      });
+function setHeatmapAttempt(n) {
+  heatmapAttempt = n;
+  buildHeatmap(lastHeatmapData);
+}
+
+// Parse a wrongQuestions string into question keys.
+//   New format: "[A06] Find the product..." separated by " | "
+//   Old format: "1,2,3" comma-separated numbers
+function parseWrongQuestions(str, questionTexts) {
+  if (!str) return [];
+  if (str.includes('[')) {
+    return str.split(' | ').map(e => {
+      const m = e.match(/^\[([A-Z]\d+)\]\s*(.*)/);
+      if (!m) return null;
+      if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2];
+      return m[1];
+    }).filter(Boolean);
+  }
+  return str.split(',').map(n => n.trim()).filter(Boolean);
+}
+
+// Count misses per question across one finished attempt per student.
+// Returns { total, missedBy: {qid: [names]} } — each student counted once.
+function tallyAttempt(attempts, questionTexts) {
+  const missedBy = {};
+  attempts.forEach(({ name, sess }) => {
+    new Set(parseWrongQuestions(sess.wrongQuestions, questionTexts)).forEach(id => {
+      (missedBy[id] = missedBy[id] || []).push(name);
     });
-    if (student.status === 'complete') totalStudents++;
+  });
+  return { total: attempts.length, missedBy };
+}
+
+function buildHeatmap(data) {
+  lastHeatmapData = data;
+  const questionTexts = {};
+
+  // Only finished attempts count; leftover in-progress rows and teacher test runs are ignored.
+  // Finished rows are appended to the sheet when submitted, so session order is chronological.
+  const firstTries = [], secondTries = [], firstOfRetakers = [];
+  data.forEach(student => {
+    if (student.name === 'Mr. O (Teacher)') return;
+    const done = (student.sessions || []).filter(s => s.status === 'complete');
+    if (!done.length) return;
+    firstTries.push({ name: student.name, sess: done[0] });
+    if (done.length > 1) {
+      secondTries.push({ name: student.name, sess: done[done.length - 1] });
+      firstOfRetakers.push({ name: student.name, sess: done[0] });
+    }
   });
 
-  if (!totalStudents || !Object.keys(wrongCounts).length) {
+  const first  = tallyAttempt(firstTries, questionTexts);
+  const second = tallyAttempt(secondTries, questionTexts);
+  const before = tallyAttempt(firstOfRetakers, questionTexts);
+
+  if (!secondTries.length) heatmapAttempt = 1;
+  const view = heatmapAttempt === 2 ? second : first;
+
+  // Same question set on both tabs, so a question fixed on the retake shows 0%.
+  const keys = [...new Set([...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])];
+
+  if (!first.total || !keys.length) {
     document.getElementById('heatmapWrap').style.display = 'none';
     return;
   }
   document.getElementById('heatmapWrap').style.display = 'block';
 
+  document.querySelectorAll('#heatToggle button').forEach(btn => {
+    const n = Number(btn.dataset.attempt);
+    const count = n === 2 ? second.total : first.total;
+    btn.textContent = `${n === 2 ? '2nd' : '1st'} Try (${count})`;
+    btn.disabled = n === 2 && !second.total;
+    btn.classList.toggle('active', n === heatmapAttempt);
+  });
+  document.getElementById('heatmapSubtitle').textContent = heatmapAttempt === 2
+    ? `% of the ${second.total} students who retook it that missed each question (was = their 1st try)`
+    : `% of the ${first.total} students who finished that missed each question on their 1st try`;
+
   const grid = document.getElementById('heatmapGrid');
   grid.innerHTML = '';
+  const existingPopup = document.getElementById('heatmapDetailPopup');
+  if (existingPopup) existingPopup.remove();
 
-  // Check if we're using ID-based or numeric keys
-  const keys = Object.keys(wrongCounts);
   const isIdBased = keys.some(k => /^[A-Z]\d+$/.test(k));
+  const ordered = isIdBased
+    ? keys.sort((a, b) => a.localeCompare(b))
+    : Array.from({ length: Math.max(...keys.map(Number).filter(n => !isNaN(n)), 0) }, (_, i) => String(i + 1));
 
-  if (isIdBased) {
-    // Sort by ID: A01, A02... B01, B02... C01...
-    keys.sort((a,b) => a.localeCompare(b));
-    keys.forEach(id => {
-      const wrong = (wrongStudents[id] || []).length;
-      const pct   = Math.round((wrong/totalStudents)*100);
-      const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
-      const qText = questionTexts[id] || getQuestionText(id);
-      const cell  = document.createElement('div');
-      cell.className = `heat-cell heat-${heat}`;
-      cell.innerHTML = `<span class="q-num">${id}</span><span class="q-pct">${pct}%</span>`;
-      cell.title = `${id}: ${qText}\n${wrong}/${totalStudents} students missed this (${pct}%)`;
-      cell.style.position = 'relative';
-      // Click to show question panel
-      cell.onclick = () => showHeatmapDetail(id, qText, wrong, totalStudents, pct, wrongStudents[id]||[]);
-      grid.appendChild(cell);
-    });
-  } else {
-    // Old numeric format — original behaviour
-    const maxQ = Math.max(...keys.map(Number).filter(n=>!isNaN(n)), 0);
-    for (let i = 1; i <= maxQ; i++) {
-      const wrong = wrongCounts[String(i)] || 0;
-      const pct   = Math.round((wrong/totalStudents)*100);
-      const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
-      const cell  = document.createElement('div');
-      cell.className = `heat-cell heat-${heat}`;
-      cell.title = `Q${i}: ${wrong}/${totalStudents} wrong (${pct}%)`;
-      cell.innerHTML = `<span class="q-num">Q${i}</span><span class="q-pct">${pct}%</span>`;
-      grid.appendChild(cell);
+  ordered.forEach(id => {
+    const names = view.missedBy[id] || [];
+    const pct   = Math.round((names.length / view.total) * 100);
+    const heat  = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
+    const label = isIdBased ? id : `Q${id}`;
+    const qText = isIdBased ? (questionTexts[id] || getQuestionText(id)) : label;
+    const cell  = document.createElement('div');
+    cell.className = `heat-cell heat-${heat}`;
+    let was = '';
+    if (heatmapAttempt === 2) {
+      const wasPct = Math.round(((before.missedBy[id] || []).length / before.total) * 100);
+      was = `<span class="q-was">was ${wasPct}%</span>`;
+      cell.classList.add('heat-tall');
     }
-  }
+    cell.innerHTML = `<span class="q-num">${label}</span><span class="q-pct">${pct}%</span>${was}`;
+    cell.title = `${label}: ${qText}\n${names.length}/${view.total} students missed this (${pct}%)`;
+    cell.style.position = 'relative';
+    if (isIdBased) cell.onclick = () => showHeatmapDetail(id, qText, names.length, view.total, pct, names);
+    grid.appendChild(cell);
+  });
 }
 
 // ── Heatmap question detail popup ──
