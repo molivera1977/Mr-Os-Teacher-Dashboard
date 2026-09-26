@@ -197,6 +197,25 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
   .heat-cell{width:36px;height:36px;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ── Fact Fluency view ── */
+.fact-toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.fact-toolbar .heat-toggle{margin-top:0;}
+.fact-grid-wrap{overflow-x:auto;}
+.fact-table th.fact-col{text-align:center;padding:10px 6px;white-space:nowrap;}
+.fact-table td.fact-cell{text-align:center;padding:6px 4px;color:#1a2e1a;font-weight:800;border-left:1px solid var(--border);min-width:44px;}
+.fact-table td.fact-empty{color:var(--muted);opacity:.5;background:transparent;}
+.fact-sub{font-size:.62rem;font-weight:700;opacity:.7;}
+.fact-up{color:#1a6a1a;font-size:.6rem;margin-left:2px;}
+.fact-down{color:#aa2222;font-size:.6rem;margin-left:2px;}
+.fact-name{background:none;border:none;padding:0;font:inherit;font-weight:800;color:var(--text);cursor:pointer;text-align:left;white-space:nowrap;}
+.fact-name:hover{color:var(--accent);text-decoration:underline;}
+.fact-last{font-size:.75rem;color:var(--muted);white-space:nowrap;}
+.fact-pill{display:inline-block;padding:2px 8px;border-radius:10px;color:#1a2e1a;}
+.fact-missed{font-size:.78rem;font-weight:600;color:var(--muted);min-width:180px;}
+.fact-nowrap{white-space:nowrap;}
+.fact-miss-title{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+.fact-chip{display:inline-block;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);border-radius:14px;padding:3px 10px;margin:0 6px 6px 0;font-size:.82rem;font-weight:800;}
 </style>
 </head>
 <body>
@@ -224,6 +243,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     </div>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('overview')" id="tabOverview">🏠 Overview</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('assignment')" id="tabAssignment">📋 Assignment</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('facts')" id="tabFacts">🧮 Fact Fluency</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -335,6 +355,40 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       </div>
     </div>
 
+    <!-- FACT FLUENCY VIEW (Math Fact Review sites) -->
+    <div id="view-facts" style="display:none;">
+      <div class="fact-toolbar">
+        <div class="heat-toggle" id="factSiteToggle">
+          <button type="button" data-site="facts-review" onclick="setFactSite('facts-review')">✖️ Basic Facts</button>
+          <button type="button" data-site="facts-tens" onclick="setFactSite('facts-tens')">🔟 Multiples of 10</button>
+        </div>
+        <div class="heat-toggle" id="factOpToggle">
+          <button type="button" data-op="Mult" onclick="setFactOp('Mult')">× Multiplication</button>
+          <button type="button" data-op="Div" onclick="setFactOp('Div')">÷ Division</button>
+        </div>
+      </div>
+      <div class="stats-row" id="factStats"></div>
+
+      <div class="section-title">🧮 Latest Accuracy by Fact Set
+        <span style="font-size:.72rem;color:var(--muted);font-weight:700;">% right on each student's most recent session · ▲▼ vs. the time before · hover for details · click a name for full history</span>
+      </div>
+      <div class="grid-wrap fact-grid-wrap" id="factGrid"></div>
+
+      <div class="detail-panel" id="factDetail">
+        <div class="detail-header">
+          <div class="detail-name" id="factDetailName"></div>
+          <button class="btn btn-ghost btn-sm" onclick="closeFactStudent()">✕ Close</button>
+        </div>
+        <div id="factDetailMissed" style="margin-bottom:14px;"></div>
+        <div class="grid-wrap fact-grid-wrap">
+          <table class="grid-table">
+            <thead><tr><th>When</th><th>Site</th><th>Set</th><th>Right</th><th>Wrong</th><th>Accuracy</th><th>Time</th><th>Missed (typed)</th></tr></thead>
+            <tbody id="factDetailBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -384,7 +438,9 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', ...LAST_YEAR_GAMES]);
+const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', ...LAST_YEAR_GAMES,
+  // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
+  'facts-review', 'facts-tens']);
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
@@ -782,13 +838,171 @@ function toggleView(view) {
   document.getElementById('view-assignment').style.display = view === 'assignment' ? 'block' : 'none';
   document.getElementById('tabOverview').className   = 'btn btn-sm ' + (view==='overview'   ? 'btn-primary' : 'btn-ghost');
   document.getElementById('tabAssignment').className = 'btn btn-sm ' + (view==='assignment' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-facts').style.display = view === 'facts' ? 'block' : 'none';
+  document.getElementById('tabFacts').className = 'btn btn-sm ' + (view==='facts' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
 function renderCurrentView() {
   if (currentView === 'overview')   renderOverview();
   if (currentView === 'assignment') renderAssignment();
+  if (currentView === 'facts')      renderFacts();
 }
+
+// ═══════════════════════════════════════════════════
+//  FACT FLUENCY VIEW
+//  Math Fact Review sites send one row per practice session:
+//    game  'facts-review' | 'facts-tens'
+//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4' | 'Mult · All 2-12'
+//    sessionId 'F-<epoch ms>-XXXXX'  (the epoch is the session start time)
+//    score/correct = right answers, total = right + wrong tries,
+//    wrongQuestions = '7 × 8 (54) | 63 ÷ 9 (6)'  (fact + what they typed)
+// ═══════════════════════════════════════════════════
+const FACT_SITES = {
+  'facts-review': '✖️ Basic Facts',
+  'facts-tens':   '🔟 Multiples of 10',
+};
+const FACT_SETS = ['2','3','4','5','6','7','8','9','10','11','12','Mixed 2-4','Mixed 5-7','Mixed 8-10','Mixed 11-12','All 2-12'];
+let factSite = 'facts-review';
+let factOp   = 'Mult';
+let factStudent = null;
+
+function escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Flatten one game's dashboard rows into parsed sessions, oldest first.
+function getFactSessions(game) {
+  const out = [];
+  (dashData[game] || []).forEach(student => {
+    student.sessions.forEach(s => {
+      const parts = String(s.form || '').split('·').map(p => p.trim());
+      const m = /^F-(\d+)-/.exec(s.sessionId || '');
+      out.push({
+        name:    student.name,
+        game,
+        op:      parts[0] || '?',
+        set:     (parts[1] || '?').replace(/^(\d+)s$/, '$1'),
+        timed:   parts.includes('Timed'),
+        started: m ? new Date(Number(m[1])) : null,
+        correct: Number(s.correct) || 0,
+        total:   Number(s.total) || 0,
+        percent: Number(s.percent) || 0,
+        elapsed: s.elapsed,
+        done:    s.status === 'complete',
+        missed:  String(s.wrongQuestions || '').split(' | ').filter(Boolean),
+      });
+    });
+  });
+  return out.sort((a, b) => (a.started || 0) - (b.started || 0));
+}
+
+function factCellColor(pct) {
+  if (pct >= 90) return '#d4f0d4';
+  if (pct >= 75) return '#b8e8b8';
+  if (pct >= 60) return '#fff3cc';
+  if (pct >= 40) return '#ffe0b2';
+  return '#ffcdd2';
+}
+
+function fmtWhen(d) {
+  if (!d) return '—';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function setFactSite(site) { factSite = site; renderFacts(); }
+function setFactOp(op)     { factOp = op; renderFacts(); }
+
+function renderFacts() {
+  document.querySelectorAll('#factSiteToggle button').forEach(b => b.classList.toggle('active', b.dataset.site === factSite));
+  document.querySelectorAll('#factOpToggle button').forEach(b => b.classList.toggle('active', b.dataset.op === factOp));
+
+  const all      = getFactSessions(factSite);
+  const students = all.filter(s => STUDENT_ROSTER.includes(s.name));
+  const weekAgo  = Date.now() - 7 * 24 * 3600 * 1000;
+  const thisWeek = students.filter(s => s.started && s.started.getTime() >= weekAgo);
+  const answered = students.reduce((t, s) => t + s.total, 0);
+  const right    = students.reduce((t, s) => t + s.correct, 0);
+
+  document.getElementById('factStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${new Set(students.map(s => s.name)).size}/${STUDENT_ROSTER.length}</div><div class="stat-label">Students Practiced</div></div>
+    <div class="stat-card"><div class="stat-num">${students.length}</div><div class="stat-label">Sessions (all time)</div></div>
+    <div class="stat-card"><div class="stat-num">${thisWeek.length}</div><div class="stat-label">Sessions (last 7 days)</div></div>
+    <div class="stat-card"><div class="stat-num">${answered ? Math.round(right / answered * 100) + '%' : '—'}</div><div class="stat-label">Class Accuracy</div></div>`;
+
+  // Latest (and previous) session per student per set, for the current operation
+  const byKey = {};
+  all.filter(s => s.op === factOp).forEach(s => {
+    const k = s.name + '|' + s.set;
+    (byKey[k] = byKey[k] || []).push(s);
+  });
+
+  const guests = [...new Set(all.map(s => s.name))].filter(n => !ROSTER.includes(n));
+  const names  = [...ROSTER, ...guests];
+  const head = `<tr><th>Student</th>${FACT_SETS.map(set => `<th class="fact-col">${set.replace(' 2-12', '').replace('Mixed ', 'Mix ')}</th>`).join('')}<th>Last Practiced</th></tr>`;
+  const rows = names.map(name => {
+    const mine = all.filter(s => s.name === name);
+    const last = mine[mine.length - 1];
+    const cells = FACT_SETS.map(set => {
+      const list = byKey[name + '|' + set];
+      if (!list) return '<td class="fact-cell fact-empty">·</td>';
+      const cur = list[list.length - 1], prev = list[list.length - 2];
+      const arrow = !prev ? '' : cur.percent > prev.percent ? '<span class="fact-up">▲</span>' : cur.percent < prev.percent ? '<span class="fact-down">▼</span>' : '';
+      const tip = `${set} — latest: ${cur.correct} right, ${cur.total - cur.correct} wrong (${cur.percent}%)${cur.timed ? ', timed' : ''} on ${fmtWhen(cur.started)} · ${list.length} session${list.length > 1 ? 's' : ''}`;
+      return `<td class="fact-cell" style="background:${factCellColor(cur.percent)}" title="${escHtml(tip)}">${cur.percent}${arrow}<div class="fact-sub">${cur.correct}✓</div></td>`;
+    }).join('');
+    return `<tr><td><button class="fact-name" data-name="${escHtml(name)}">${escHtml(name)}</button></td>${cells}<td class="fact-last">${last ? fmtWhen(last.started) : '<span style="opacity:.5">never</span>'}</td></tr>`;
+  }).join('');
+  document.getElementById('factGrid').innerHTML = `<table class="grid-table fact-table"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+
+  renderFactStudent();
+}
+
+function openFactStudent(name) { factStudent = name; renderFactStudent(); document.getElementById('factDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+function closeFactStudent()    { factStudent = null; renderFactStudent(); }
+
+function renderFactStudent() {
+  const panel = document.getElementById('factDetail');
+  if (!factStudent) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  document.getElementById('factDetailName').textContent = factStudent;
+
+  const sessions = Object.keys(FACT_SITES)
+    .flatMap(g => getFactSessions(g))
+    .filter(s => s.name === factStudent)
+    .sort((a, b) => (b.started || 0) - (a.started || 0));
+
+  const missCount = {};
+  sessions.forEach(s => s.missed.forEach(m => {
+    const fact = m.replace(/\s*\(.*\)$/, '');
+    missCount[fact] = (missCount[fact] || 0) + 1;
+  }));
+  const topMissed = Object.entries(missCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  document.getElementById('factDetailMissed').innerHTML = topMissed.length
+    ? `<div class="fact-miss-title">Facts to work on (times missed):</div>` +
+      topMissed.map(([f, n]) => `<span class="fact-chip">${escHtml(f)}${n > 1 ? ` <b>×${n}</b>` : ''}</span>`).join('')
+    : '';
+
+  document.getElementById('factDetailBody').innerHTML = sessions.length ? sessions.map(s => {
+    const mins = s.elapsed != null ? `${Math.floor(s.elapsed / 60)}:${String(s.elapsed % 60).padStart(2, '0')}` : '—';
+    return `<tr>
+      <td class="fact-nowrap">${fmtWhen(s.started)}</td>
+      <td class="fact-nowrap">${FACT_SITES[s.game]}</td>
+      <td class="fact-nowrap">${s.op === 'Mult' ? '×' : '÷'} ${escHtml(s.set)}${s.timed ? ' ⏱️' : ''}</td>
+      <td style="color:var(--green)">${s.correct}</td>
+      <td style="color:var(--red)">${s.total - s.correct}</td>
+      <td><span class="fact-pill" style="background:${factCellColor(s.percent)}">${s.percent}%</span></td>
+      <td>${mins}${s.done ? '' : ' <span title="Left before finishing" style="opacity:.6">…</span>'}</td>
+      <td class="fact-missed">${s.missed.map(escHtml).join(', ') || '<span style="opacity:.5">none</span>'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted)">No fact practice saved yet.</td></tr>';
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.fact-name');
+  if (btn) openFactStudent(btn.dataset.name);
+});
 
 // ═══════════════════════════════════════════════════
 //  WRITTEN BADGE HELPER
