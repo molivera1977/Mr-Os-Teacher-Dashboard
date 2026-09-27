@@ -422,6 +422,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'gk-geography', 'gk-civics', 'gk-math', 'gk-ela',
   'mod1a-review', 'mod1b-review', 'mod1c-review',
 ];
 
@@ -456,6 +457,10 @@ const WRITTEN_GAME_MAP = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'gk-geography': '🌍 GK — Geography',
+  'gk-civics':    '🏛️ GK — Civics',
+  'gk-math':      '➕ GK — Math',
+  'gk-ela':       '📚 GK — Lang Arts',
   'mod1a-review': '🔢 MM1A-Review',
   'mod1b-review': '🔢 MM1B-Review',
   'mod1c-review': '🔢 MM1C-Review',
@@ -479,6 +484,10 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  'gk-geography': 28,
+  'gk-civics':    25,
+  'gk-math':      33,
+  'gk-ela':       27,
   'mod1a-review': 17,
   'mod1b-review': 17,
   'mod1c-review': 17,
