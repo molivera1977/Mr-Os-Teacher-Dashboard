@@ -310,6 +310,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
               <th onclick="sortAssignment('status')"  style="cursor:pointer;" id="sort-status">Status</th>
               <th onclick="sortAssignment('score')"   style="cursor:pointer;" id="sort-score">Score</th>
               <th onclick="sortAssignment('pct')"     style="cursor:pointer;" id="sort-pct">% / Grade</th>
+              <th onclick="sortAssignment('date')"    style="cursor:pointer;" id="sort-date">Date</th>
               <th onclick="sortAssignment('time')"    style="cursor:pointer;" id="sort-time">Time</th>
               <th onclick="sortAssignment('sessions')" style="cursor:pointer;" id="sort-sessions">Sessions</th>
               <th onclick="sortAssignment('tabsw')"   style="cursor:pointer;" id="sort-tabsw">Tab Sw.</th>
@@ -1206,7 +1207,7 @@ function renderAssignment() {
       tr.innerHTML = `
         <td style="font-weight:800;">${name}</td>
         <td><span class="status-pill notstarted">⬜ Not Started</span></td>
-        <td colspan="5" style="color:var(--muted);font-size:.8rem;">—</td>`;
+        <td colspan="6" style="color:var(--muted);font-size:.8rem;">—</td>`;
     } else {
       const best     = student.bestScore;
       const pct      = Math.round((best/maxScore)*100);
@@ -1229,6 +1230,7 @@ function renderAssignment() {
           </div>
         </td>
         <td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>
+        <td style="color:var(--muted);white-space:nowrap;" title="Most recent attempt">${formatSessionDate(latestSessionDate(student))}</td>
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
         <td style="color:${tabSw>3?'var(--red)':'var(--muted)'};">${tabSw}${tabSw>3?' ⚑':''}</td>
@@ -1479,6 +1481,7 @@ function openDetail(name) {
       const label   = s.form ? s.form : (i === 0 ? 'Original' : `Attempt ${i + 1}`);
       const pct     = maxScore > 0 ? Math.round((s.score / maxScore) * 100) : 0;
       const timeStr = s.elapsed != null ? formatTime(s.elapsed) : '—';
+      const dateStr = formatSessionDate(sessionDate(s));
       const done    = s.status === 'complete'
         ? '<span style="color:var(--green);font-weight:800;">✅ Complete</span>'
         : '<span style="color:var(--orange);font-weight:800;">🔄 In Progress</span>';
@@ -1487,6 +1490,7 @@ function openDetail(name) {
         <td style="padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--text);">${label}</td>
         <td style="padding:7px 10px;font-size:.88rem;font-weight:800;color:var(--accent);">${s.score}/${maxScore}</td>
         <td style="padding:7px 10px;font-size:.82rem;font-weight:700;">${pct}%</td>
+        <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);white-space:nowrap;">${dateStr}</td>
         <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);">${timeStr}</td>
         <td style="padding:7px 10px;">${done}</td>
       </tr>`;
@@ -1498,6 +1502,7 @@ function openDetail(name) {
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Attempt</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Score</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">%</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Date</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Time</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Status</th>
         </tr></thead>
@@ -1652,6 +1657,30 @@ function stepDetail(dir) {
 // ═══════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════
+// When an attempt was started. Uses the sheet timestamp if the Apps Script
+// ever sends one; otherwise reads it from session IDs like 'GK-1790522317031-XXXXX'
+// (General Knowledge Hub, Fact Review). Other sites' IDs carry no date → null.
+function sessionDate(s) {
+  if (s && s.timestamp) {
+    const d = new Date(s.timestamp);
+    if (!isNaN(d)) return d;
+  }
+  const m = /^[A-Z]+-(\d{13})-/.exec((s && s.sessionId) || '');
+  return m ? new Date(Number(m[1])) : null;
+}
+
+function latestSessionDate(student) {
+  if (!student) return null;
+  return (student.sessions || []).reduce((latest, s) => {
+    const d = sessionDate(s);
+    return d && (!latest || d > latest) ? d : latest;
+  }, null);
+}
+
+function formatSessionDate(d) {
+  return d ? d.toLocaleString('en-US', { month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' }) : '—';
+}
+
 function isFlagged(student) {
   if (student.name === 'Mr. O (Teacher)') return false;
   const totalTabSw = student.sessions.reduce((t,s)=>t+(s.tabSwitches||0),0);
@@ -1668,7 +1697,7 @@ function sortAssignment(col) {
   if (sortCol === col) sortAsc = !sortAsc;
   else { sortCol = col; sortAsc = false; }
   // Update header indicators
-  ['name','status','score','pct','time','sessions','tabsw'].forEach(c => {
+  ['name','status','score','pct','date','time','sessions','tabsw'].forEach(c => {
     const el = document.getElementById('sort-' + c);
     if (!el) return;
     const base = el.textContent.replace(/ [▲▼]$/,'');
@@ -1690,6 +1719,8 @@ function getSortedRoster(data, maxScore) {
       vb = statusOrder[sb?.status ?? 'notstarted'] ?? 2;
     } else if (sortCol === 'score' || sortCol === 'pct') {
       va = sa?.bestScore ?? -1; vb = sb?.bestScore ?? -1;
+    } else if (sortCol === 'date') {
+      va = latestSessionDate(sa)?.getTime() ?? 0; vb = latestSessionDate(sb)?.getTime() ?? 0;
     } else if (sortCol === 'time') {
       const ta = sa?.sessions.reduce((b,s)=>s.score>(b?.score||0)?s:b,null);
       const tb = sb?.sessions.reduce((b,s)=>s.score>(b?.score||0)?s:b,null);
