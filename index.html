@@ -875,7 +875,7 @@ function renderCurrentView() {
 //  FACT FLUENCY VIEW
 //  Math Fact Review sites send one row per practice session:
 //    game  'facts-review' | 'facts-tens'
-//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4' | 'Mult · All 2-12'
+//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4 · Choice' | 'Mult · All 2-12'
 //    sessionId 'F-<epoch ms>-XXXXX'  (the epoch is the session start time)
 //    score/correct = right answers, total = right + wrong tries,
 //    wrongQuestions = '7 × 8 (54) | 63 ÷ 9 (6)'  (fact + what they typed)
@@ -906,6 +906,7 @@ function getFactSessions(game) {
         op:      parts[0] || '?',
         set:     (parts[1] || '?').replace(/^(\d+)s$/, '$1'),
         timed:   parts.includes('Timed'),
+        choice:  parts.includes('Choice'),
         started: m ? new Date(Number(m[1])) : null,
         correct: Number(s.correct) || 0,
         total:   Number(s.total) || 0,
@@ -971,7 +972,7 @@ function renderFacts() {
       if (!list) return '<td class="fact-cell fact-empty">·</td>';
       const cur = list[list.length - 1], prev = list[list.length - 2];
       const arrow = !prev ? '' : cur.percent > prev.percent ? '<span class="fact-up">▲</span>' : cur.percent < prev.percent ? '<span class="fact-down">▼</span>' : '';
-      const tip = `${set} — latest: ${cur.correct} right, ${cur.total - cur.correct} wrong (${cur.percent}%)${cur.timed ? ', timed' : ''} on ${fmtWhen(cur.started)} · ${list.length} session${list.length > 1 ? 's' : ''}`;
+      const tip = `${set} — latest: ${cur.correct} right, ${cur.total - cur.correct} wrong (${cur.percent}%)${cur.timed ? ', timed' : ''}${cur.choice ? ', multiple choice' : ', typed'} on ${fmtWhen(cur.started)} · ${list.length} session${list.length > 1 ? 's' : ''}`;
       return `<td class="fact-cell" style="background:${factCellColor(cur.percent)}" title="${escHtml(tip)}">${cur.percent}${arrow}<div class="fact-sub">${cur.correct}✓</div></td>`;
     }).join('');
     return `<tr><td><button class="fact-name" data-name="${escHtml(name)}">${escHtml(name)}</button></td>${cells}<td class="fact-last">${last ? fmtWhen(last.started) : '<span style="opacity:.5">never</span>'}</td></tr>`;
@@ -1011,7 +1012,7 @@ function renderFactStudent() {
     return `<tr>
       <td class="fact-nowrap">${fmtWhen(s.started)}</td>
       <td class="fact-nowrap">${FACT_SITES[s.game]}</td>
-      <td class="fact-nowrap">${s.op === 'Mult' ? '×' : '÷'} ${escHtml(s.set)}${s.timed ? ' ⏱️' : ''}</td>
+      <td class="fact-nowrap">${s.op === 'Mult' ? '×' : '÷'} ${escHtml(s.set)}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
       <td style="color:var(--green)">${s.correct}</td>
       <td style="color:var(--red)">${s.total - s.correct}</td>
       <td><span class="fact-pill" style="background:${factCellColor(s.percent)}">${s.percent}%</span></td>
