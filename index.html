@@ -1414,12 +1414,15 @@ function setHeatmapAttempt(n) {
 //   New format: "[A06] Find the product..." separated by " | "
 //   Old format: "1,2,3" comma-separated numbers
 function parseWrongQuestions(str, questionTexts) {
+  // Code.gs prepends "[⚠️ FAST: …]" to rushed submissions — drop it so the first miss still counts.
+  str = String(str || '').replace(/^\[⚠️ FAST:[^\]]*\]\s*/, '');
   if (!str) return [];
   if (str.includes('[')) {
     return str.split(' | ').map(e => {
       const m = e.match(/^\[([A-Z]\d+(?:\.\d+)?)\]\s*(.*)/);
       if (!m) return null;
-      if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2];
+      // GK entries end with the student's pick — keep only the question text
+      if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2].replace(/\s*\(picked: .*\)$/, '');
       return m[1];
     }).filter(Boolean);
   }
