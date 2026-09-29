@@ -242,8 +242,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="top-bar-sub">Jettie S. Tisdale Elementary · 4th Grade</div>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('overview')" id="tabOverview">🏠 Overview</button>
-    <button class="btn btn-ghost btn-sm" onclick="toggleView('assignment')" id="tabAssignment">📋 Assignment</button>
+    <button class="btn btn-ghost btn-sm" onclick="openAssignmentsTab()" id="tabAssignment">📋 Assignment</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('facts')" id="tabFacts">🧮 Fact Fluency</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('gk')" id="tabGk">🌟 General Knowledge</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -357,6 +358,12 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     </div>
 
     <!-- FACT FLUENCY VIEW (Math Fact Review sites) -->
+    <!-- GENERAL KNOWLEDGE VIEW — one card per GK Hub test -->
+    <div id="view-gk" style="display:none;">
+      <div class="section-title">🌟 General Knowledge Hub — Tests</div>
+      <div class="assignment-cards" id="gkCards"></div>
+    </div>
+
     <div id="view-facts" style="display:none;">
       <div class="fact-toolbar">
         <div class="heat-toggle" id="factSiteToggle">
@@ -449,6 +456,10 @@ const LAST_YEAR_GAMES = [
 const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens']);
+
+// General Knowledge Hub tests — shown on the 🌟 General Knowledge page,
+// kept off the main Overview cards and Assignment tabs.
+const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
@@ -922,6 +933,8 @@ function toggleView(view) {
   document.getElementById('tabAssignment').className = 'btn btn-sm ' + (view==='assignment' ? 'btn-primary' : 'btn-ghost');
   document.getElementById('view-facts').style.display = view === 'facts' ? 'block' : 'none';
   document.getElementById('tabFacts').className = 'btn btn-sm ' + (view==='facts' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-gk').style.display = view === 'gk' ? 'block' : 'none';
+  document.getElementById('tabGk').className = 'btn btn-sm ' + (view==='gk' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
@@ -929,6 +942,25 @@ function renderCurrentView() {
   if (currentView === 'overview')   renderOverview();
   if (currentView === 'assignment') renderAssignment();
   if (currentView === 'facts')      renderFacts();
+  if (currentView === 'gk')         renderGk();
+}
+
+// Header 📋 Assignment button — always lands on the regular assignments,
+// not on a General Knowledge test left open from the 🌟 page.
+function openAssignmentsTab() {
+  if (GK_GAMES.includes(currentGame)) currentGame = null;
+  toggleView('assignment');
+}
+
+// ═══════════════════════════════════════════════════
+//  GENERAL KNOWLEDGE VIEW
+//  The GK Hub's four subject tests live behind the 🌟 button instead of the
+//  main Overview / Assignment tabs. Clicking a card opens its results.
+// ═══════════════════════════════════════════════════
+function renderGk() {
+  const cardsEl = document.getElementById('gkCards');
+  cardsEl.innerHTML = '';
+  GK_GAMES.forEach(game => cardsEl.appendChild(buildAssignmentCard(game)));
 }
 
 // ═══════════════════════════════════════════════════
@@ -1113,6 +1145,34 @@ function getWrittenBadge(game, name) {
     : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
 }
 
+// One assignment summary card (class avg, done / in progress / not started).
+function buildAssignmentCard(game) {
+  const totalStudents = STUDENT_ROSTER.length;
+  const data     = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name));
+  const complete = data.filter(s => s.status === 'complete').length;
+  const inprog   = data.filter(s => s.status === 'inprogress').length;
+  const notstart = totalStudents - complete - inprog;
+  const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
+  const max      = MAX_SCORES[game] || 100;
+  const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
+  const label    = GAME_LABELS[game] || game.toUpperCase();
+
+  const card = document.createElement('div');
+  card.className = 'asgn-card';
+  card.onclick = () => { currentGame = game; toggleView('assignment'); };
+  card.innerHTML = `
+    <div class="asgn-card-title">${label}</div>
+    <div class="asgn-card-avg">${scores.length ? avgPct + '%' : '—'}</div>
+    <div class="asgn-card-avg-label">Class Avg</div>
+    <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${avgPct}%"></div></div>
+    <div class="asgn-card-pills">
+      <span class="asgn-pill complete">✅ ${complete}</span>
+      <span class="asgn-pill inprogress">🔄 ${inprog}</span>
+      <span class="asgn-pill notstarted">⬜ ${notstart}</span>
+    </div>`;
+  return card;
+}
+
 // ═══════════════════════════════════════════════════
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
@@ -1122,7 +1182,7 @@ function renderOverview() {
   const games = [
     ...GAME_ORDER.filter(g => allGames.includes(g)),
     ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ];
+  ].filter(g => !GK_GAMES.includes(g));
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
@@ -1146,31 +1206,7 @@ function renderOverview() {
   // ── Assignment cards ──
   const cardsEl = document.getElementById('assignmentCards');
   cardsEl.innerHTML = '';
-  games.forEach(game => {
-    const data     = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name));
-    const complete = data.filter(s => s.status === 'complete').length;
-    const inprog   = data.filter(s => s.status === 'inprogress').length;
-    const notstart = totalStudents - complete - inprog;
-    const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
-    const max      = MAX_SCORES[game] || 100;
-    const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
-    const label    = GAME_LABELS[game] || game.toUpperCase();
-
-    const card = document.createElement('div');
-    card.className = 'asgn-card';
-    card.onclick = () => { currentGame = game; toggleView('assignment'); };
-    card.innerHTML = `
-      <div class="asgn-card-title">${label}</div>
-      <div class="asgn-card-avg">${scores.length ? avgPct + '%' : '—'}</div>
-      <div class="asgn-card-avg-label">Class Avg</div>
-      <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${avgPct}%"></div></div>
-      <div class="asgn-card-pills">
-        <span class="asgn-pill complete">✅ ${complete}</span>
-        <span class="asgn-pill inprogress">🔄 ${inprog}</span>
-        <span class="asgn-pill notstarted">⬜ ${notstart}</span>
-      </div>`;
-    cardsEl.appendChild(card);
-  });
+  games.forEach(game => cardsEl.appendChild(buildAssignmentCard(game)));
 
   // ── Student dot grid ──
   const dotEl = document.getElementById('dotGrid');
@@ -1217,15 +1253,26 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════
 function buildAssignmentTabs() {
   const allGames = Object.keys(dashData);
-  const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))];
+  const inGk = GK_GAMES.includes(currentGame);
+  const games = inGk ? GK_GAMES : [
+    ...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)),
+    ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
+  ].filter(g => !GK_GAMES.includes(g));
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
+  if (inGk) {
+    const back = document.createElement('button');
+    back.className = 'tab-btn';
+    back.textContent = '← 🌟 All GK Tests';
+    back.onclick = () => toggleView('gk');
+    tabsEl.appendChild(back);
+  }
   games.forEach(game => {
     const btn = document.createElement('button');
     btn.className = 'tab-btn' + (game === currentGame ? ' active' : '');
     btn.textContent = GAME_LABELS[game] || game;
-    btn.onclick = () => { currentGame = game; buildAssignmentTabs(); renderAssignment(); };
+    btn.onclick = () => { currentGame = game; renderAssignment(); };
     tabsEl.appendChild(btn);
   });
 }
@@ -1250,6 +1297,7 @@ function letterGrade(pct) {
 }
 
 function renderAssignment() {
+  buildAssignmentTabs(); // regular tabs, or the GK group when a GK test is open
   if (!currentGame) return;
   const data     = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
   const maxScore = MAX_SCORES[currentGame] || 100;
