@@ -515,9 +515,9 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
-  'pvfiaba-review': 15,
-  'pvfiabb-review': 15,
-  'pvfiabc-review': 15,
+  'pvfiaba-review': 23,
+  'pvfiabb-review': 23,
+  'pvfiabc-review': 23,
   rad_quiz1:      23,
   'gk-geography': 28,
   'gk-civics':    25,
@@ -546,53 +546,79 @@ const MAX_SCORES = {
   'mod16-test': 25,
 };
 
-// ── Question bank for the Place Value FIAB Review — keyed by question ID ──
+// ── Question bank for the Place Value FIAB Review — keyed by scored element.
+//    Grid rows are separate entries (A01.1, A01.2, ...) so reteaching can
+//    target the individual statement. Each label starts with its skill.
 const PVFIAB_QUESTIONS = {
-  A01:"True/False — 406 = 400 + 60 · three thousand forty > 3 thousands + 4 ones · eight hundred ninety-nine < one thousand",
-  A02:"Round 47,382 to the nearest hundred.",
-  A03:"58,_43 > 58,643 — What is the SMALLEST digit that makes this comparison true?",
-  A04:"Compare (< > =): 8,061 _ 6 hundreds + 1 one + 8 thousands",
-  A05:"The value of the digit 5 in 5,000 is how many times the value of the digit 5 in 500?",
-  A06:"round to 45,000 when rounded to the nearest thousand — 44,803 · 45,209 · 44,499",
-  A07:"Round 72,614 to the nearest thousand.",
-  A08:"True/False — 540 < 40 + 500 · 30 tens + 30 ones = 3 hundreds + 3 tens · 50 + 9 + 800 > 8 hundreds + 9 tens + 5 ones",
-  A09:"round to 63,000 when rounded to the nearest thousand — 62,715 · 63,486 · 63,502",
-  A10:"Compare (< > =): 200 + 70 + 4,000 + 3 _ 3 thousands + 12 hundreds + 3 ones + 7 tens",
-  A11:"How do the numbers 240 and 2,400 compare?",
-  A12:"Round 528,461 to the nearest ten thousand.",
-  A13:"Nora rounded 4,872 to the nearest thousand and got 5,000. Owen rounded 4,872 to the nearest hundred and got 4,900. Both students are correct. Nora then says:...",
-  A14:"What is 600,000 + 4,000 + 50 + 7 written in standard form?",
-  A15:"A stadium sold 318,764 tickets in May, 309,215 tickets in June, and 331,480 tickets in July. Which list orders the numbers from GREATEST to LEAST?",
-  B01:"True/False — 805 = 800 + 50 · five thousand seventy > 5 thousands + 7 ones · seven hundred ninety-nine < eight hundred",
-  B02:"Round 36,758 to the nearest hundred.",
-  B03:"24,_19 > 24,519 — What is the SMALLEST digit that makes this comparison true?",
-  B04:"Compare (< > =): 7,043 _ 4 hundreds + 3 ones + 7 thousands",
-  B05:"The value of the digit 3 in 30,000 is how many times the value of the digit 3 in 3,000?",
-  B06:"round to 28,000 when rounded to the nearest thousand — 27,650 · 28,431 · 27,382",
-  B07:"Round 85,097 to the nearest thousand.",
-  B08:"True/False — 670 < 70 + 600 · 40 tens + 40 ones = 4 hundreds + 4 tens · 60 + 2 + 900 > 9 hundreds + 2 tens + 6 ones",
-  B09:"round to 51,000 when rounded to the nearest thousand — 50,617 · 51,298 · 51,804",
-  B10:"Compare (< > =): 300 + 60 + 5,000 + 4 _ 4 thousands + 13 hundreds + 4 ones + 6 tens",
-  B11:"How do the numbers 170 and 1,700 compare?",
-  B12:"Round 463,928 to the nearest ten thousand.",
-  B13:"Devon rounded 6,948 to the nearest thousand and got 7,000. Maya rounded 6,948 to the nearest hundred and got 6,900. Both students are correct. Devon then say...",
-  B14:"What is 900,000 + 7,000 + 60 + 2 written in standard form?",
-  B15:"A museum counted 425,306 visitors in 2023, 419,872 visitors in 2024, and 452,130 visitors in 2025. Which list orders the numbers from GREATEST to LEAST?",
-  C01:"True/False — 308 = 300 + 80 · nine thousand fifty > 9 thousands + 5 ones · six hundred ninety-nine < seven hundred",
-  C02:"Round 84,236 to the nearest hundred.",
-  C03:"73,_58 > 73,858 — What is the SMALLEST digit that makes this comparison true?",
-  C04:"Compare (< > =): 6,072 _ 7 hundreds + 2 ones + 6 thousands",
-  C05:"The value of the digit 8 in 80,000 is how many times the value of the digit 8 in 8,000?",
-  C06:"round to 19,000 when rounded to the nearest thousand — 18,741 · 19,320 · 19,555",
-  C07:"Round 57,483 to the nearest thousand.",
-  C08:"True/False — 920 < 20 + 900 · 60 tens + 60 ones = 6 hundreds + 6 tens · 80 + 4 + 700 > 7 hundreds + 4 tens + 8 ones",
-  C09:"round to 76,000 when rounded to the nearest thousand — 75,903 · 76,274 · 76,613",
-  C10:"Compare (< > =): 400 + 80 + 2,000 + 1 _ 1 thousand + 14 hundreds + 1 one + 8 tens",
-  C11:"How do the numbers 520 and 5,200 compare?",
-  C12:"Round 819,547 to the nearest ten thousand.",
-  C13:"Priya rounded 3,756 to the nearest thousand and got 4,000. Lucas rounded 3,756 to the nearest hundred and got 3,800. Both students are correct. Priya then sa...",
-  C14:"What is 300,000 + 8,000 + 90 + 4 written in standard form?",
-  C15:"A city library loaned out 537,209 books in 2023, 519,843 books in 2024, and 562,014 books in 2025. Which list orders the numbers from GREATEST to LEAST?",
+  "A01.1":"(Expanded form) True/False: 406 = 400 + 60",
+  "A01.2":"(Word form) True/False: three thousand forty > 3 thousands + 4 ones",
+  "A01.3":"(Comparing numbers) True/False: eight hundred ninety-nine < one thousand",
+  A02:"(Rounding) Round 47,382 to the nearest hundred.",
+  A03:"(Comparing numbers) 58,_43 > 58,643 — What is the SMALLEST digit that makes this comparison true?",
+  A04:"(Place-value language) Compare (< > =): 8,061 _ 6 hundreds + 1 one + 8 thousands",
+  A05:"(x10 relationship) The value of the digit 5 in 5,000 is how many times the value of the digit 5 in 500?",
+  "A06.1":"(Rounding) round to 45,000 when rounded to the nearest thousand: 44,803",
+  "A06.2":"(Rounding) round to 45,000 when rounded to the nearest thousand: 45,209",
+  "A06.3":"(Rounding) round to 45,000 when rounded to the nearest thousand: 44,499",
+  A07:"(Rounding) Round 72,614 to the nearest thousand.",
+  "A08.1":"(Expanded form) True/False: 540 < 40 + 500",
+  "A08.2":"(Regrouped place value) True/False: 30 tens + 30 ones = 3 hundreds + 3 tens",
+  "A08.3":"(Place-value language) True/False: 50 + 9 + 800 > 8 hundreds + 9 tens + 5 ones",
+  "A09.1":"(Rounding) round to 63,000 when rounded to the nearest thousand: 62,715",
+  "A09.2":"(Rounding) round to 63,000 when rounded to the nearest thousand: 63,486",
+  "A09.3":"(Rounding) round to 63,000 when rounded to the nearest thousand: 63,502",
+  A10:"(Regrouped place value) Compare (< > =): 200 + 70 + 4,000 + 3 _ 3 thousands + 12 hundreds + 3 ones + 7 tens",
+  A11:"(x10 relationship) How do the numbers 240 and 2,400 compare?",
+  A12:"(Rounding) Round 528,461 to the nearest ten thousand.",
+  A13:"(Reasoning about rounding) Nora rounded 4,872 to the nearest thousand and got 5,000. Owen rounded 4,872 to the nearest hundred and got 4,900. Both students a...",
+  A14:"(Expanded form) What is 600,000 + 4,000 + 50 + 7 written in standard form?",
+  A15:"(Ordering numbers) A stadium sold 318,764 tickets in May, 309,215 tickets in June, and 331,480 tickets in July. Which list orders the numbers from GREATEST t...",
+  "B01.1":"(Expanded form) True/False: 805 = 800 + 50",
+  "B01.2":"(Word form) True/False: five thousand seventy > 5 thousands + 7 ones",
+  "B01.3":"(Comparing numbers) True/False: seven hundred ninety-nine < eight hundred",
+  B02:"(Rounding) Round 36,758 to the nearest hundred.",
+  B03:"(Comparing numbers) 24,_19 > 24,519 — What is the SMALLEST digit that makes this comparison true?",
+  B04:"(Place-value language) Compare (< > =): 7,043 _ 4 hundreds + 3 ones + 7 thousands",
+  B05:"(x10 relationship) The value of the digit 3 in 30,000 is how many times the value of the digit 3 in 3,000?",
+  "B06.1":"(Rounding) round to 28,000 when rounded to the nearest thousand: 27,650",
+  "B06.2":"(Rounding) round to 28,000 when rounded to the nearest thousand: 28,431",
+  "B06.3":"(Rounding) round to 28,000 when rounded to the nearest thousand: 27,382",
+  B07:"(Rounding) Round 85,097 to the nearest thousand.",
+  "B08.1":"(Expanded form) True/False: 670 < 70 + 600",
+  "B08.2":"(Regrouped place value) True/False: 40 tens + 40 ones = 4 hundreds + 4 tens",
+  "B08.3":"(Place-value language) True/False: 60 + 2 + 900 > 9 hundreds + 2 tens + 6 ones",
+  "B09.1":"(Rounding) round to 51,000 when rounded to the nearest thousand: 50,617",
+  "B09.2":"(Rounding) round to 51,000 when rounded to the nearest thousand: 51,298",
+  "B09.3":"(Rounding) round to 51,000 when rounded to the nearest thousand: 51,804",
+  B10:"(Regrouped place value) Compare (< > =): 300 + 60 + 5,000 + 4 _ 4 thousands + 13 hundreds + 4 ones + 6 tens",
+  B11:"(x10 relationship) How do the numbers 170 and 1,700 compare?",
+  B12:"(Rounding) Round 463,928 to the nearest ten thousand.",
+  B13:"(Reasoning about rounding) Devon rounded 6,948 to the nearest thousand and got 7,000. Maya rounded 6,948 to the nearest hundred and got 6,900. Both students ...",
+  B14:"(Expanded form) What is 900,000 + 7,000 + 60 + 2 written in standard form?",
+  B15:"(Ordering numbers) A museum counted 425,306 visitors in 2023, 419,872 visitors in 2024, and 452,130 visitors in 2025. Which list orders the numbers from GREA...",
+  "C01.1":"(Expanded form) True/False: 308 = 300 + 80",
+  "C01.2":"(Word form) True/False: nine thousand fifty > 9 thousands + 5 ones",
+  "C01.3":"(Comparing numbers) True/False: six hundred ninety-nine < seven hundred",
+  C02:"(Rounding) Round 84,236 to the nearest hundred.",
+  C03:"(Comparing numbers) 73,_58 > 73,858 — What is the SMALLEST digit that makes this comparison true?",
+  C04:"(Place-value language) Compare (< > =): 6,072 _ 7 hundreds + 2 ones + 6 thousands",
+  C05:"(x10 relationship) The value of the digit 8 in 80,000 is how many times the value of the digit 8 in 8,000?",
+  "C06.1":"(Rounding) round to 19,000 when rounded to the nearest thousand: 18,741",
+  "C06.2":"(Rounding) round to 19,000 when rounded to the nearest thousand: 19,320",
+  "C06.3":"(Rounding) round to 19,000 when rounded to the nearest thousand: 19,555",
+  C07:"(Rounding) Round 57,483 to the nearest thousand.",
+  "C08.1":"(Expanded form) True/False: 920 < 20 + 900",
+  "C08.2":"(Regrouped place value) True/False: 60 tens + 60 ones = 6 hundreds + 6 tens",
+  "C08.3":"(Place-value language) True/False: 80 + 4 + 700 > 7 hundreds + 4 tens + 8 ones",
+  "C09.1":"(Rounding) round to 76,000 when rounded to the nearest thousand: 75,903",
+  "C09.2":"(Rounding) round to 76,000 when rounded to the nearest thousand: 76,274",
+  "C09.3":"(Rounding) round to 76,000 when rounded to the nearest thousand: 76,613",
+  C10:"(Regrouped place value) Compare (< > =): 400 + 80 + 2,000 + 1 _ 1 thousand + 14 hundreds + 1 one + 8 tens",
+  C11:"(x10 relationship) How do the numbers 520 and 5,200 compare?",
+  C12:"(Rounding) Round 819,547 to the nearest ten thousand.",
+  C13:"(Reasoning about rounding) Priya rounded 3,756 to the nearest thousand and got 4,000. Lucas rounded 3,756 to the nearest hundred and got 3,800. Both students...",
+  C14:"(Expanded form) What is 300,000 + 8,000 + 90 + 4 written in standard form?",
+  C15:"(Ordering numbers) A city library loaned out 537,209 books in 2023, 519,843 books in 2024, and 562,014 books in 2025. Which list orders the numbers from GREA...",
 };
 
 // ── Question bank for Mod 1 Review — keyed by question ID ──
@@ -1391,7 +1417,7 @@ function parseWrongQuestions(str, questionTexts) {
   if (!str) return [];
   if (str.includes('[')) {
     return str.split(' | ').map(e => {
-      const m = e.match(/^\[([A-Z]\d+)\]\s*(.*)/);
+      const m = e.match(/^\[([A-Z]\d+(?:\.\d+)?)\]\s*(.*)/);
       if (!m) return null;
       if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2];
       return m[1];
@@ -1462,7 +1488,10 @@ function buildHeatmap(data) {
   const existingPopup = document.getElementById('heatmapDetailPopup');
   if (existingPopup) existingPopup.remove();
 
-  const isIdBased = keys.some(k => /^[A-Z]\d+$/.test(k));
+  // grid-row ids look like A01.2 — without the optional suffix here a class
+  // whose only misses were grid rows fell through to the numeric branch
+  // and rendered an empty heatmap.
+  const isIdBased = keys.some(k => /^[A-Z]\d+(?:\.\d+)?$/.test(k));
   const ordered = isIdBased
     ? keys.sort((a, b) => a.localeCompare(b))
     : Array.from({ length: Math.max(...keys.map(Number).filter(n => !isNaN(n)), 0) }, (_, i) => String(i + 1));
@@ -1657,7 +1686,7 @@ function openDetail(name) {
     if (isIdBased) {
       // Show as readable rows: ID badge + full question text
       chipsHtml = [...allWrong].sort().map(entry => {
-        const m = entry.match(/^\[([A-Z]\d+)\]\s*(.*)/);
+        const m = entry.match(/^\[([A-Z]\d+(?:\.\d+)?)\]\s*(.*)/);
         if (m) {
           const id = m[1];
           const text = m[2] || getQuestionText(id) || id;
