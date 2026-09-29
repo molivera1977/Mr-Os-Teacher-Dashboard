@@ -110,6 +110,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 [data-theme="dark"] .heat-4{background:#3a0000;color:#ff5252;border-color:#6a2222;}
 .heat-cell .q-was{font-size:.55rem;font-weight:700;opacity:.75;}
 .heat-cell.heat-tall{width:56px;height:58px;}
+.heat-cell.fact-heat{width:auto;min-width:66px;padding:0 8px;}
+.heat-cell.fact-heat .q-num{font-size:.78rem;opacity:1;white-space:nowrap;}
+.heat-cell.fact-heat .q-pct{font-size:.68rem;}
 .heat-toggle{display:inline-flex;gap:4px;margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;}
 .heat-toggle button{border:none;background:none;border-radius:8px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.8rem;color:var(--muted);cursor:pointer;}
 .heat-toggle button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);}
@@ -386,6 +389,18 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
         <span style="font-size:.72rem;color:var(--muted);font-weight:700;">% right on each student's most recent session · ▲▼ vs. the time before · hover for details · click a name for full history</span>
       </div>
       <div class="grid-wrap fact-grid-wrap" id="factGrid"></div>
+
+      <div class="heatmap-wrap" id="factHeatWrap">
+        <div class="section-title">🔥 Most Missed Facts
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="factHeatSubtitle"></span>
+        </div>
+        <div class="heat-toggle" id="factWindowToggle">
+          <button type="button" data-window="all" onclick="setFactWindow('all')">All time</button>
+          <button type="button" data-window="week" onclick="setFactWindow('week')">Last 7 days</button>
+        </div>
+        <div class="heatmap-grid" id="factHeatGrid"></div>
+        <div id="factHeatDetail"></div>
+      </div>
 
       <div class="detail-panel" id="factDetail">
         <div class="detail-header">
@@ -832,7 +847,11 @@ let currentView   = 'overview';
 let currentGame   = null;
 let autoRefreshInterval = null;
 let inactivityTimer     = null;
-let isDark = localStorage.getItem('dashTheme') === 'dark';
+// Theme / font-size preferences are a convenience — private windows can block
+// localStorage, and an uncaught error here would stop the whole dashboard script.
+function prefGet(k)    { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function prefSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+let isDark = prefGet('dashTheme') === 'dark';
 
 // ═══════════════════════════════════════════════════
 //  INIT
@@ -900,18 +919,18 @@ function lockDashboard() {
 // ═══════════════════════════════════════════════════
 //  THEME
 // ═══════════════════════════════════════════════════
-let fontSize = parseFloat(localStorage.getItem('dashFontSize')) || 1;
+let fontSize = parseFloat(prefGet('dashFontSize')) || 1;
 function changeFontSize(dir) {
   fontSize = Math.min(1.4, Math.max(0.7, fontSize + dir * 0.1));
   document.documentElement.style.fontSize = fontSize + 'rem';
-  localStorage.setItem('dashFontSize', fontSize);
+  prefSet('dashFontSize', fontSize);
 }
 (function(){ if(fontSize !== 1) document.documentElement.style.fontSize = fontSize + 'rem'; })();
 
 function toggleTheme() {
   isDark = !isDark;
   applyTheme(isDark ? 'dark' : 'light');
-  localStorage.setItem('dashTheme', isDark ? 'dark' : 'light');
+  prefSet('dashTheme', isDark ? 'dark' : 'light');
 }
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
@@ -1053,6 +1072,92 @@ function fmtWhen(d) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+let factWindow = 'all'; // 'all' | 'week' — time range for the Most Missed Facts heatmap
+function setFactWindow(w) { factWindow = w; renderFactHeatmap(); }
+
+// "7 × 8 (54)" → "7 × 8". Multiplication is merged by order (8 × 7 counts as 7 × 8).
+function factKey(entry) {
+  const m = /^(\d+) ([×÷]) (\d+)/.exec(entry);
+  if (!m) return null;
+  const a = Number(m[1]), b = Number(m[3]);
+  return m[2] === '×' ? `${Math.min(a, b)} × ${Math.max(a, b)}` : `${a} ÷ ${b}`;
+}
+
+// Class-wide misses per fact for the current site / operation / answer style.
+// The practice site only records misses, not every fact asked, so the % is
+// "students who missed it at least once" out of students who practiced.
+function renderFactHeatmap() {
+  document.querySelectorAll('#factWindowToggle button').forEach(b => b.classList.toggle('active', b.dataset.window === factWindow));
+  const weekAgo  = Date.now() - 7 * 24 * 3600 * 1000;
+  const sessions = getFactSessions(factSite).filter(s =>
+    STUDENT_ROSTER.includes(s.name) && s.op === factOp &&
+    (factStyle === 'all' || (factStyle === 'choice') === s.choice) &&
+    (factWindow === 'all' || (s.started && s.started.getTime() >= weekAgo)));
+
+  const practiced = new Set(sessions.map(s => s.name));
+  const facts = {}; // key → { students: {name: {times, answers:Set}} }
+  sessions.forEach(s => {
+    new Set(s.missed.map(factKey).filter(Boolean)).forEach(key => {
+      const st = ((facts[key] = facts[key] || {})[s.name] = facts[key][s.name] || { times: 0, answers: new Set() });
+      st.times++;
+    });
+    s.missed.forEach(e => {
+      const key = factKey(e), ans = /\((-?\d+)\)$/.exec(e);
+      if (key && ans && facts[key]?.[s.name]) facts[key][s.name].answers.add(ans[1]);
+    });
+  });
+
+  const opWord = factOp === 'Mult' ? 'multiplication' : 'division';
+  const range  = factWindow === 'week' ? ' in the last 7 days' : '';
+  document.getElementById('factHeatSubtitle').textContent = practiced.size
+    ? `% of the ${practiced.size} student${practiced.size > 1 ? 's' : ''} who practiced ${opWord}${range} that missed each fact at least once · click a fact for names`
+    : '';
+
+  const grid = document.getElementById('factHeatGrid');
+  document.getElementById('factHeatDetail').innerHTML = '';
+  const ranked = Object.entries(facts).map(([key, who]) => ({
+    key, who,
+    students: Object.keys(who).length,
+    times: Object.values(who).reduce((t, w) => t + w.times, 0),
+  })).sort((a, b) => b.students - a.students || b.times - a.times || a.key.localeCompare(b.key, undefined, { numeric: true }));
+
+  if (!ranked.length) {
+    grid.innerHTML = `<div style="color:var(--muted);font-size:.85rem;font-weight:700;">${practiced.size ? 'No missed facts' + range + ' — nice!' : 'No ' + opWord + ' practice' + range + ' yet.'}</div>`;
+    return;
+  }
+  grid.innerHTML = '';
+  ranked.slice(0, 40).forEach(f => {
+    const pct  = Math.round(f.students / practiced.size * 100);
+    const heat = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
+    const cell = document.createElement('div');
+    cell.className = `heat-cell fact-heat heat-${heat}`;
+    cell.innerHTML = `<span class="q-num">${f.key}</span><span class="q-pct">${pct}%</span>`;
+    cell.title = `${f.key}: ${f.students}/${practiced.size} students missed it (${pct}%), ${f.times} time${f.times > 1 ? 's' : ''} in all`;
+    cell.onclick = () => showFactHeatDetail(f, practiced.size, pct);
+    grid.appendChild(cell);
+  });
+}
+
+function factAnswer(key) {
+  const [a, op, b] = key.split(' ');
+  return op === '×' ? Number(a) * Number(b) : Number(a) / Number(b);
+}
+
+function showFactHeatDetail(f, total, pct) {
+  const chips = Object.entries(f.who).sort((a, b) => b[1].times - a[1].times).map(([name, w]) =>
+    `<span class="wrong-q-chip">${escHtml(name)}${w.times > 1 ? ` <b>×${w.times}</b>` : ''} <span style="opacity:.7">(answered ${[...w.answers].map(escHtml).join(', ')})</span></span>`).join('');
+  document.getElementById('factHeatDetail').innerHTML = `
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:14px;box-shadow:var(--shadow);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text);">${f.key} = ${factAnswer(f.key)}</div>
+        <button onclick="document.getElementById('factHeatDetail').innerHTML=''"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;">✕ Close</button>
+      </div>
+      <div style="color:var(--muted);font-size:.85rem;font-weight:700;margin-bottom:10px;">${f.students} of ${total} students missed it (${pct}%) · ${f.times} time${f.times > 1 ? 's' : ''} in all</div>
+      <div class="wrong-q-list">${chips}</div>
+    </div>`;
+}
+
 function setFactSite(site) { factSite = site; renderFacts(); }
 function setFactOp(op)     { factOp = op; renderFacts(); }
 function setFactStyle(st)  { factStyle = st; renderFacts(); }
@@ -1104,6 +1209,7 @@ function renderFacts() {
   }).join('');
   document.getElementById('factGrid').innerHTML = `<table class="grid-table fact-table"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
 
+  renderFactHeatmap();
   renderFactStudent();
 }
 
