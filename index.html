@@ -110,6 +110,16 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 [data-theme="dark"] .heat-4{background:#3a0000;color:#ff5252;border-color:#6a2222;}
 .heat-cell .q-was{font-size:.55rem;font-weight:700;opacity:.75;}
 .heat-cell.heat-tall{width:56px;height:58px;}
+.skill-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 48px;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;cursor:pointer;}
+.skill-row:hover{background:var(--surface2);}
+.skill-row.std{font-weight:800;color:var(--text);margin-top:8px;border:1px solid var(--border);}
+.skill-row.sub{padding-left:28px;font-size:.85rem;font-weight:700;color:var(--muted);}
+.skill-row .skill-bar-wrap{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.skill-row .skill-bar{height:100%;border-radius:6px;}
+.skill-row .skill-pct{text-align:right;font-weight:800;color:var(--text);}
+.skill-code{font-family:'Fredoka One',cursive;color:var(--accent);margin-right:6px;}
+.skill-row .skill-parts{font-weight:700;color:var(--muted);font-size:.72rem;margin-left:4px;}
+@media (max-width:480px){.skill-row{grid-template-columns:minmax(0,1fr) 70px 42px;}}
 .heat-cell.fact-heat{width:auto;min-width:66px;padding:0 8px;}
 .heat-cell.fact-heat .q-num{font-size:.78rem;opacity:1;white-space:nowrap;}
 .heat-cell.fact-heat .q-pct{font-size:.68rem;}
@@ -323,6 +333,15 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           </thead>
           <tbody id="assignmentBody"></tbody>
         </table>
+      </div>
+
+      <!-- Standards & skills (only for assignments listed in SKILL_REPORTS) -->
+      <div class="heatmap-wrap" id="skillReportWrap" style="display:none;">
+        <div class="section-title">📐 Standards &amp; Skills
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="skillReportSubtitle"></span>
+        </div>
+        <div id="skillReportBody"></div>
+        <div id="skillReportDetail"></div>
       </div>
 
       <!-- Question heatmap -->
@@ -1501,6 +1520,7 @@ function renderAssignment() {
 
   // Heatmap
   buildHeatmap(data);
+  buildSkillReport(data); // after the heatmap, which settles 1st vs 2nd Try
 }
 
 // ═══════════════════════════════════════════════════
@@ -1514,6 +1534,123 @@ let lastHeatmapData = [];
 function setHeatmapAttempt(n) {
   heatmapAttempt = n;
   buildHeatmap(lastHeatmapData);
+  buildSkillReport(lastHeatmapData);
+}
+
+// ── Standards & Skills report ──
+// Skill → grade-4 standard for the SBAC Place Value FIAB reviews.
+// Move a skill by changing its standard here.
+const PVFIAB_STANDARDS = {
+  'x10 relationship':         '4.NBT.1',
+  'Regrouped place value':    '4.NBT.1', // 30 tens + 30 ones = 3 hundreds + 3 tens
+  'Place-value language':     '4.NBT.2', // compare 8,061 to 6 hundreds + 1 one + 8 thousands
+  'Expanded form':            '4.NBT.2',
+  'Word form':                '4.NBT.2',
+  'Comparing numbers':        '4.NBT.2',
+  'Ordering numbers':         '4.NBT.2',
+  'Rounding':                 '4.NBT.3',
+  'Reasoning about rounding': '4.NBT.3',
+};
+const STANDARD_NAMES = {
+  '4.NBT.1': 'A digit is 10× the same digit one place to its right',
+  '4.NBT.2': 'Read, write & compare multi-digit numbers',
+  '4.NBT.3': 'Round multi-digit numbers',
+};
+// Assignments with a skill report: every scored part in `bank` for `form`
+// is labeled "(Skill) …", so % correct = parts right ÷ parts asked.
+const SKILL_REPORTS = {
+  'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS },
+  'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS },
+  'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS },
+};
+const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
+let skillReportRows = {};
+
+function buildSkillReport(data) {
+  const wrap = document.getElementById('skillReportWrap');
+  const cfg  = SKILL_REPORTS[currentGame];
+  document.getElementById('skillReportDetail').innerHTML = '';
+  if (!cfg) { wrap.style.display = 'none'; return; }
+
+  // Scored parts on this form, grouped by skill
+  const partsBySkill = {};
+  Object.entries(cfg.bank).forEach(([id, label]) => {
+    if (id[0] !== cfg.form) return;
+    const skill = (/^\(([^)]+)\)/.exec(label) || [])[1] || 'Unsorted';
+    (partsBySkill[skill] = partsBySkill[skill] || []).push(id);
+  });
+
+  // Same attempt choice as the heatmap: 1st finished try, or latest retake
+  const attempts = [];
+  data.forEach(student => {
+    if (student.name === 'Mr. O (Teacher)') return;
+    const done = (student.sessions || []).filter(s => s.status === 'complete');
+    if (!done.length) return;
+    if (heatmapAttempt === 2 && done.length < 2) return;
+    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions((heatmapAttempt === 2 ? done[done.length - 1] : done[0]).wrongQuestions, {})) });
+  });
+  if (!attempts.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  // One row per standard, then its skills. Each row keeps per-student results for the click-through.
+  const rowFor = ids => {
+    const perStudent = attempts.map(a => {
+      const right = ids.filter(id => !a.missed.has(id)).length;
+      return { name: a.name, right, total: ids.length, pct: Math.round(right / ids.length * 100) };
+    });
+    const right = perStudent.reduce((t, s) => t + s.right, 0);
+    return { perStudent, parts: ids.length, pct: Math.round(right / (ids.length * attempts.length) * 100) };
+  };
+  const byStandard = {};
+  Object.entries(partsBySkill).forEach(([skill, ids]) => {
+    const std = cfg.standards[skill] || 'Other';
+    (byStandard[std] = byStandard[std] || []).push({ skill, ids });
+  });
+
+  skillReportRows = {};
+  const bar = (key, cls, labelHtml, row) => {
+    skillReportRows[key] = { ...row, label: labelHtml };
+    return `<div class="skill-row ${cls}" data-key="${escHtml(key)}" onclick="showSkillReportDetail(this.dataset.key)">
+      <div>${labelHtml}<span class="skill-parts">${row.parts} part${row.parts > 1 ? 's' : ''}</span></div>
+      <div class="skill-bar-wrap"><div class="skill-bar" style="width:${row.pct}%;background:${skillBarColor(row.pct)};"></div></div>
+      <div class="skill-pct">${row.pct}%</div>
+    </div>`;
+  };
+  document.getElementById('skillReportBody').innerHTML = Object.keys(byStandard).sort().map(std => {
+    const skills = byStandard[std].sort((a, b) => a.skill.localeCompare(b.skill));
+    const stdRow = rowFor(skills.flatMap(s => s.ids));
+    return bar(std, 'std', `<span class="skill-code">${std}</span>${escHtml(STANDARD_NAMES[std] || '')}`, stdRow) +
+      skills.map(s => bar(std + '|' + s.skill, 'sub', escHtml(s.skill), rowFor(s.ids))).join('');
+  }).join('');
+
+  document.getElementById('skillReportSubtitle').textContent =
+    `% of scored parts answered correctly · ${attempts.length} student${attempts.length > 1 ? 's' : ''} · ${heatmapAttempt === 2 ? '2nd Try (retakers only)' : '1st Try'} · click a row for each student`;
+}
+
+// Same bands as factCellColor, in solid tones so a bar reads against its track.
+function skillBarColor(pct) {
+  if (pct >= 90) return '#43a047';
+  if (pct >= 75) return '#8bc34a';
+  if (pct >= 60) return '#f9c02d';
+  if (pct >= 40) return '#fb8c00';
+  return '#e53935';
+}
+
+function showSkillReportDetail(key) {
+  const row = skillReportRows[key];
+  if (!row) return;
+  const list = [...row.perStudent].sort((a, b) => a.pct - b.pct || a.name.localeCompare(b.name));
+  const below = list.filter(s => s.pct < SKILL_CUTOFF).length;
+  document.getElementById('skillReportDetail').innerHTML = `
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:14px;box-shadow:var(--shadow);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
+        <div style="font-size:1rem;font-weight:800;color:var(--text);">${row.label}</div>
+        <button onclick="document.getElementById('skillReportDetail').innerHTML=''"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;">✕ Close</button>
+      </div>
+      <div style="color:var(--muted);font-size:.85rem;font-weight:700;margin-bottom:10px;">Class ${row.pct}% · ${below} of ${list.length} below ${SKILL_CUTOFF}%</div>
+      <div class="wrong-q-list">${list.map(s => `<span class="wrong-q-chip" style="background:${factCellColor(s.pct)};color:#1a2e1a;border-color:${skillBarColor(s.pct)};${s.pct < SKILL_CUTOFF ? 'font-weight:800;' : ''}">${escHtml(s.name)} — ${s.right}/${s.total} (${s.pct}%)</span>`).join('')}</div>
+    </div>`;
 }
 
 // Parse a wrongQuestions string into question keys.
