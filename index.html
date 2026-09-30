@@ -1915,7 +1915,7 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num">${maxScore}</div><div class="detail-stat-label">Max Possible</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${Math.round((student.bestScore/maxScore)*100)}%</div><div class="detail-stat-label">Score %</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
-    <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Best Time</div></div>
+    <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Time on Task</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
@@ -1987,11 +1987,11 @@ function openDetail(name) {
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Score</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">%</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Date</th>
-          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Time</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">On Task</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Status</th>
         </tr></thead>
         <tbody>${rows}</tbody>
-      </table>`;
+      </table>` + renderChronology(student);
   } else {
     sessBreakEl.innerHTML = '';
   }
@@ -2241,6 +2241,64 @@ function getQuestionText(id) {
   };
   const bank = banks[currentGame];
   return bank ? (bank[id] || id) : id;
+}
+
+/* ── ATTEMPT CHRONOLOGY ──────────────────────────────
+   Renders the session event log a student's attempt carries:
+   started, left, returned, resumed, closed, finished. Rows
+   recorded before the log existed simply render nothing. */
+const EVENT_LOOK = {
+  start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
+  resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
+  leave:  { icon:'⏸',  text:'Left the page',  color:'var(--orange)' },
+  return: { icon:'▶',  text:'Came back',      color:'var(--muted)'  },
+  close:  { icon:'✕',  text:'Closed the tab', color:'var(--red)'    },
+  finish: { icon:'✅', text:'Finished',       color:'var(--green)'  }
+};
+
+function clockOf(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+}
+
+function renderChronology(student) {
+  const events = [];
+  (student.sessions || []).forEach(function(sess) {
+    let list = [];
+    try { list = JSON.parse(sess.events || '[]'); } catch (e) { list = []; }
+    list.forEach(function(ev) { events.push(ev); });
+  });
+  if (!events.length) return '';
+  events.sort(function(a, b) { return String(a.at).localeCompare(String(b.at)); });
+
+  const rows = events.map(function(ev) {
+    const look = EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' };
+    const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
+    const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q);
+    return '<tr>' +
+      '<td style="padding:5px 10px;font-size:.8rem;color:var(--muted);white-space:nowrap;">' + clockOf(ev.at) + '</td>' +
+      '<td style="padding:5px 8px;font-size:.9rem;">' + look.icon + '</td>' +
+      '<td style="padding:5px 10px;font-size:.82rem;font-weight:700;color:' + look.color + ';">' + look.text + '</td>' +
+      '<td style="padding:5px 10px;font-size:.78rem;color:var(--muted);">' + where + '</td>' +
+      '<td style="padding:5px 10px;font-size:.78rem;color:var(--muted);">' + onTask + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const first = events[0], last = events[events.length - 1];
+  const span  = (first && last) ? (clockOf(first.at) + ' → ' + clockOf(last.at)) : '';
+  const onTaskTotal = last && last.on != null ? formatTime(last.on) : '—';
+
+  return '<div style="margin-top:14px;">' +
+    '<div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">🕘 What Happened, In Order</div>' +
+    '<table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>' +
+    '<div style="margin-top:6px;font-size:.76rem;color:var(--muted);">' +
+      span + ' on the clock · <strong>' + onTaskTotal + '</strong> actually working ' +
+      '<span style="opacity:.75;">(the timer pauses whenever they leave the page)</span>' +
+    '</div>' +
+  '</div>';
 }
 
 function statusIcon(s)  { return s==='complete'?'✅':s==='inprogress'?'🔄':'⬜'; }
