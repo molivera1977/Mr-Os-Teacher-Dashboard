@@ -517,6 +517,9 @@ const WRITTEN_PROMPT_LABELS = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'ilfiaba-review': '🔍 SBAC Inferences (Lit) A',
+  'ilfiabb-review': '🔍 SBAC Inferences (Lit) B',
+  'ilfiabc-review': '🔍 SBAC Inferences (Lit) C',
   'pvfiaba-review': '🔢 SBAC Place Value A',
   'pvfiabb-review': '🔢 SBAC Place Value B',
   'pvfiabc-review': '🔢 SBAC Place Value C',
@@ -548,6 +551,10 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  // 10 items each: 6 EBSRs worth 2 points (Part A + Part B) + 4 MC worth 1
+  'ilfiaba-review': 16,
+  'ilfiabb-review': 16,
+  'ilfiabc-review': 16,
   'pvfiaba-review': 23,
   'pvfiabb-review': 23,
   'pvfiabc-review': 23,
@@ -577,6 +584,62 @@ const MAX_SCORES = {
   dj_comp:     24,
   dj_cloze:    30,
   'mod16-test': 25,
+};
+
+// ── Question bank for the Inferences (Literary) FIAB Review — keyed by
+//    scored element. EBSR parts are separate entries (A02.A, A02.B) so
+//    reteaching can tell apart "did not get the inference" from "got the
+//    inference but could not find the evidence". Each label starts with
+//    its skill, then the story it came from.
+const INFLIT_QUESTIONS = {
+  "A01":"(Evidence selection) [The Great Volcano Incident] Which detail from the passage BEST supports the idea that Arizona knows Dante very well?",
+  "A02.A":"(Theme) [The Great Volcano Incident] Part A — What is a THEME of the passage?",
+  "A02.B":"(Supporting detail) [The Great Volcano Incident] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "A03.A":"(Author's craft) [The Great Volcano Incident] Part A — Read this sentence from the passage: \"I want to be clear that I said something. I said, 'Dante, I think that is too much.' I said it out loud, with my mouth, in the garage. I want that written down somewhere.\" Why does the author include the words \"with my mouth\" and \"I want that written down somewhere\"?",
+  "A03.B":"(Supporting detail) [The Great Volcano Incident] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "A04.A":"(Character inference) [The Great Volcano Incident] Part A — Based on the passage, how are Arizona and Dante DIFFERENT?",
+  "A04.B":"(Supporting detail) [The Great Volcano Incident] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A05.A":"(Feeling change) [Open Seat] Part A — How does the narrator feel about Millbrook by the END of the passage?",
+  "A05.B":"(Supporting detail) [Open Seat] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A06":"(Evidence selection) [Open Seat] Which detail from the passage BEST supports the idea that Meera is CURIOUS?",
+  "A07":"(Main idea) [Open Seat] Read this paragraph from the passage again. What is the MAIN IDEA of the paragraph?",
+  "A08":"(Evidence selection) [Why the Heron Stands So Still] Which detail from the passage BEST supports the idea that Heron has great courage?",
+  "A09.A":"(Theme) [Why the Heron Stands So Still] Part A — What is a THEME of the passage?",
+  "A09.B":"(Supporting detail) [Why the Heron Stands So Still] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A10.A":"(Drawing conclusions) [Why the Heron Stands So Still] Part A — Read the four paragraphs above again. Which statement BEST provides a conclusion that can be drawn from them?",
+  "A10.B":"(Supporting detail) [Why the Heron Stands So Still] Part B — Which sentence from the paragraphs above BEST supports the answer in Part A?",
+  "B01":"(Evidence selection) [Beatriz Has a System] Which detail from the passage BEST supports the idea that Jonah knows Beatriz very well?",
+  "B02.A":"(Theme) [Beatriz Has a System] Part A — What is a THEME of the passage?",
+  "B02.B":"(Supporting detail) [Beatriz Has a System] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "B03.A":"(Author's craft) [Beatriz Has a System] Part A — Read this sentence from the passage: \"Beatriz had two buckets, four sponges, a hose, and what she called a 'waterproof' plan, which turned out to mean a plan she had written in marker on a paper towel.\" Why does the author put quotation marks around the word waterproof?",
+  "B03.B":"(Supporting detail) [Beatriz Has a System] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "B04.A":"(Character inference) [Beatriz Has a System] Part A — Based on the passage, how are Jonah and Beatriz DIFFERENT?",
+  "B04.B":"(Supporting detail) [Beatriz Has a System] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B05.A":"(Feeling change) [Second Chair] Part A — How does the narrator feel about band by the END of the passage?",
+  "B05.B":"(Supporting detail) [Second Chair] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B06":"(Evidence selection) [Second Chair] Which detail from the passage BEST supports the idea that Hana is CURIOUS?",
+  "B07":"(Main idea) [Second Chair] Read this paragraph from the passage again. What is the MAIN IDEA of the paragraph?",
+  "B08":"(Evidence selection) [Why the Cedar Keeps Her Green Coat] Which detail from the passage BEST supports the idea that Cedar has great courage?",
+  "B09.A":"(Theme) [Why the Cedar Keeps Her Green Coat] Part A — What is a THEME of the passage?",
+  "B09.B":"(Supporting detail) [Why the Cedar Keeps Her Green Coat] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B10.A":"(Drawing conclusions) [Why the Cedar Keeps Her Green Coat] Part A — Read the four paragraphs above again. Which statement BEST provides a conclusion that can be drawn from them?",
+  "B10.B":"(Supporting detail) [Why the Cedar Keeps Her Green Coat] Part B — Which sentence from the paragraphs above BEST supports the answer in Part A?",
+  "C01":"(Evidence selection) [Lucia's Amazing Escape] Which detail from the passage BEST supports the idea that Omar knows Lucia very well?",
+  "C02.A":"(Theme) [Lucia's Amazing Escape] Part A — What is a THEME of the passage?",
+  "C02.B":"(Supporting detail) [Lucia's Amazing Escape] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "C03.A":"(Author's craft) [Lucia's Amazing Escape] Part A — The sentence \"It was going to be fine.\" appears twice in the passage — once after the nine rehearsals and once by itself, right after the music starts. Why does the author repeat it?",
+  "C03.B":"(Supporting detail) [Lucia's Amazing Escape] Part B — Which detail from the passage BEST supports the answer in Part A?",
+  "C04.A":"(Character inference) [Lucia's Amazing Escape] Part A — Based on the passage, how are Omar and Lucia DIFFERENT?",
+  "C04.B":"(Supporting detail) [Lucia's Amazing Escape] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C05.A":"(Feeling change) [The Greenhouse] Part A — How does the narrator feel about the greenhouse by the END of the passage?",
+  "C05.B":"(Supporting detail) [The Greenhouse] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C06":"(Evidence selection) [The Greenhouse] Which detail from the passage BEST supports the idea that Theo is CURIOUS?",
+  "C07":"(Main idea) [The Greenhouse] Read this paragraph from the passage again. What is the MAIN IDEA of the paragraph?",
+  "C08":"(Evidence selection) [Why Woodpecker Must Knock] Which detail from the passage BEST supports the idea that Squirrel has great courage?",
+  "C09.A":"(Theme) [Why Woodpecker Must Knock] Part A — What is a THEME of the passage?",
+  "C09.B":"(Supporting detail) [Why Woodpecker Must Knock] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C10.A":"(Drawing conclusions) [Why Woodpecker Must Knock] Part A — Read the three paragraphs above again. Which statement BEST provides a conclusion that can be drawn from them?",
+  "C10.B":"(Supporting detail) [Why Woodpecker Must Knock] Part B — Which sentence from the paragraphs above BEST supports the answer in Part A?",
 };
 
 // ── Question bank for the Place Value FIAB Review — keyed by scored element.
@@ -859,7 +922,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1537,6 +1600,19 @@ function setHeatmapAttempt(n) {
 }
 
 // ── Standards & Skills report ──
+// Skill → grade-4 standard for the SBAC Inferences (Literary) FIAB reviews.
+// Move a skill by changing its standard here.
+const INFLIT_STANDARDS = {
+  'Evidence selection':   'RL.4.1',
+  'Supporting detail':    'RL.4.1',
+  'Drawing conclusions':  'RL.4.1',
+  'Character inference':  'RL.4.3',
+  'Feeling change':       'RL.4.3',
+  'Theme':                'RL.4.2',
+  'Main idea':            'RL.4.2',
+  "Author's craft":       'RL.4.4',
+};
+
 // Skill → grade-4 standard for the SBAC Place Value FIAB reviews.
 // Move a skill by changing its standard here.
 const PVFIAB_STANDARDS = {
@@ -1551,6 +1627,10 @@ const PVFIAB_STANDARDS = {
   'Reasoning about rounding': '4.NBT.3',
 };
 const STANDARD_NAMES = {
+  'RL.4.1': 'Refer to details & examples to explain and support inferences',
+  'RL.4.2': 'Determine a theme; summarize the text',
+  'RL.4.3': 'Describe a character, setting or event using specific details',
+  'RL.4.4': 'Determine the meaning of words, phrases & the author\'s word choice',
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
   '4.NBT.2': 'Read, write & compare multi-digit numbers',
   '4.NBT.3': 'Round multi-digit numbers',
@@ -1558,6 +1638,9 @@ const STANDARD_NAMES = {
 // Assignments with a skill report: every scored part in `bank` for `form`
 // is labeled "(Skill) …", so % correct = parts right ÷ parts asked.
 const SKILL_REPORTS = {
+  'ilfiaba-review': { bank: INFLIT_QUESTIONS, form: 'A', standards: INFLIT_STANDARDS },
+  'ilfiabb-review': { bank: INFLIT_QUESTIONS, form: 'B', standards: INFLIT_STANDARDS },
+  'ilfiabc-review': { bank: INFLIT_QUESTIONS, form: 'C', standards: INFLIT_STANDARDS },
   'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS },
   'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS },
   'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS },
@@ -1661,7 +1744,10 @@ function parseWrongQuestions(str, questionTexts) {
   if (!str) return [];
   if (str.includes('[')) {
     return str.split(' | ').map(e => {
-      const m = e.match(/^\[([A-Z]\d+(?:\.\d+)?)\]\s*(.*)/);
+      // Sub-parts are numeric on grid items (A01.1) and LETTERED on EBSR
+      // items (A02.A = Part A, A02.B = Part B) — accept both, or every
+      // EBSR miss is dropped and the heatmap shows those parts as correct.
+      const m = e.match(/^\[([A-Z]\d+(?:\.[0-9A-Z])?)\]\s*(.*)/);
       if (!m) return null;
       // GK entries end with the student's pick — keep only the question text
       if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2].replace(/\s*\(picked: .*\)$/, '');
@@ -2137,6 +2223,9 @@ function getSortedRoster(data, maxScore) {
 
 function getQuestionText(id) {
   const banks = {
+    'ilfiaba-review': INFLIT_QUESTIONS,
+    'ilfiabb-review': INFLIT_QUESTIONS,
+    'ilfiabc-review': INFLIT_QUESTIONS,
     'pvfiaba-review': PVFIAB_QUESTIONS,
     'pvfiabb-review': PVFIAB_QUESTIONS,
     'pvfiabc-review': PVFIAB_QUESTIONS,
