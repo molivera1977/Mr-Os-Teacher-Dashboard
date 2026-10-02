@@ -117,6 +117,35 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .skill-row .skill-bar-wrap{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;border:1px solid var(--border);}
 .skill-row .skill-bar{height:100%;border-radius:6px;}
 .skill-row .skill-pct{text-align:right;font-weight:800;color:var(--text);}
+.skill-highlights{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 6px;}
+@media (max-width:640px){.skill-highlights{grid-template-columns:1fr;}}
+.hl-card{border:2px solid var(--border);border-radius:14px;padding:12px 14px;background:var(--surface2);}
+.hl-card.focus{border-color:#fb8c00;}
+.hl-card.strong{border-color:#43a047;}
+.hl-title{font-weight:800;font-size:.9rem;color:var(--text);margin-bottom:8px;}
+.hl-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px dashed var(--border);cursor:pointer;}
+.hl-item:first-of-type{border-top:none;}
+.hl-rank{font-family:'Fredoka One',cursive;color:var(--muted);width:16px;}
+.hl-name{flex:1;font-weight:700;font-size:.86rem;color:var(--text);}
+.hl-std{font-size:.7rem;color:var(--muted);font-weight:700;}
+.hl-thin{font-size:.68rem;color:var(--orange);font-weight:800;white-space:nowrap;}
+.qx{margin-top:4px;}
+.qx-note{font-size:.78rem;color:var(--muted);font-style:italic;}
+.qx-choices{margin:4px 0 0 20px;padding:0;font-size:.84rem;color:var(--text);line-height:1.45;}
+.qx-choices li{padding:3px 6px;border-radius:6px;margin:2px 0;}
+.qx-right{background:#d4f0d4;color:#1a5a1a;font-weight:700;}
+.qx-tag{font-size:.7rem;font-weight:800;white-space:nowrap;}
+.qx-wrong{background:#ffe0b2;color:#5a3000;}
+.qx-who{font-size:.74rem;font-weight:800;color:#b45400;margin-top:2px;}
+.qx-pill{padding:1px 8px;border-radius:6px;}
+.qx-line{font-size:.84rem;color:var(--text);margin:4px 0;line-height:1.45;}
+.qx-why{font-size:.8rem;color:var(--muted);margin-top:6px;line-height:1.45;}
+.qx-passage{margin-top:8px;font-size:.82rem;}
+.qx-passage summary{cursor:pointer;font-weight:800;color:var(--accent);}
+.qx-passage p{margin:6px 0;line-height:1.55;color:var(--text);}
+.hl-qlink{background:none;border:none;padding:2px 4px;font-family:'Nunito',sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+.hl-qlink:hover{opacity:.75;}
+.hl-pct{font-weight:800;font-size:.86rem;padding:2px 8px;border-radius:8px;color:#1a2e1a;white-space:nowrap;flex-shrink:0;}
 .skill-code{font-family:'Fredoka One',cursive;color:var(--accent);margin-right:6px;}
 .skill-row .skill-parts{font-weight:700;color:var(--muted);font-size:.72rem;margin-left:4px;}
 @media (max-width:480px){.skill-row{grid-template-columns:minmax(0,1fr) 70px 42px;}}
@@ -340,6 +369,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
         <div class="section-title">📐 Standards &amp; Skills
           <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="skillReportSubtitle"></span>
         </div>
+        <div class="skill-highlights" id="skillHighlights"></div>
+        <div id="skillHighlightDetail"></div>
         <div id="skillReportBody"></div>
         <div id="skillReportDetail"></div>
       </div>
@@ -1637,21 +1668,25 @@ const STANDARD_NAMES = {
 };
 // Assignments with a skill report: every scored part in `bank` for `form`
 // is labeled "(Skill) …", so % correct = parts right ÷ parts asked.
+// `site` is the student review's published repo — its data/form_X.js files hold the
+// passages, answer choices and explanations the question cards show.
 const SKILL_REPORTS = {
-  'ilfiaba-review': { bank: INFLIT_QUESTIONS, form: 'A', standards: INFLIT_STANDARDS },
-  'ilfiabb-review': { bank: INFLIT_QUESTIONS, form: 'B', standards: INFLIT_STANDARDS },
-  'ilfiabc-review': { bank: INFLIT_QUESTIONS, form: 'C', standards: INFLIT_STANDARDS },
-  'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS },
-  'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS },
-  'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS },
+  'ilfiaba-review': { bank: INFLIT_QUESTIONS, form: 'A', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
+  'ilfiabb-review': { bank: INFLIT_QUESTIONS, form: 'B', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
+  'ilfiabc-review': { bank: INFLIT_QUESTIONS, form: 'C', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
+  'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
+  'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
+  'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
+let skillReportContext = { attempts: [], bank: {} };
 
 function buildSkillReport(data) {
   const wrap = document.getElementById('skillReportWrap');
   const cfg  = SKILL_REPORTS[currentGame];
   document.getElementById('skillReportDetail').innerHTML = '';
+  document.getElementById('skillHighlightDetail').innerHTML = '';
   if (!cfg) { wrap.style.display = 'none'; return; }
 
   // Scored parts on this form, grouped by skill
@@ -1669,7 +1704,8 @@ function buildSkillReport(data) {
     const done = (student.sessions || []).filter(s => s.status === 'complete');
     if (!done.length) return;
     if (heatmapAttempt === 2 && done.length < 2) return;
-    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions((heatmapAttempt === 2 ? done[done.length - 1] : done[0]).wrongQuestions, {})) });
+    const sess = heatmapAttempt === 2 ? done[done.length - 1] : done[0];
+    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions(sess.wrongQuestions, {})), picks: parsePicks(sess.wrongQuestions) });
   });
   if (!attempts.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
@@ -1681,8 +1717,9 @@ function buildSkillReport(data) {
       return { name: a.name, right, total: ids.length, pct: Math.round(right / ids.length * 100) };
     });
     const right = perStudent.reduce((t, s) => t + s.right, 0);
-    return { perStudent, parts: ids.length, pct: Math.round(right / (ids.length * attempts.length) * 100) };
+    return { perStudent, ids, parts: ids.length, pct: Math.round(right / (ids.length * attempts.length) * 100) };
   };
+  skillReportContext = { attempts, bank: cfg.bank, site: cfg.site, form: cfg.form };
   const byStandard = {};
   Object.entries(partsBySkill).forEach(([skill, ids]) => {
     const std = cfg.standards[skill] || 'Other';
@@ -1704,9 +1741,165 @@ function buildSkillReport(data) {
     return bar(std, 'std', `<span class="skill-code">${std}</span>${escHtml(STANDARD_NAMES[std] || '')}`, stdRow) +
       skills.map(s => bar(std + '|' + s.skill, 'sub', escHtml(s.skill), rowFor(s.ids))).join('');
   }).join('');
+  renderSkillHighlights();
 
   document.getElementById('skillReportSubtitle').textContent =
     `% of scored parts answered correctly · ${attempts.length} student${attempts.length > 1 ? 's' : ''} · ${heatmapAttempt === 2 ? '2nd Try (retakers only)' : '1st Try'} · click a row for each student`;
+}
+
+// Top 3 skills to focus on (lowest %) and top 3 to celebrate (highest %).
+// Ties go to the skill with more questions behind it; a list never repeats a
+// skill the other already shows. "Celebrate" is only used when all three are 80%+.
+const CELEBRATE_MIN = 80;
+function renderSkillHighlights() {
+  const el = document.getElementById('skillHighlights');
+  const skills = Object.entries(skillReportRows)
+    .filter(([key]) => key.includes('|'))
+    .map(([key, row]) => ({ key, std: key.split('|')[0], name: key.split('|')[1], pct: row.pct, parts: row.parts }));
+  if (skills.length < 2) { el.innerHTML = ''; return; }
+
+  const n = Math.min(3, Math.floor(skills.length / 2));
+  const focus = [...skills].sort((a, b) => a.pct - b.pct || b.parts - a.parts).slice(0, n);
+  const strong = [...skills].sort((a, b) => b.pct - a.pct || b.parts - a.parts)
+    .filter(s => !focus.includes(s)).slice(0, n);
+  const celebrate = strong.every(s => s.pct >= CELEBRATE_MIN);
+
+  const item = (s, i) => `<div class="hl-item" data-key="${escHtml(s.key)}" onclick="showSkillReportDetail(this.dataset.key, 'skillHighlightDetail')">
+      <span class="hl-rank">${i + 1}</span>
+      <span class="hl-name">${escHtml(s.name)} <span class="hl-std">${escHtml(s.std)}</span></span>
+      <button type="button" class="hl-thin hl-qlink" style="${s.parts === 1 ? '' : 'color:var(--muted);'}"
+        title="${s.parts === 1 ? 'Only one question tests this skill, so one item can swing it — click to see it' : 'Click to see the ' + s.parts + ' questions that test this skill'}"
+        data-key="${escHtml(s.key)}" onclick="event.stopPropagation(); showSkillQuestions(this.dataset.key)">from ${s.parts} question${s.parts > 1 ? 's' : ''} ›</button>
+      <span class="hl-pct" style="background:${factCellColor(s.pct)}">${s.pct}%</span>
+    </div>`;
+  el.innerHTML = `
+    <div class="hl-card focus"><div class="hl-title">🎯 Focus next — lowest ${n}</div>${focus.map(item).join('')}</div>
+    <div class="hl-card strong"><div class="hl-title">${celebrate ? '🎉 Celebrate — highest ' + n : '💪 Strongest so far <span class="hl-std">(none at ' + CELEBRATE_MIN + '% yet)</span>'}</div>${strong.map(item).join('')}</div>`;
+}
+
+// The questions behind one skill: wording, passage, class % right, and who missed it.
+function showSkillQuestions(key) {
+  const row = skillReportRows[key];
+  if (!row) return;
+  const { attempts, bank } = skillReportContext;
+  // Who missed each question and what they chose (only attempts that saved their pick)
+  skillQuestionPicks = {};
+  row.ids.forEach(id => {
+    skillQuestionPicks[id] = attempts.filter(a => a.missed.has(id)).map(a => ({ name: a.name, picked: a.picks[id] }));
+  });
+  const cards = row.ids.map(id => {
+    const m = /^\(([^)]+)\)\s*(?:\[([^\]]+)\]\s*)?(.*)$/.exec(bank[id] || '') || [];
+    const missedBy = attempts.filter(a => a.missed.has(id)).map(a => a.name);
+    const pct = attempts.length ? Math.round((attempts.length - missedBy.length) / attempts.length * 100) : 0;
+    return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-top:8px;background:var(--surface2);">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;">
+        <div style="font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Question ${escHtml(id)}${m[2] ? ' · ' + escHtml(m[2]) : ''}</div>
+        <span class="hl-pct" style="background:${factCellColor(pct)}">${pct}% right</span>
+      </div>
+      <div style="font-size:.92rem;font-weight:700;color:var(--text);margin:6px 0;line-height:1.45;">${escHtml(m[3] || bank[id] || id)}</div>
+      <div class="qx" data-qid="${escHtml(id)}"><div class="qx-note">Loading answer choices…</div></div>
+      <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-top:6px;">${missedBy.length ? 'Missed by: ' + missedBy.map(escHtml).join(', ') : 'Nobody missed it'}</div>
+    </div>`;
+  }).join('');
+  const target = document.getElementById('skillHighlightDetail');
+  target.innerHTML = `
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:4px;margin-bottom:12px;box-shadow:var(--shadow);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="font-size:1rem;font-weight:800;color:var(--text);">${row.label} — the ${row.parts} question${row.parts > 1 ? 's' : ''} behind it</div>
+        <button onclick="document.getElementById('skillHighlightDetail').innerHTML=''"
+          style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;">✕ Close</button>
+      </div>
+      ${cards}
+    </div>`;
+  target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  fillQuestionExtras(target, skillReportContext.site, skillReportContext.form);
+}
+
+// ── Answer choices, explanation and passage from the student review's own data file ──
+const reviewFormCache = {};
+let skillQuestionPicks = {};
+function loadReviewForm(site, form) {
+  const url = `https://mroteacher.com/${site}/data/form_${form.toLowerCase()}.js`;
+  if (!reviewFormCache[url]) {
+    reviewFormCache[url] = fetch(url, { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(src => {
+        // The file assigns window.FORM_X — run it against a private object so the
+        // two review sites' same-named globals can't collide.
+        const box = {};
+        new Function('window', src)(box);
+        const data = box['FORM_' + form];
+        if (!data) throw new Error('FORM_' + form + ' not found');
+        return data;
+      })
+      .catch(err => { delete reviewFormCache[url]; throw err; });
+  }
+  return reviewFormCache[url];
+}
+
+// "B02.A" → Part A of item B02 · "A01.2" → row 2 of grid A01 · "B06" → item B06
+function findReviewElement(data, id) {
+  const items = Array.isArray(data) ? data : (data.items || []);
+  const [, base, sub] = /^([A-Z]\d+)(?:\.(\w+))?$/.exec(id) || [];
+  const item = items.find(q => q.id === base);
+  if (!item) return null;
+  const passage = data.passages && item.p != null ? data.passages[item.p] : null;
+  if (item.type === 'ebsr' && sub) return { kind: 'mc', el: sub === 'A' ? item.partA : item.partB, passage };
+  if (item.type === 'grid' && sub) return { kind: 'grid', el: item.rows[Number(sub) - 1], item, passage };
+  return { kind: item.type === 'symbol' ? 'symbol' : item.choices ? 'mc' : 'answer', el: item, passage };
+}
+
+// Saved picks are plain text; choices may carry HTML entities — compare them as text.
+function choiceText(html) {
+  const t = document.createElement('textarea');
+  t.innerHTML = String(html ?? '');
+  return t.value.replace(/\s+/g, ' ').trim();
+}
+
+function reviewElementHtml(found, picks = []) {
+  // Content comes from Mr. O's own review files and is written as HTML (e.g. &#9723;).
+  const { kind, el, item, passage } = found;
+  const known = picks.filter(p => p.picked != null);
+  const pickedBy = ans => known.filter(p => choiceText(p.picked) === choiceText(ans)).map(p => p.name);
+  const who = names => names.length ? `<div class="qx-who">👈 picked by ${names.map(escHtml).join(', ')}</div>` : '';
+  let body = '';
+  if (kind === 'mc') {
+    body = '<ol class="qx-choices">' + (el.choices || []).map(c => {
+      const right = c === el.answer;
+      return `<li class="${right ? 'qx-right' : pickedBy(c).length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${right ? '' : who(pickedBy(c))}</li>`;
+    }).join('') + '</ol>';
+  } else if (kind === 'grid') {
+    const wrongAns = (item.cols || ['True', 'False']).find(c => c !== el.answer);
+    body = `<div class="qx-line">${item.q}</div><div class="qx-line">“${el.text}” → <span class="qx-right qx-pill">${escHtml(el.answer)} ✅</span></div>` +
+      (wrongAns ? who(pickedBy(wrongAns)).replace('👈 picked by', `👈 answered ${escHtml(wrongAns)}:`) : '');
+  } else if (kind === 'symbol') {
+    const wrongPicks = ['<', '>', '='].filter(s => s !== choiceText(el.answer))
+      .map(s => pickedBy(s).length ? `<div class="qx-who">👈 chose ${escHtml(s)}: ${pickedBy(s).map(escHtml).join(', ')}</div>` : '').join('');
+    body = `<div class="qx-line">${el.q}</div><div class="qx-line">Correct: <span class="qx-right qx-pill">${el.answer} ✅</span></div>${wrongPicks}`;
+  } else {
+    body = `<div class="qx-line">Correct answer: <span class="qx-right qx-pill">${el.answer ?? '—'} ✅</span></div>` +
+      known.map(p => `<div class="qx-who">👈 ${escHtml(p.name)} answered ${escHtml(p.picked)}</div>`).join('');
+  }
+  const unrecorded = picks.length - known.length;
+  if (picks.length && unrecorded) {
+    body += `<div class="qx-note">${unrecorded === picks.length ? 'Their answers weren’t saved' : unrecorded + ' answer' + (unrecorded > 1 ? 's' : '') + ' not saved'} — attempts before picks were recorded.</div>`;
+  }
+  const why = (el && el.explanation) || (item && item.explanation) || '';
+  const passageHtml = passage ? `<details class="qx-passage"><summary>📖 Read the passage — ${escHtml(passage.title || '')}</summary>${(passage.paragraphs || []).map(p => `<p>${p}</p>`).join('')}</details>` : '';
+  return body + (why ? `<div class="qx-why"><b>Why:</b> ${why}</div>` : '') + passageHtml;
+}
+
+function fillQuestionExtras(container, site, form) {
+  const slots = container.querySelectorAll('.qx');
+  if (!site || !slots.length) { slots.forEach(s => s.remove()); return; }
+  loadReviewForm(site, form).then(data => {
+    slots.forEach(slot => {
+      const found = findReviewElement(data, slot.dataset.qid);
+      slot.innerHTML = found ? reviewElementHtml(found, skillQuestionPicks[slot.dataset.qid] || []) : '<div class="qx-note">Answer choices not found for this question.</div>';
+    });
+  }).catch(() => {
+    slots.forEach(slot => { slot.innerHTML = '<div class="qx-note">Couldn’t load the answer choices — check the connection and try again.</div>'; });
+  });
 }
 
 // Same bands as factCellColor, in solid tones so a bar reads against its track.
@@ -1718,16 +1911,17 @@ function skillBarColor(pct) {
   return '#e53935';
 }
 
-function showSkillReportDetail(key) {
+// `where` = the container under whatever was clicked (the top-3 boxes or the standards list).
+function showSkillReportDetail(key, where = 'skillReportDetail') {
   const row = skillReportRows[key];
   if (!row) return;
   const list = [...row.perStudent].sort((a, b) => a.pct - b.pct || a.name.localeCompare(b.name));
   const below = list.filter(s => s.pct < SKILL_CUTOFF).length;
-  document.getElementById('skillReportDetail').innerHTML = `
+  document.getElementById(where).innerHTML = `
     <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:14px;box-shadow:var(--shadow);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
         <div style="font-size:1rem;font-weight:800;color:var(--text);">${row.label}</div>
-        <button onclick="document.getElementById('skillReportDetail').innerHTML=''"
+        <button onclick="document.getElementById('${where}').innerHTML=''"
           style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;">✕ Close</button>
       </div>
       <div style="color:var(--muted);font-size:.85rem;font-weight:700;margin-bottom:10px;">Class ${row.pct}% · ${below} of ${list.length} below ${SKILL_CUTOFF}%</div>
@@ -1755,6 +1949,18 @@ function parseWrongQuestions(str, questionTexts) {
     }).filter(Boolean);
   }
   return str.split(',').map(n => n.trim()).filter(Boolean);
+}
+
+// The answer a student chose on each missed question, when the review saved it:
+// "[B06] (Skill) question (picked: their answer)" → { B06: 'their answer' }.
+// Attempts saved before picks were recorded simply have no entry.
+function parsePicks(str) {
+  const picks = {};
+  String(str || '').replace(/^\[⚠️ FAST:[^\]]*\]\s*/, '').split(' | ').forEach(e => {
+    const m = /^\[([A-Z]\d+(?:\.\w+)?)\].*?\(picked: (.*)\)$/.exec(e);
+    if (m) picks[m[1]] = m[2];
+  });
+  return picks;
 }
 
 // Count misses per question across one finished attempt per student.
