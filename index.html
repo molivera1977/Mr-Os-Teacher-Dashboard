@@ -1657,6 +1657,30 @@ const PVFIAB_STANDARDS = {
   'Rounding':                 '4.NBT.3',
   'Reasoning about rounding': '4.NBT.3',
 };
+// Math Module 1 Review — same 4.NBT skills as the Place Value FIAB, plus two of its own.
+// Tags mirror math-module-1-review/data/skills.js (the site saves them with each miss).
+const MOD1_STANDARDS = {
+  ...PVFIAB_STANDARDS,
+  'Building numbers from digits': '4.NBT.2', // greatest / least number from given digits
+  'Value of a digit':             '4.NBT.2',
+};
+const MOD1_SKILLS = {
+  'x10 relationship':             ['A01','A04','A15','B01','B04','B16','C01'],
+  'Regrouped place value':        ['A07','A11','B07','B12','C08','C12','C15'],
+  'Expanded form':                ['A09','A12','B08','B13','C06','C07','C11','C14'],
+  'Word form':                    ['A03','B03','C13'],
+  'Comparing numbers':            ['A05','A08','A17','B05','B09','B10','C09'],
+  'Ordering numbers':             ['A16','B17','C16'],
+  'Building numbers from digits': ['A13','A14','B14','B15'],
+  'Value of a digit':             ['C17'],
+  'Rounding':                     ['A02','A10','B02','B11','C02','C03','C04','C05'],
+  'Reasoning about rounding':     ['A06','B06','C10'],
+};
+// MOD1_QUESTIONS with each label prefixed "(Skill) " — the shape SKILL_REPORTS reads.
+const MOD1_SKILL_BANK = {};
+Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
+
 const STANDARD_NAMES = {
   'RL.4.1': 'Refer to details & examples to explain and support inferences',
   'RL.4.2': 'Determine a theme; summarize the text',
@@ -1677,6 +1701,9 @@ const SKILL_REPORTS = {
   'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
+  'mod1a-review':   { bank: MOD1_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
+  'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
+  'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
