@@ -2262,12 +2262,33 @@ function clockOf(iso) {
   return isNaN(d) ? '' : d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
 }
 
+// Event times come from the student's device, and a device clock can be wrong
+// (one student's runs an hour fast). The finish is saved in the same request the
+// server stamps with its own clock, so server time − device finish = that device's error.
+const CLOCK_FIX_MIN_MS = 2 * 60 * 1000; // ignore normal network delay
+function deviceClockOffset(sess) {
+  if (!sess.finishedAt || !sess.timestamp) return null;
+  const off = new Date(sess.timestamp) - new Date(sess.finishedAt);
+  return isNaN(off) ? null : off;
+}
+
 function renderChronology(student) {
   const events = [];
-  (student.sessions || []).forEach(function(sess) {
+  const sessions = student.sessions || [];
+  // Unfinished attempts have no finish to compare, so they borrow the student's other attempts' error.
+  const known = sessions.map(deviceClockOffset).filter(function(o) { return o != null; });
+  let fixedBy = 0;
+  sessions.forEach(function(sess) {
     let list = [];
     try { list = JSON.parse(sess.events || '[]'); } catch (e) { list = []; }
-    list.forEach(function(ev) { events.push(ev); });
+    const own = deviceClockOffset(sess);
+    const off = own != null ? own : (known.length ? known[0] : 0);
+    const shift = Math.abs(off) >= CLOCK_FIX_MIN_MS ? Math.round(off / 60000) * 60000 : 0;
+    if (shift && list.length) fixedBy = shift;
+    list.forEach(function(ev) {
+      const d = new Date(ev.at);
+      events.push(shift && !isNaN(d) ? Object.assign({}, ev, { at: new Date(d.getTime() + shift).toISOString() }) : ev);
+    });
   });
   if (!events.length) return '';
   events.sort(function(a, b) { return String(a.at).localeCompare(String(b.at)); });
@@ -2298,7 +2319,15 @@ function renderChronology(student) {
       span + ' on the clock · <strong>' + onTaskTotal + '</strong> actually working ' +
       '<span style="opacity:.75;">(the timer pauses whenever they leave the page)</span>' +
     '</div>' +
+    (fixedBy ? '<div style="margin-top:4px;font-size:.76rem;color:var(--orange);font-weight:700;">⏰ This student\'s device clock was ' +
+      formatClockError(fixedBy) + ' — times above are corrected to the real time.</div>' : '') +
   '</div>';
+}
+
+function formatClockError(shiftMs) {
+  const mins = Math.round(Math.abs(shiftMs) / 60000);
+  const amount = mins % 60 === 0 ? (mins / 60) + ' hr' + (mins > 60 ? 's' : '') : mins + ' min';
+  return amount + (shiftMs < 0 ? ' fast' : ' slow');
 }
 
 function statusIcon(s)  { return s==='complete'?'✅':s==='inprogress'?'🔄':'⬜'; }
