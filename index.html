@@ -1714,6 +1714,44 @@ const PVFIAB_STANDARDS = {
   'Rounding':                 '4.NBT.3',
   'Reasoning about rounding': '4.NBT.3',
 };
+// ── R.A.D. Online Quiz 1 — multiple-choice bank, labeled "(Skill) [Passage] question".
+//    Mirrors rad-online-quiz-1/data/quiz.js + data/skills.js (the site saves the same tags).
+const RAD_QUESTIONS = {
+  Q01:"(R.A.D. steps) What do the three letters in R.A.D. stand for?",
+  Q02:"(R.A.D. steps) In R.A.D., what does the letter R stand for?",
+  Q03:"(R.A.D. steps) In R.A.D., what does the letter A stand for?",
+  Q04:"(R.A.D. steps) In R.A.D., what does the letter D stand for?",
+  Q05:"(Restating with key words) Read the question: \"How do you help at home?\" Which is the best turnaround to start your answer?",
+  Q06:"(Question-word clues) A \"When\" question is asking for…",
+  Q07:"(Restating with key words) Question: \"Why do you like soccer?\" Which answer starts the RIGHT way?",
+  Q08:"(Complete sentences vs. fragments) Which of these is a sentence FRAGMENT (not a complete sentence)?",
+  Q09:"(Full R.A.D. answer) Question: \"What is your favorite holiday?\" Which answer is a full R.A.D. answer?",
+  Q10:"(Strong vs. vague details) Answer: \"My favorite animal is a dolphin.\" Which sentence is the BEST detail to add?",
+  Q11:"(Name it first) Question: \"Who is someone who teaches you new things?\" Which answer names the person FIRST before using \"she\"?",
+  Q12:"(Strong vs. vague details) Question: \"What games do you like to play at recess?\" Answer: \"I like them a lot. They are really fun.\" What is wrong with this answer?",
+  Q13:"(Restating with key words) Question: \"Where does your family go on vacation?\" Which answer uses the key words the BEST way?",
+  Q14:"(Finding evidence in the text) [The Rooftop Garden] Question: \"Why did Marisol want tomatoes?\" In which paragraph can you find the answer?",
+  Q15:"(Full R.A.D. answer) [The Rooftop Garden] Question: \"Why did Marisol want tomatoes?\" Which is the best R.A.D. answer?",
+  Q16:"(Finding evidence in the text) [The Rooftop Garden] According to paragraph 4, how did Deshawn know the plants needed water?",
+  Q17:"(Strong vs. vague details) [The Rooftop Garden] Answer: \"The class made a watering chart.\" Which is the BEST detail from the story to add?",
+  Q18:"(Complete sentences vs. fragments) [The Rooftop Garden] Question: \"What did the students do with the wooden boxes?\" Which answer is a FRAGMENT?",
+  Q19:"(Question-word clues) [The Rooftop Garden] Question: \"Why did Deshawn want sunflowers?\" What kind of answer does this question need?",
+  Q20:"(Restating with key words) [The Rooftop Garden] Question: \"What did the principal say the students had to do?\" Which answer uses the key words?",
+  Q21:"(Strong vs. vague details) [The Rooftop Garden] Which detail is TOO VAGUE to be a good detail?",
+  Q22:"(Finding evidence in the text) [The Rooftop Garden] Which sentence shows the reader WHERE you found your proof?",
+  Q23:"(Name it first) [The Rooftop Garden] Which answer names the person FIRST before using \"he\"?",
+};
+const RAD_STANDARDS = {
+  'R.A.D. steps':                     'W.4.4',
+  'Restating with key words':         'W.4.4',
+  'Question-word clues':              'W.4.4',
+  'Full R.A.D. answer':               'W.4.4',
+  'Strong vs. vague details':         'W.4.4',
+  'Name it first':                    'W.4.4',
+  'Complete sentences vs. fragments': 'L.4.1f',
+  'Finding evidence in the text':     'RL.4.1',
+};
+
 // Math Module 1 Review — same 4.NBT skills as the Place Value FIAB, plus two of its own.
 // Tags mirror math-module-1-review/data/skills.js (the site saves them with each miss).
 const MOD1_STANDARDS = {
@@ -1746,6 +1784,8 @@ const STANDARD_NAMES = {
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
   '4.NBT.2': 'Read, write & compare multi-digit numbers',
   '4.NBT.3': 'Round multi-digit numbers',
+  'W.4.4':   'Write clearly for the task: answer the question fully',
+  'L.4.1f':  'Write complete sentences; fix fragments',
 };
 // Assignments with a skill report: every scored part in `bank` for `form`
 // is labeled "(Skill) …", so % correct = parts right ÷ parts asked.
@@ -1761,6 +1801,7 @@ const SKILL_REPORTS = {
   'mod1a-review':   { bank: MOD1_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
+  rad_quiz1:        { bank: RAD_QUESTIONS,    form: 'Q', standards: RAD_STANDARDS,    site: 'rad-online-quiz-1' }, // ids Q01–Q23, one form
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
@@ -2026,8 +2067,22 @@ function toggleQbqChoices(rowEl) {
 // ── Answer choices, explanation and passage from the student review's own data file ──
 const reviewFormCache = {};
 let skillQuestionPicks = {};
+// Sites whose question file isn't data/form_x.js → window.FORM_X. `adapt` turns the
+// file's globals into the { items, passages } shape findReviewElement reads.
+const REVIEW_FILES = {
+  // One quiz: window.RAD_MC (story questions marked story:true) + window.RAD_PASSAGE
+  'rad-online-quiz-1': {
+    file: 'data/quiz.js',
+    adapt: box => box.RAD_MC && {
+      items: box.RAD_MC.map(q => q.story ? Object.assign({}, q, { p: 0 }) : q),
+      passages: [box.RAD_PASSAGE],
+    },
+  },
+};
+
 function loadReviewForm(site, form) {
-  const url = `https://mroteacher.com/${site}/data/form_${form.toLowerCase()}.js`;
+  const custom = REVIEW_FILES[site];
+  const url = `https://mroteacher.com/${site}/${custom ? custom.file : `data/form_${form.toLowerCase()}.js`}`;
   if (!reviewFormCache[url]) {
     reviewFormCache[url] = fetch(url, { cache: 'no-store' })
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
@@ -2036,8 +2091,8 @@ function loadReviewForm(site, form) {
         // two review sites' same-named globals can't collide.
         const box = {};
         new Function('window', src)(box);
-        const data = box['FORM_' + form];
-        if (!data) throw new Error('FORM_' + form + ' not found');
+        const data = custom ? custom.adapt(box) : box['FORM_' + form];
+        if (!data) throw new Error((custom ? custom.file : 'FORM_' + form) + ' not found');
         return data;
       })
       .catch(err => { delete reviewFormCache[url]; throw err; });
