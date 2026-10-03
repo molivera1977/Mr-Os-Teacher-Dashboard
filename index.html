@@ -129,6 +129,28 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .hl-name{flex:1;font-weight:700;font-size:.86rem;color:var(--text);}
 .hl-std{font-size:.7rem;color:var(--muted);font-weight:700;}
 .hl-thin{font-size:.68rem;color:var(--orange);font-weight:800;white-space:nowrap;}
+.qbq-attempt{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--surface);}
+.qbq-head{font-size:.86rem;color:var(--text);margin-bottom:6px;}
+.qbq-when{color:var(--muted);font-size:.74rem;margin-left:4px;}
+.qbq-skills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.qbq-skill{font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:8px;border:1px solid;color:#1a2e1a;}
+.qbq-list summary{cursor:pointer;font-size:.78rem;font-weight:800;color:var(--accent);margin-bottom:6px;}
+.qbq-row{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:9px;margin-bottom:4px;border:1px solid;}
+.qbq-row.ok{background:var(--complete);border-color:var(--complete-border);color:var(--complete-text);}
+.qbq-row.miss{background:var(--flagged);border-color:var(--flagged-border);color:var(--flagged-text);}
+.qbq-row{cursor:pointer;}
+.qbq-row.qbq-flash{box-shadow:0 0 0 3px var(--accent);transition:box-shadow .3s;}
+.student-jump{cursor:pointer;}
+.student-jump:hover{filter:brightness(.95);text-decoration:underline;}
+.qbq-row:hover{filter:brightness(.97);}
+.qbq-choices{margin:-2px 0 8px 28px;padding:8px 12px;border:1px dashed var(--border);border-radius:9px;background:var(--surface);}
+.qbq-mark{font-size:.8rem;flex-shrink:0;}
+.qbq-id{font-size:.7rem;font-weight:800;white-space:nowrap;flex-shrink:0;padding-top:1px;}
+.qbq-text{font-size:.78rem;font-weight:700;line-height:1.4;flex:1;}
+.qbq-passage{opacity:.7;font-weight:600;}
+.qbq-pick{font-weight:800;}
+.qbq-skilltag{font-size:.66rem;font-weight:700;opacity:.7;white-space:nowrap;flex-shrink:0;padding-top:1px;}
+@media (max-width:640px){.qbq-skilltag{display:none;}}
 .qx{margin-top:4px;}
 .qx-note{font-size:.78rem;color:var(--muted);font-style:italic;}
 .qx-choices{margin:4px 0 0 20px;padding:0;font-size:.84rem;color:var(--text);line-height:1.45;}
@@ -181,6 +203,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 /* ── STUDENT PROFILE PANEL ── */
 .student-profile{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
 .student-profile.open{display:block;}
+/* A student's detail / profile opens as a window over the page (front and center),
+   not at the bottom of a long assignment page. */
+#detailPanel.open,#studentProfile.open{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(1100px,94vw);max-height:88vh;overflow-y:auto;z-index:300;margin:0;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:299;display:none;}
+.panel-backdrop.open{display:block;}
 .profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;scroll-margin-top:80px;}
 .profile-name{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);}
 .profile-table{width:100%;border-collapse:collapse;}
@@ -469,6 +496,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 
   </div>
 </div>
+
+<!-- Dims the page behind an open student window; clicking it closes the window -->
+<div class="panel-backdrop" id="panelBackdrop" onclick="closeDetail(); closeProfile();"></div>
 
 <script>
 // ═══════════════════════════════════════════════════
@@ -1017,6 +1047,7 @@ function checkPin() {
 }
 
 function lockDashboard() {
+  closeDetail(); closeProfile();
   document.getElementById('screen-main').style.display = 'none';
   document.getElementById('screen-pin').style.display = 'flex';
   document.getElementById('pinInput').value = '';
@@ -1059,6 +1090,7 @@ async function refreshData() {
     const raw  = await res.json();
     dashData   = {};
     Object.entries(raw).forEach(([k, v]) => { dashData[k.toLowerCase()] = v; });
+    collapseSavedCopies(dashData);
     // Show every current assignment, even before its first submission creates a sheet tab
     GAME_ORDER.forEach(g => { if (!dashData[g] && !HIDDEN_GAMES.has(g)) dashData[g] = []; });
     const now  = new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
@@ -1068,6 +1100,30 @@ async function refreshData() {
   } catch(e) {
     document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
   }
+}
+
+// While a student works, the review keeps a running "in progress" row; finishing saves a
+// separate final row. Once that attempt is finished, its running row is just a stale copy
+// (it showed up as a second "attempt"). Drop it when a finished row is the same attempt:
+// same start time, or the running row's session id + a later save. A running row from a
+// different start (an abandoned try, or a 2nd attempt still underway) is kept.
+function collapseSavedCopies(data) {
+  const at = s => { const d = new Date(s.timestamp); return isNaN(d) ? null : d.getTime(); };
+  Object.values(data).forEach(rows => {
+    if (!Array.isArray(rows)) return;
+    rows.forEach(student => {
+      if (!Array.isArray(student.sessions)) return;
+      const done = student.sessions.filter(s => s.status === 'complete');
+      if (!done.length) return;
+      student.sessions = student.sessions.filter(p => {
+        if (p.status !== 'inprogress') return true;
+        return !done.some(c =>
+          (p.startedAt && p.startedAt === c.startedAt) ||
+          (p.sessionId && String(c.sessionId || '').startsWith(p.sessionId + '-') &&
+            at(c) != null && at(p) != null && at(c) >= at(p)));
+      });
+    });
+  });
 }
 
 function toggleAutoRefresh() {
@@ -1083,6 +1139,7 @@ function toggleAutoRefresh() {
 //  VIEW ROUTING
 // ═══════════════════════════════════════════════════
 function toggleView(view) {
+  closeDetail(); closeProfile(); // a student window never outlives the page it came from
   currentView = view;
   document.getElementById('view-overview').style.display   = view === 'overview'   ? 'block' : 'none';
   document.getElementById('view-assignment').style.display = view === 'assignment' ? 'block' : 'none';
@@ -1606,7 +1663,7 @@ function renderAssignment() {
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
         <td style="color:${tabSw>3?'var(--red)':'var(--muted)'};">${tabSw}${tabSw>3?' ⚑':''}</td>
-        <td><button class="detail-btn" onclick="openDetail('${name}')">View →</button></td>`;
+        <td><button class="detail-btn" data-name="${escHtml(name)}" onclick="openDetail(this.dataset.name)">View →</button></td>`;
     }
     body.appendChild(tr);
   });
@@ -1756,7 +1813,7 @@ function buildSkillReport(data) {
   skillReportRows = {};
   const bar = (key, cls, labelHtml, row) => {
     skillReportRows[key] = { ...row, label: labelHtml };
-    return `<div class="skill-row ${cls}" data-key="${escHtml(key)}" onclick="showSkillReportDetail(this.dataset.key)">
+    return `<div class="skill-row ${cls}" data-key="${escHtml(key)}" onclick="showSkillReportDetail(this.dataset.key, this)">
       <div>${labelHtml}<span class="skill-parts">${row.parts} part${row.parts > 1 ? 's' : ''}</span></div>
       <div class="skill-bar-wrap"><div class="skill-bar" style="width:${row.pct}%;background:${skillBarColor(row.pct)};"></div></div>
       <div class="skill-pct">${row.pct}%</div>
@@ -1805,16 +1862,15 @@ function renderSkillHighlights() {
 }
 
 // The questions behind one skill: wording, passage, class % right, and who missed it.
-function showSkillQuestions(key) {
-  const row = skillReportRows[key];
-  if (!row) return;
+// One card per question behind a skill / standard row: wording, passage, class % right,
+// who missed it, and a slot fillQuestionExtras fills with the answer choices and picks.
+function skillQuestionCards(row) {
   const { attempts, bank } = skillReportContext;
   // Who missed each question and what they chose (only attempts that saved their pick)
-  skillQuestionPicks = {};
   row.ids.forEach(id => {
     skillQuestionPicks[id] = attempts.filter(a => a.missed.has(id)).map(a => ({ name: a.name, picked: a.picks[id] }));
   });
-  const cards = row.ids.map(id => {
+  return row.ids.map(id => {
     const m = /^\(([^)]+)\)\s*(?:\[([^\]]+)\]\s*)?(.*)$/.exec(bank[id] || '') || [];
     const missedBy = attempts.filter(a => a.missed.has(id)).map(a => a.name);
     const pct = attempts.length ? Math.round((attempts.length - missedBy.length) / attempts.length * 100) : 0;
@@ -1828,6 +1884,12 @@ function showSkillQuestions(key) {
       <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-top:6px;">${missedBy.length ? 'Missed by: ' + missedBy.map(escHtml).join(', ') : 'Nobody missed it'}</div>
     </div>`;
   }).join('');
+}
+
+function showSkillQuestions(key) {
+  const row = skillReportRows[key];
+  if (!row) return;
+  const cards = skillQuestionCards(row);
   const target = document.getElementById('skillHighlightDetail');
   target.innerHTML = `
     <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:4px;margin-bottom:12px;box-shadow:var(--shadow);">
@@ -1840,6 +1902,125 @@ function showSkillQuestions(key) {
     </div>`;
   target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   fillQuestionExtras(target, skillReportContext.site, skillReportContext.form);
+}
+
+// ── Student detail: every question, right and wrong, for each finished attempt ──
+// Only for SKILL_REPORTS reviews, whose bank lists every scored part of the form —
+// on a finished attempt, anything not in the missed list was answered correctly.
+// Returns '' when there's nothing to show, so the plain missed list is used instead.
+function renderQuestionByQuestion(student) {
+  const cfg = SKILL_REPORTS[currentGame];
+  if (!cfg) return '';
+  const finished = (student.sessions || []).filter(s => s.status === 'complete');
+  if (!finished.length) return '';
+
+  const parts = Object.keys(cfg.bank).filter(id => id[0] === cfg.form)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const label = id => {
+    const m = /^\(([^)]+)\)\s*(?:\[([^\]]+)\]\s*)?(.*)$/.exec(cfg.bank[id] || '') || [];
+    return { skill: m[1] || 'Unsorted', passage: m[2] || '', text: m[3] || cfg.bank[id] || id };
+  };
+
+  const blocks = finished.map((sess, i) => {
+    const missed = new Set(parseWrongQuestions(sess.wrongQuestions, {}));
+    const picks  = parsePicks(sess.wrongQuestions);
+    const right  = parts.filter(id => !missed.has(id)).length;
+
+    const skills = {};
+    parts.forEach(id => {
+      const s = label(id).skill;
+      skills[s] = skills[s] || { right: 0, total: 0 };
+      skills[s].total++;
+      if (!missed.has(id)) skills[s].right++;
+    });
+    const skillChips = Object.entries(skills)
+      .sort((a, b) => a[1].right / a[1].total - b[1].right / b[1].total || a[0].localeCompare(b[0]))
+      .map(([s, v]) => {
+        const pct = Math.round(v.right / v.total * 100);
+        return `<span class="qbq-skill" style="background:${factCellColor(pct)};border-color:${skillBarColor(pct)}">${escHtml(s)} <b>${v.right}/${v.total}</b></span>`;
+      }).join('');
+
+    const rows = parts.map(id => {
+      const L = label(id), ok = !missed.has(id);
+      const pick = !ok && picks[id] != null ? ` <span class="qbq-pick">— picked: ${escHtml(picks[id])}</span>` : '';
+      return `<div class="qbq-row ${ok ? 'ok' : 'miss'}" title="Click to see the answer choices"
+        data-qid="${escHtml(id)}" data-name="${escHtml(student.name)}" data-pick="${!ok && picks[id] != null ? escHtml(picks[id]) : ''}"
+        data-missed="${ok ? '' : '1'}" onclick="toggleQbqChoices(this)">
+        <span class="qbq-mark">${ok ? '✅' : '❌'}</span>
+        <span class="qbq-id">${escHtml(id)}</span>
+        <span class="qbq-text">${L.passage ? `<span class="qbq-passage">${escHtml(L.passage)} · </span>` : ''}${escHtml(L.text)}${pick}</span>
+        <span class="qbq-skilltag">${escHtml(L.skill)}</span>
+      </div>`;
+    }).join('');
+
+    const when = sessionDate(sess);
+    // A question re-asked after the student closed and reopened the review can be
+    // scored right the second time while its first miss stays saved (3 of 133
+    // finished attempts on 10/3) — say so instead of showing a total that disagrees.
+    const gap = Number(sess.score) - right;
+    const gapNote = gap > 0 && Number(sess.total) === parts.length
+      ? `<div class="qx-note" style="margin-bottom:6px;">Saved score is ${sess.score}/${sess.total}: ${gap} question${gap > 1 ? 's were' : ' was'} asked again after they left and came back, and answered right the second time — the list shows their first answer.</div>` : '';
+    return `<div class="qbq-attempt">
+      <div class="qbq-head">Attempt ${i + 1}${finished.length > 1 && i === finished.length - 1 ? ' (latest)' : ''} · <b>${right} of ${parts.length} right</b>${when ? ` <span class="qbq-when">${formatSessionDate(when)}</span>` : ''}</div>${gapNote}
+      <div class="qbq-skills">${skillChips}</div>
+      <details class="qbq-list" ${i === finished.length - 1 ? 'open' : ''}><summary>Every question (${right} ✅ · ${parts.length - right} ❌)</summary>${rows}</details>
+    </div>`;
+  }).reverse().join('');
+
+  return `<div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">📝 Question by Question</div>${blocks}`;
+}
+
+// From a skill / heat-map list: open the student's window at the questions in `ids`, in the
+// attempt the panel was showing (1st Try = their first finished attempt, 2nd Try = latest),
+// with each question's answer choices already open.
+function openDetailAt(name, ids) {
+  openDetail(name);
+  const panel  = document.getElementById('detailPanel');
+  const blocks = [...document.querySelectorAll('#detailWrongQs .qbq-attempt')]; // newest first
+  if (!panel.classList.contains('open') || !blocks.length) return;
+  const block = heatmapAttempt === 2 ? blocks[0] : blocks[blocks.length - 1];
+  const list = block.querySelector('details.qbq-list');
+  if (list) list.open = true;
+  let first = null;
+  ids.forEach(id => {
+    const row = block.querySelector(`.qbq-row[data-qid="${CSS.escape(id)}"]`);
+    if (!row) return;
+    if (!(row.nextElementSibling && row.nextElementSibling.classList.contains('qbq-choices'))) toggleQbqChoices(row);
+    row.classList.add('qbq-flash');
+    setTimeout(() => row.classList.remove('qbq-flash'), 2200);
+    first = first || row;
+  });
+  if (!first) return;
+  const scrollToFirst = () => { panel.scrollTop += first.getBoundingClientRect().top - panel.getBoundingClientRect().top - 70; };
+  scrollToFirst();
+  // The answer choices arrive a moment later and make the window taller — the last
+  // question can only reach the top once they're in.
+  const cfg = SKILL_REPORTS[currentGame];
+  if (cfg && cfg.site) loadReviewForm(cfg.site, cfg.form).then(() => setTimeout(scrollToFirst, 50)).catch(() => {});
+}
+
+// Click a question row in a student's Question by Question list → its answer choices open
+// right under it, the correct one marked and this student's pick highlighted. Click again to close.
+function toggleQbqChoices(rowEl) {
+  const next = rowEl.nextElementSibling;
+  if (next && next.classList.contains('qbq-choices')) { next.remove(); return; }
+  const cfg = SKILL_REPORTS[currentGame];
+  if (!cfg || !cfg.site) return;
+  const id = rowEl.dataset.qid;
+  const box = document.createElement('div');
+  box.className = 'qbq-choices';
+  box.innerHTML = `<div class="qx" data-qid="${escHtml(id)}"><div class="qx-note">Loading answer choices…</div></div>`;
+  rowEl.insertAdjacentElement('afterend', box);
+  // Only this student's answer: their pick if they missed it (and it was saved), nothing extra if right
+  const picks = rowEl.dataset.missed ? [{ name: rowEl.dataset.name, picked: rowEl.dataset.pick || null }] : [];
+  loadReviewForm(cfg.site, cfg.form).then(data => {
+    const found = findReviewElement(data, id);
+    box.querySelector('.qx').innerHTML = found
+      ? reviewElementHtml(found, picks).replace(/👈 picked by [^<]*/g, '👈 their answer')
+      : '<div class="qx-note">Answer choices not found for this question.</div>';
+  }).catch(() => {
+    box.querySelector('.qx').innerHTML = '<div class="qx-note">Couldn’t load the answer choices — check the connection and try again.</div>';
+  });
 }
 
 // ── Answer choices, explanation and passage from the student review's own data file ──
@@ -1938,22 +2119,45 @@ function skillBarColor(pct) {
   return '#e53935';
 }
 
-// `where` = the container under whatever was clicked (the top-3 boxes or the standards list).
+// Students' scores on a skill / standard, then the questions behind it with answer choices
+// and picks. `where` is a container id (the top-3 boxes' slot) or the clicked standards row
+// itself — then the panel opens right under that row, and clicking the row again closes it.
 function showSkillReportDetail(key, where = 'skillReportDetail') {
   const row = skillReportRows[key];
   if (!row) return;
+  let target;
+  if (typeof where === 'string') {
+    target = document.getElementById(where);
+  } else {
+    const open = document.getElementById('skillInlineDetail');
+    const sameRow = open && open.dataset.key === key;
+    if (open) open.remove();
+    if (sameRow) return;
+    target = document.createElement('div');
+    target.id = 'skillInlineDetail';
+    target.dataset.key = key;
+    where.insertAdjacentElement('afterend', target);
+  }
   const list = [...row.perStudent].sort((a, b) => a.pct - b.pct || a.name.localeCompare(b.name));
   const below = list.filter(s => s.pct < SKILL_CUTOFF).length;
-  document.getElementById(where).innerHTML = `
-    <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin-top:14px;box-shadow:var(--shadow);">
+  const closeJs = typeof where === 'string'
+    ? `document.getElementById('${where}').innerHTML=''`
+    : `document.getElementById('skillInlineDetail').remove()`;
+  target.innerHTML = `
+    <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin:8px 0 12px;box-shadow:var(--shadow);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
         <div style="font-size:1rem;font-weight:800;color:var(--text);">${row.label}</div>
-        <button onclick="document.getElementById('${where}').innerHTML=''"
+        <button onclick="${closeJs}"
           style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;">✕ Close</button>
       </div>
       <div style="color:var(--muted);font-size:.85rem;font-weight:700;margin-bottom:10px;">Class ${row.pct}% · ${below} of ${list.length} below ${SKILL_CUTOFF}%</div>
-      <div class="wrong-q-list">${list.map(s => `<span class="wrong-q-chip" style="background:${factCellColor(s.pct)};color:#1a2e1a;border-color:${skillBarColor(s.pct)};${s.pct < SKILL_CUTOFF ? 'font-weight:800;' : ''}">${escHtml(s.name)} — ${s.right}/${s.total} (${s.pct}%)</span>`).join('')}</div>
+      <div class="wrong-q-list">${list.map(s => `<span class="wrong-q-chip student-jump" title="Open ${escHtml(s.name)}'s answers on these questions" data-name="${escHtml(s.name)}" data-ids="${escHtml(row.ids.join(','))}" onclick="openDetailAt(this.dataset.name, this.dataset.ids.split(','))" style="background:${factCellColor(s.pct)};color:#1a2e1a;border-color:${skillBarColor(s.pct)};${s.pct < SKILL_CUTOFF ? 'font-weight:800;' : ''}">${escHtml(s.name)} — ${s.right}/${s.total} (${s.pct}%) ›</span>`).join('')}</div>
+      <div style="font-size:.74rem;color:var(--muted);font-weight:700;margin-top:6px;">Click a name to open that student's answers on these questions.</div>
+      <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 2px;">The ${row.parts} question${row.parts > 1 ? 's' : ''} behind it</div>
+      ${skillQuestionCards(row)}
     </div>`;
+  target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  fillQuestionExtras(target, skillReportContext.site, skillReportContext.form);
 }
 
 // Parse a wrongQuestions string into question keys.
@@ -1993,13 +2197,15 @@ function parsePicks(str) {
 // Count misses per question across one finished attempt per student.
 // Returns { total, missedBy: {qid: [names]} } — each student counted once.
 function tallyAttempt(attempts, questionTexts) {
-  const missedBy = {};
+  const missedBy = {}, picksBy = {};
   attempts.forEach(({ name, sess }) => {
+    const picks = parsePicks(sess.wrongQuestions);
     new Set(parseWrongQuestions(sess.wrongQuestions, questionTexts)).forEach(id => {
       (missedBy[id] = missedBy[id] || []).push(name);
+      (picksBy[id] = picksBy[id] || []).push({ name, picked: picks[id] });
     });
   });
-  return { total: attempts.length, missedBy };
+  return { total: attempts.length, missedBy, picksBy };
 }
 
 function buildHeatmap(data) {
@@ -2077,19 +2283,19 @@ function buildHeatmap(data) {
     cell.innerHTML = `<span class="q-num">${label}</span><span class="q-pct">${pct}%</span>${was}`;
     cell.title = `${label}: ${qText}\n${names.length}/${view.total} students missed this (${pct}%)`;
     cell.style.position = 'relative';
-    if (isIdBased) cell.onclick = () => showHeatmapDetail(id, qText, names.length, view.total, pct, names);
+    if (isIdBased) cell.onclick = () => showHeatmapDetail(id, qText, names.length, view.total, pct, names, view.picksBy[id] || []);
     grid.appendChild(cell);
   });
 }
 
 // ── Heatmap question detail popup ──
-function showHeatmapDetail(id, qText, wrong, total, pct, studentNames) {
+function showHeatmapDetail(id, qText, wrong, total, pct, studentNames, picks = []) {
   // Remove any existing popup
   const existing = document.getElementById('heatmapDetailPopup');
   if (existing) existing.remove();
 
   const studentList = studentNames.length
-    ? studentNames.map(n=>`<span class="wrong-q-chip">${n}</span>`).join('')
+    ? studentNames.map(n=>`<span class="wrong-q-chip student-jump" title="Open ${escHtml(n)}'s answer" data-name="${escHtml(n)}" data-ids="${escHtml(id)}" onclick="openDetailAt(this.dataset.name, [this.dataset.ids])">${escHtml(n)} ›</span>`).join('')
     : '<span style="color:var(--muted);font-size:.8rem;">None</span>';
 
   const heat = pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4;
@@ -2119,6 +2325,17 @@ function showHeatmapDetail(id, qText, wrong, total, pct, studentNames) {
     <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Students Who Missed It</div>
     <div class="wrong-q-list">${studentList}</div>
   `;
+
+  // Answer choices, explanation, passage and each student's wrong pick — same card as the
+  // Standards & Skills question links, for any assignment whose review files are registered.
+  const cfg = SKILL_REPORTS[currentGame];
+  if (cfg && cfg.site) {
+    popup.insertAdjacentHTML('beforeend',
+      `<div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 4px;">Answer Choices</div>
+       <div class="qx" data-qid="${escHtml(id)}"><div class="qx-note">Loading answer choices…</div></div>`);
+    skillQuestionPicks[id] = picks;
+    fillQuestionExtras(popup, cfg.site, cfg.form);
+  }
 
   // Insert popup right after the heatmap grid
   const grid = document.getElementById('heatmapGrid');
@@ -2226,13 +2443,16 @@ function openDetail(name) {
         <tbody>${rows}</tbody>
       </table>` + renderChronology(student);
   } else {
-    sessBreakEl.innerHTML = '';
+    // One attempt: no attempts table, but its timeline still belongs here
+    sessBreakEl.innerHTML = renderChronology(student);
   }
 
   // Wrong questions
   const wrongEl = document.getElementById('detailWrongQs');
+  // Reviews with a full question list get every question, right and wrong, per finished attempt
+  const byQuestion = renderQuestionByQuestion(student);
   const allWrong = new Set();
-  student.sessions.forEach(s => {
+  if (!byQuestion) student.sessions.forEach(s => {
     if (!s.wrongQuestions) return;
     if (s.wrongQuestions.includes('[')) {
       // New ID-based format: "[A06] Full question text | [A15] ..."
@@ -2244,13 +2464,15 @@ function openDetail(name) {
       s.wrongQuestions.split(',').map(n=>n.trim()).filter(Boolean).forEach(n=>allWrong.add(n));
     }
   });
-  if (allWrong.size) {
+  if (byQuestion) {
+    wrongEl.innerHTML = byQuestion;
+  } else if (allWrong.size) {
     const isIdBased = [...allWrong][0].startsWith('[');
     let chipsHtml;
     if (isIdBased) {
       // Show as readable rows: ID badge + full question text
       chipsHtml = [...allWrong].sort().map(entry => {
-        const m = entry.match(/^\[([A-Z]\d+(?:\.\d+)?)\]\s*(.*)/);
+        const m = entry.match(/^\[([A-Z]\d+(?:\.[0-9A-Z])?)\]\s*(.*)/);
         if (m) {
           const id = m[1];
           const text = m[2] || getQuestionText(id) || id;
@@ -2287,10 +2509,8 @@ function openDetail(name) {
   } else timeEl.innerHTML = '';
 
   panel.classList.add('open');
-  setTimeout(() => {
-    const header = panel.querySelector('.detail-header');
-    if (header) header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, 50);
+  panel.scrollTop = 0; // Prev / Next start each student at the top of the window
+  syncPanelBackdrop();
 }
 
 let currentProfileName = null;
@@ -2333,17 +2553,26 @@ function openProfile(name) {
 
     const panel = document.getElementById('studentProfile');
     panel.classList.add('open');
-    setTimeout(() => {
-      const header = panel.querySelector('.profile-header');
-      if (header) header.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 50);
+    panel.scrollTop = 0;
+    syncPanelBackdrop();
   } catch(err) {
     alert('Profile error: ' + err.message);
   }
 }
 
+// Backdrop + page scroll lock follow whether either student window is open.
+function syncPanelBackdrop() {
+  const anyOpen = ['detailPanel', 'studentProfile'].some(id => document.getElementById(id).classList.contains('open'));
+  document.getElementById('panelBackdrop').classList.toggle('open', anyOpen);
+  document.body.style.overflow = anyOpen ? 'hidden' : '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeProfile(); }
+});
+
 function closeProfile() {
   document.getElementById('studentProfile').classList.remove('open');
+  syncPanelBackdrop();
 }
 
 function stepProfile(dir) {
@@ -2357,18 +2586,21 @@ function stepProfile(dir) {
 
 function closeDetail() {
   document.getElementById('detailPanel').classList.remove('open');
+  syncPanelBackdrop();
 }
 
+// Prev / Next walk the students in the order the table shows them, skipping anyone
+// with no attempt on this assignment — openDetail has nothing to open for them, so
+// stepping onto one used to leave the buttons stuck on the same student.
 function stepDetail(dir) {
   const data = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
   const currentName = document.getElementById('detailName').textContent.replace('👤 ', '').trim();
-  const rosterInGame = ROSTER.filter(name => data.find(s => s.name === name) || true);
-  const idx = rosterInGame.indexOf(currentName);
-  if (idx === -1) return;
-  let next = idx + dir;
-  if (next < 0) next = rosterInGame.length - 1;
-  if (next >= rosterInGame.length) next = 0;
-  openDetail(rosterInGame[next]);
+  const order = getSortedRoster(data, MAX_SCORES[currentGame] || 100)
+    .filter(name => data.some(s => s.name === name));
+  if (!order.length) return;
+  const idx = order.indexOf(currentName);
+  const next = idx === -1 ? 0 : (idx + dir + order.length) % order.length;
+  openDetail(order[next]);
 }
 
 // ═══════════════════════════════════════════════════
@@ -2525,6 +2757,13 @@ function renderChronology(student) {
   });
   if (!events.length) return '';
   events.sort(function(a, b) { return String(a.at).localeCompare(String(b.at)); });
+  // An attempt is saved twice (the running in-progress row and the final row), and
+  // both carry the same event log — keep each event once.
+  const seenEv = new Set();
+  for (let i = events.length - 1; i >= 0; i--) {
+    const k = events[i].at + '|' + events[i].e + '|' + events[i].q;
+    if (seenEv.has(k)) events.splice(i, 1); else seenEv.add(k);
+  }
 
   const rows = events.map(function(ev) {
     const look = EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' };
