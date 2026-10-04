@@ -529,6 +529,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'rliaba-review', 'rliabb-review', 'rliabc-review',
   'rad_quiz1',
   'gk-geography', 'gk-civics', 'gk-math', 'gk-ela',
   'mod1a-review', 'mod1b-review', 'mod1c-review',
@@ -547,7 +548,7 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', ...LAST_YEAR_GAMES,
+const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens']);
 
@@ -558,6 +559,9 @@ const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
 const WRITTEN_GAME_MAP = {
+  'rliaba-review': 'rliaba_written',
+  'rliabb-review': 'rliabb_written',
+  'rliabc-review': 'rliabc_written',
   rad_quiz1:      'rad_quiz1_written',
   wwrt_comp:      'wwrt_comp_written',
   djt_comp:       'djt_comp_written',
@@ -566,6 +570,9 @@ const WRITTEN_GAME_MAP = {
 
 // Labels shown above each written answer (W1, W2, W3) in the student detail view.
 const WRITTEN_PROMPT_LABELS = {
+  'rliaba-review': ["What can you infer about the relationship between Nia and her brother Andre? Use details from the passage to support your answer."],
+  'rliabb-review': ["What can you infer about the relationship between Lena and her sister Noor? Use details from the passage to support your answer."],
+  'rliabc-review': ["What can you infer about the relationship between Kenji and his sister Mika? Use details from the passage to support your answer."],
   rad_quiz1:    ['Why is it important to listen to your teacher?', 'Why did Deshawn want to plant sunflowers?', 'What problem did the garden have in June, and how did the class solve it?'],
   wwrt_comp:    ['Extended Response','Evidence-Based Response','Argument / Opinion'],
   djt_comp:     ['Extended Response','Evidence-Based Response','Argument / Opinion'],
@@ -578,6 +585,9 @@ const WRITTEN_PROMPT_LABELS = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'rliaba-review': '📚 SBAC Read Literary A',
+  'rliabb-review': '📚 SBAC Read Literary B',
+  'rliabc-review': '📚 SBAC Read Literary C',
   'ilfiaba-review': '🔍 SBAC Inferences (Lit) A',
   'ilfiabb-review': '🔍 SBAC Inferences (Lit) B',
   'ilfiabc-review': '🔍 SBAC Inferences (Lit) C',
@@ -612,6 +622,11 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  // 15 items each: 2 EBSRs worth 2 + 12 one-point items (MC, choose-N, hot text);
+  // the written answer (item 11) is scored by hand and is not in this total
+  'rliaba-review': 16,
+  'rliabb-review': 16,
+  'rliabc-review': 16,
   // 10 items each: 6 EBSRs worth 2 points (Part A + Part B) + 4 MC worth 1
   'ilfiaba-review': 16,
   'ilfiabb-review': 16,
@@ -983,7 +998,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1687,6 +1702,62 @@ function setHeatmapAttempt(n) {
   buildSkillReport(lastHeatmapData);
 }
 
+// ── Question bank for the Read Literary Texts IAB Review — keyed by scored
+//    element (EBSR parts A04.A / A04.B; choose-N and hot-text items are one
+//    element each). Labels are "(Skill) [Story] question", generated from
+//    sbac-read-literary-iab-review/data/form_x.js + data/skills.js. The written
+//    answer (item 11) is scored by hand, so it has no entry here.
+const RLIT_QUESTIONS = {
+  "A01":"(Character inference) [Mateo's Worm Bin] Read paragraph 3 from the passage. What does paragraph 3 show about Mateo?",
+  "A02":"(Word meaning) [Mateo's Worm Bin] Read this sentence from the passage. “One by one, the worms burrowed down into the damp newspaper until not a single one could be seen.” What does the word burrowed mean in this sentence?",
+  "A03":"(Picture purpose) [Mateo's Worm Bin] Look at the picture from the passage. Why does the author include this picture?",
+  "A04.A":"(Drawing conclusions) [Mateo's Worm Bin] Part A — What conclusion can be drawn about why Abuela agrees to build the worm bin?",
+  "A04.B":"(Supporting detail) [Mateo's Worm Bin] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A05":"(Main idea) [Mateo's Worm Bin] Read paragraphs 9 and 10 from the passage again. What is the main idea of these paragraphs?",
+  "A06":"(Evidence selection) [Mateo's Worm Bin] The passage shows that Mateo and Abuela work TOGETHER. Click on the TWO sentences from the passage that BEST support this idea.",
+  "A07":"(Summarizing) [Anchor Leg] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "A08":"(Evidence selection) [Anchor Leg] Which detail from the passage BEST shows that Andre cares a lot about how Nia's race turns out?",
+  "A09.A":"(Character inference) [Anchor Leg] Part A — Which word BEST describes Nia during the race?",
+  "A09.B":"(Supporting detail) [Anchor Leg] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A10":"(Figurative language) [Anchor Leg] Read this sentence from the passage. “It was not announcing, but Mom said he had finally gotten his foot in the door.” What does the phrase “gotten his foot in the door” suggest about Andre? Choose TWO answers.",
+  "A12":"(Word meaning) [The Keeper of the Spring] Read this sentence from the passage. “Tomas and Lina were astonished.” Which TWO words mean about the same as astonished? Choose TWO answers.",
+  "A13":"(Summarizing) [The Keeper of the Spring] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "A14":"(Figurative language) [The Keeper of the Spring] Read these sentences from the passage. “A village is like a stream. When one stone blocks it at the top, every house at the bottom goes thirsty.” What does this comparison show about what Ama believes? Choose THREE answers.",
+  "A15":"(Evidence selection) [The Keeper of the Spring] Read paragraph 2 from the passage. The passage shows that Ama is CAREFUL about choosing the next keeper. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "B01":"(Character inference) [A Window for the Birds] Read paragraph 3 from the passage. What does paragraph 3 show about Amira?",
+  "B02":"(Word meaning) [A Window for the Birds] Read these sentences from the passage. “Uncle Sami tugged hard on the branch two times. It did not bend or crack.” Then he calls the branch “nice and sturdy.” What does the word sturdy mean?",
+  "B03":"(Picture purpose) [A Window for the Birds] Look at the picture from the passage. Why does the author include this picture?",
+  "B04.A":"(Drawing conclusions) [A Window for the Birds] Part A — What conclusion can be drawn about Amira from the way she chooses a place to hang the feeder?",
+  "B04.B":"(Supporting detail) [A Window for the Birds] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B05":"(Main idea) [A Window for the Birds] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
+  "B06":"(Evidence selection) [A Window for the Birds] The passage shows that Uncle Sami lets Amira be IN CHARGE of building the feeder. Click on the TWO sentences from the passage that BEST support this idea.",
+  "B07":"(Summarizing) [Pick a Spot] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "B08":"(Evidence selection) [Pick a Spot] Which detail from the passage BEST shows that Noor was PATIENT while she was teaching Lena?",
+  "B09.A":"(Character inference) [Pick a Spot] Part A — Which word BEST describes Lena when she takes the last kick?",
+  "B09.B":"(Supporting detail) [Pick a Spot] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B10":"(Figurative language) [Pick a Spot] Read this sentence from the passage. “The night before she left, Noor got cold feet.” What does the phrase “got cold feet” suggest about Noor? Choose TWO answers.",
+  "B12":"(Word meaning) [The Cracked Bowls] Read this sentence from the passage. “Pell was so anxious that his hands shook as he set his bowl down beside theirs.” Which TWO words mean about the same as anxious? Choose TWO answers.",
+  "B13":"(Summarizing) [The Cracked Bowls] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "B14":"(Figurative language) [The Cracked Bowls] Read these sentences from the passage. “An honest word is like Pell's bowl. It may not look perfect, but it holds what you put in it. A pretty answer that hides the truth is like a painted crack. It looks fine right up until the moment you need it to hold.” What do these comparisons show about what the queen believes? Choose THREE answers.",
+  "B15":"(Evidence selection) [The Cracked Bowls] Read paragraph 2 from the passage. The passage shows that Queen Ilsa is HONEST herself. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "C01":"(Character inference) [Two Sticks and a Bag] Read paragraph 3 from the passage. What does paragraph 3 show about Malik?",
+  "C02":"(Word meaning) [Two Sticks and a Bag] Read this sentence from the passage. “He pulled until the string was taut and the sticks did not wobble at all when he tapped them.” What does the word taut mean in this sentence?",
+  "C03":"(Picture purpose) [Two Sticks and a Bag] Look at the picture from the passage. Why does the author include this picture?",
+  "C04.A":"(Drawing conclusions) [Two Sticks and a Bag] Part A — What conclusion can be drawn about Desmond?",
+  "C04.B":"(Supporting detail) [Two Sticks and a Bag] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C05":"(Main idea) [Two Sticks and a Bag] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
+  "C06":"(Evidence selection) [Two Sticks and a Bag] The passage shows that Desmond wants Malik to do the building HIMSELF while Desmond teaches. Click on the TWO sentences from the passage that BEST support this idea.",
+  "C07":"(Summarizing) [One Hundred Before Dinner] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "C08":"(Evidence selection) [One Hundred Before Dinner] Which detail from the passage BEST shows that Mika is sure Kenji will succeed?",
+  "C09.A":"(Character inference) [One Hundred Before Dinner] Part A — Which word BEST describes Kenji at the END of the passage?",
+  "C09.B":"(Supporting detail) [One Hundred Before Dinner] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C10":"(Figurative language) [One Hundred Before Dinner] Read this sentence from the passage. “Mika was still learning the ropes, and most of her pictures came out blurry.” What does the phrase “learning the ropes” suggest about Mika? Choose TWO answers.",
+  "C12":"(Word meaning) [The Slowest Climb] Read this sentence from the passage. “Bear and Fox were perplexed.” Which TWO words mean about the same as perplexed? Choose TWO answers.",
+  "C13":"(Summarizing) [The Slowest Climb] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "C14":"(Figurative language) [The Slowest Climb] Read these sentences from the passage. “A guardian is like a lantern on a dark path. A lantern does not run ahead so that everyone will look at it. It stays close beside the traveler, so the traveler can see where to step.” What does this comparison show about what Grandmother Tortoise believes? Choose THREE answers.",
+  "C15":"(Evidence selection) [The Slowest Climb] Read paragraph 5 from the passage. The passage shows that Field Mouse is PATIENT. Click on the TWO sentences in the paragraph that BEST support this idea.",
+};
+
 // ── Standards & Skills report ──
 // Skill → grade-4 standard for the SBAC Inferences (Literary) FIAB reviews.
 // Move a skill by changing its standard here.
@@ -1699,6 +1770,20 @@ const INFLIT_STANDARDS = {
   'Theme':                'RL.4.2',
   'Main idea':            'RL.4.2',
   "Author's craft":       'RL.4.4',
+};
+
+// Skill → grade-4 standard for the SBAC Read Literary Texts IAB reviews.
+// Skill names shared with the Inferences review keep the same standard.
+const RLIT_STANDARDS = {
+  'Evidence selection':   'RL.4.1',
+  'Supporting detail':    'RL.4.1',
+  'Drawing conclusions':  'RL.4.1',
+  'Main idea':            'RL.4.2',
+  'Summarizing':          'RL.4.2',
+  'Character inference':  'RL.4.3',
+  'Word meaning':         'RL.4.4',
+  'Figurative language':  'RL.4.4',
+  'Picture purpose':      'RL.4.7',
 };
 
 // Skill → grade-4 standard for the SBAC Place Value FIAB reviews.
@@ -1781,6 +1866,7 @@ const STANDARD_NAMES = {
   'RL.4.2': 'Determine a theme; summarize the text',
   'RL.4.3': 'Describe a character, setting or event using specific details',
   'RL.4.4': 'Determine the meaning of words, phrases & the author\'s word choice',
+  'RL.4.7': 'Connect the text of a story to its pictures and visuals',
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
   '4.NBT.2': 'Read, write & compare multi-digit numbers',
   '4.NBT.3': 'Round multi-digit numbers',
@@ -1792,6 +1878,9 @@ const STANDARD_NAMES = {
 // `site` is the student review's published repo — its data/form_X.js files hold the
 // passages, answer choices and explanations the question cards show.
 const SKILL_REPORTS = {
+  'rliaba-review':  { bank: RLIT_QUESTIONS,   form: 'A', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
+  'rliabb-review':  { bank: RLIT_QUESTIONS,   form: 'B', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
+  'rliabc-review':  { bank: RLIT_QUESTIONS,   form: 'C', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'ilfiaba-review': { bank: INFLIT_QUESTIONS, form: 'A', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
   'ilfiabb-review': { bank: INFLIT_QUESTIONS, form: 'B', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
   'ilfiabc-review': { bank: INFLIT_QUESTIONS, form: 'C', standards: INFLIT_STANDARDS, site: 'sbac-inferences-lit-fiab-review' },
@@ -2109,6 +2198,8 @@ function findReviewElement(data, id) {
   const passage = data.passages && item.p != null ? data.passages[item.p] : null;
   if (item.type === 'ebsr' && sub) return { kind: 'mc', el: sub === 'A' ? item.partA : item.partB, passage };
   if (item.type === 'grid' && sub) return { kind: 'grid', el: item.rows[Number(sub) - 1], item, passage };
+  // choose-N and hot-text: several right answers in `answers`; picks save as "X / Y"
+  if (item.type === 'ms' || item.type === 'hottext') return { kind: 'multi', el: item, passage };
   return { kind: item.type === 'symbol' ? 'symbol' : item.choices ? 'mc' : 'answer', el: item, passage };
 }
 
@@ -2126,7 +2217,15 @@ function reviewElementHtml(found, picks = []) {
   const pickedBy = ans => known.filter(p => choiceText(p.picked) === choiceText(ans)).map(p => p.name);
   const who = names => names.length ? `<div class="qx-who">👈 picked by ${names.map(escHtml).join(', ')}</div>` : '';
   let body = '';
-  if (kind === 'mc') {
+  if (kind === 'multi') {
+    // a saved pick is every choice the student held, joined with " / "
+    const heldBy = ans => known.filter(p => String(p.picked).split(' / ').some(x => choiceText(x) === choiceText(ans))).map(p => p.name);
+    body = `<div class="qx-line">Choose ${el.pick} — all ${el.pick} needed for the point.</div><ol class="qx-choices">` + (el.choices || []).map(c => {
+      const right = (el.answers || []).includes(c);
+      const names = heldBy(c);
+      return `<li class="${right ? 'qx-right' : names.length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${who(names)}</li>`;
+    }).join('') + '</ol>';
+  } else if (kind === 'mc') {
     body = '<ol class="qx-choices">' + (el.choices || []).map(c => {
       const right = c === el.answer;
       return `<li class="${right ? 'qx-right' : pickedBy(c).length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${right ? '' : who(pickedBy(c))}</li>`;
@@ -2436,7 +2535,8 @@ function openDetail(name) {
         <div class="detail-stat-num" style="color:#856404;font-size:1rem;">⏳ Not yet submitted</div>
         <div class="detail-stat-label">Written Response</div>
       </div>`;
-      // Response text is stored as the key inside formStatus (deployed Apps Script format)
+      // Response text is stored as the key inside formStatus (deployed Apps Script format).
+      // It is whatever the student typed, so it is escaped — never rendered as HTML.
       const formKeys = Object.keys(wr.formStatus || {});
       const hasFormStatus = formKeys.length > 0 && !wr.w1;
       const PROMPTS = WRITTEN_PROMPT_LABELS[g] || ['Written Response','Written Response','Written Response'];
@@ -2445,17 +2545,17 @@ function openDetail(name) {
         cards = formKeys.map((text, i) => `
           <div style="margin-bottom:12px;">
             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i] || 'Written Response'}</div>
-            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text ? escHtml(text) : '<em style="color:#aaa;">No response entered</em>'}</div>
           </div>`).join('');
       } else {
         const answers = [wr.w1||'', wr.w2||'', wr.w3||''].slice(0, PROMPTS.length);
         cards = answers.map((text, i) => `
           <div style="margin-bottom:12px;">
             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#8e44ad;margin-bottom:4px;">W${i+1} — ${PROMPTS[i]}</div>
-            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text || '<em style="color:#aaa;">No response entered</em>'}</div>
+            <div style="background:white;border:1px solid #e0e0e0;border-radius:8px;padding:10px 12px;font-size:0.88rem;line-height:1.7;color:#2c3e50;white-space:pre-wrap;">${text ? escHtml(text) : '<em style="color:#aaa;">No response entered</em>'}</div>
           </div>`).join('');
       }
-      const timeSpent = wr.elapsed ? `<span style="margin-left:10px;font-weight:400;color:#888;font-size:0.82rem;">⏱ ${wr.elapsed}</span>` : '';
+      const timeSpent = wr.elapsed ? `<span style="margin-left:10px;font-weight:400;color:#888;font-size:0.82rem;">⏱ ${escHtml(wr.elapsed)}</span>` : '';
       return `<div style="grid-column:1/-1;background:#f3e8ff;border:2px solid #9b59b6;border-radius:10px;padding:14px 16px;margin-top:4px;">
         <div style="font-weight:800;color:#6c3483;margin-bottom:12px;font-size:0.95rem;">✍️ Written Responses — submitted${timeSpent}</div>
         ${cards}
@@ -2743,6 +2843,9 @@ function getSortedRoster(data, maxScore) {
 
 function getQuestionText(id) {
   const banks = {
+    'rliaba-review': RLIT_QUESTIONS,
+    'rliabb-review': RLIT_QUESTIONS,
+    'rliabc-review': RLIT_QUESTIONS,
     'ilfiaba-review': INFLIT_QUESTIONS,
     'ilfiabb-review': INFLIT_QUESTIONS,
     'ilfiabc-review': INFLIT_QUESTIONS,
