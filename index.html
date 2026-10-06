@@ -649,9 +649,9 @@ const MAX_SCORES = {
   'gk-civics':    25,
   'gk-math':      33,
   'gk-ela':       27,
-  'mod1a-test': 17,
-  'mod1b-test': 17,
-  'mod1c-test': 17,
+  'mod1a-test': 20,
+  'mod1b-test': 20,
+  'mod1c-test': 20,
   'mod1a-review': 17,
   'mod1b-review': 17,
   'mod1c-review': 17,
@@ -1874,6 +1874,28 @@ const MOD1_SKILL_BANK = {};
 Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
 
+// ── Math Module 1 TEST bank — the review's 51 questions + 3 per form added to the
+// test only (10/5). Kept separate so the review's skill reports never count
+// A18–C20 as questions its students saw.
+const MOD1T_QUESTIONS = Object.assign({}, MOD1_QUESTIONS, {
+  A18: "What is 527,309 rounded to the nearest ten thousand?",
+  A19: "What number is 10 times as much as 470?",
+  A20: "Which shows 703,056 in expanded form?",
+  B18: "What is 86,452 rounded to the nearest thousand?",
+  B19: "Which number is 10 times as much as 2,080?",
+  B20: "Which shows 250,418 in expanded form?",
+  C18: "What is 449,612 rounded to the nearest hundred thousand?",
+  C19: "Which number is 10 times as much as 6,307?",
+  C20: "What is 300,000 + 60,000 + 500 + 8 written in standard form?",
+});
+const MOD1T_SKILLS = Object.fromEntries(Object.entries(MOD1_SKILLS).map(([k, ids]) => [k, ids.slice()]));
+MOD1T_SKILLS["Rounding"].push("A18", "B18", "C18");
+MOD1T_SKILLS["x10 relationship"].push("A19", "B19", "C19");
+MOD1T_SKILLS["Expanded form"].push("A20", "B20", "C20");
+const MOD1T_SKILL_BANK = {};
+Object.entries(MOD1T_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD1T_SKILL_BANK[id] = `(${skill}) ${MOD1T_QUESTIONS[id]}`; }));
+
 const STANDARD_NAMES = {
   'RL.4.1': 'Refer to details & examples to explain and support inferences',
   'RL.4.2': 'Determine a theme; summarize the text',
@@ -1900,9 +1922,9 @@ const SKILL_REPORTS = {
   'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
-  'mod1a-test':     { bank: MOD1_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
-  'mod1b-test':     { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
-  'mod1c-test':     { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
+  'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
+  'mod1b-test':     { bank: MOD1T_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
+  'mod1c-test':     { bank: MOD1T_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1a-review':   { bank: MOD1_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
@@ -2868,9 +2890,9 @@ function getQuestionText(id) {
     'pvfiaba-review': PVFIAB_QUESTIONS,
     'pvfiabb-review': PVFIAB_QUESTIONS,
     'pvfiabc-review': PVFIAB_QUESTIONS,
-    'mod1a-test': MOD1_QUESTIONS,
-    'mod1b-test': MOD1_QUESTIONS,
-    'mod1c-test': MOD1_QUESTIONS,
+    'mod1a-test': MOD1T_QUESTIONS,
+    'mod1b-test': MOD1T_QUESTIONS,
+    'mod1c-test': MOD1T_QUESTIONS,
     'mod1a-review': MOD1_QUESTIONS,
     'mod1b-review': MOD1_QUESTIONS,
     'mod1c-review': MOD1_QUESTIONS,
