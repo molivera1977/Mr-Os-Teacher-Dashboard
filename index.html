@@ -449,11 +449,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
         <div class="heat-toggle" id="factSiteToggle">
           <button type="button" data-site="facts-review" onclick="setFactSite('facts-review')">✖️ Basic Facts</button>
           <button type="button" data-site="facts-tens" onclick="setFactSite('facts-tens')">🔟 Multiples of 10</button>
+          <button type="button" data-site="facts-addsub" onclick="setFactSite('facts-addsub')">➕ Add &amp; Subtract</button>
         </div>
-        <div class="heat-toggle" id="factOpToggle">
-          <button type="button" data-op="Mult" onclick="setFactOp('Mult')">× Multiplication</button>
-          <button type="button" data-op="Div" onclick="setFactOp('Div')">÷ Division</button>
-        </div>
+        <div class="heat-toggle" id="factOpToggle"><!-- filled by renderFacts() for the chosen site --></div>
         <div class="heat-toggle" id="factStyleToggle">
           <button type="button" data-style="type" onclick="setFactStyle('type')">⌨️ Typed</button>
           <button type="button" data-style="choice" onclick="setFactStyle('choice')">🔘 Multiple Choice</button>
@@ -551,7 +549,7 @@ const LAST_YEAR_GAMES = [
 // Game keys that have been retired — hide them even if sheet data still exists
 const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
-  'facts-review', 'facts-tens']);
+  'facts-review', 'facts-tens', 'facts-addsub']);
 
 // General Knowledge Hub tests — shown on the 🌟 General Knowledge page,
 // kept off the main Overview cards and Assignment tabs.
@@ -1208,15 +1206,28 @@ function renderGk() {
 // ═══════════════════════════════════════════════════
 //  FACT FLUENCY VIEW
 //  Math Fact Review sites send one row per practice session:
-//    game  'facts-review' | 'facts-tens'
-//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4 · Choice' | 'Mult · All 2-12'
+//    game  'facts-review' | 'facts-tens' | 'facts-addsub'
+//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4 · Choice' | 'Add · All 2-12' | 'Sub · 9s'
 //    sessionId 'F-<epoch ms>-XXXXX'  (the epoch is the session start time)
 //    score/correct = right answers, total = right + wrong tries,
-//    wrongQuestions = '7 × 8 (54) | 63 ÷ 9 (6)'  (fact + what they typed)
+//    wrongQuestions = '7 × 8 (54) | 63 ÷ 9 (6) | 15 − 7 (9)'  (fact + what they typed)
 // ═══════════════════════════════════════════════════
 const FACT_SITES = {
   'facts-review': '✖️ Basic Facts',
   'facts-tens':   '🔟 Multiples of 10',
+  'facts-addsub': '➕ Add & Subtract',
+};
+// Operations each site practices, and how each one is shown.
+const FACT_SITE_OPS = {
+  'facts-review': ['Mult', 'Div'],
+  'facts-tens':   ['Mult', 'Div'],
+  'facts-addsub': ['Add', 'Sub'],
+};
+const FACT_OPS = {
+  Mult: { sym: '×', word: 'multiplication', label: '× Multiplication' },
+  Div:  { sym: '÷', word: 'division',       label: '÷ Division' },
+  Add:  { sym: '+', word: 'addition',       label: '+ Addition' },
+  Sub:  { sym: '−', word: 'subtraction',    label: '− Subtraction' },
 };
 const FACT_SETS = ['2','3','4','5','6','7','8','9','10','11','12','Mixed 2-4','Mixed 5-7','Mixed 8-10','Mixed 11-12','All 2-12'];
 let factSite = 'facts-review';
@@ -1272,12 +1283,13 @@ function fmtWhen(d) {
 let factWindow = 'all'; // 'all' | 'week' — time range for the Most Missed Facts heatmap
 function setFactWindow(w) { factWindow = w; renderFactHeatmap(); }
 
-// "7 × 8 (54)" → "7 × 8". Multiplication is merged by order (8 × 7 counts as 7 × 8).
+// "7 × 8 (54)" → "7 × 8". Multiplication and addition are merged by order
+// (8 × 7 counts as 7 × 8, 9 + 4 as 4 + 9); division and subtraction keep theirs.
 function factKey(entry) {
-  const m = /^(\d+) ([×÷]) (\d+)/.exec(entry);
+  const m = /^(\d+) ([×÷+−]) (\d+)/.exec(entry);
   if (!m) return null;
-  const a = Number(m[1]), b = Number(m[3]);
-  return m[2] === '×' ? `${Math.min(a, b)} × ${Math.max(a, b)}` : `${a} ÷ ${b}`;
+  const a = Number(m[1]), op = m[2], b = Number(m[3]);
+  return op === '×' || op === '+' ? `${Math.min(a, b)} ${op} ${Math.max(a, b)}` : `${a} ${op} ${b}`;
 }
 
 // Class-wide misses per fact for the current site / operation / answer style.
@@ -1304,7 +1316,7 @@ function renderFactHeatmap() {
     });
   });
 
-  const opWord = factOp === 'Mult' ? 'multiplication' : 'division';
+  const opWord = FACT_OPS[factOp].word;
   const range  = factWindow === 'week' ? ' in the last 7 days' : '';
   document.getElementById('factHeatSubtitle').textContent = practiced.size
     ? `% of the ${practiced.size} student${practiced.size > 1 ? 's' : ''} who practiced ${opWord}${range} that missed each fact at least once · click a fact for names`
@@ -1337,7 +1349,8 @@ function renderFactHeatmap() {
 
 function factAnswer(key) {
   const [a, op, b] = key.split(' ');
-  return op === '×' ? Number(a) * Number(b) : Number(a) / Number(b);
+  const x = Number(a), y = Number(b);
+  return op === '×' ? x * y : op === '÷' ? x / y : op === '+' ? x + y : x - y;
 }
 
 function showFactHeatDetail(f, total, pct) {
@@ -1355,13 +1368,18 @@ function showFactHeatDetail(f, total, pct) {
     </div>`;
 }
 
-function setFactSite(site) { factSite = site; renderFacts(); }
+function setFactSite(site) {
+  factSite = site;
+  if (!FACT_SITE_OPS[site].includes(factOp)) factOp = FACT_SITE_OPS[site][0];
+  renderFacts();
+}
 function setFactOp(op)     { factOp = op; renderFacts(); }
 function setFactStyle(st)  { factStyle = st; renderFacts(); }
 
 function renderFacts() {
   document.querySelectorAll('#factSiteToggle button').forEach(b => b.classList.toggle('active', b.dataset.site === factSite));
-  document.querySelectorAll('#factOpToggle button').forEach(b => b.classList.toggle('active', b.dataset.op === factOp));
+  document.getElementById('factOpToggle').innerHTML = FACT_SITE_OPS[factSite].map(op =>
+    `<button type="button" data-op="${op}" onclick="setFactOp('${op}')"${op === factOp ? ' class="active"' : ''}>${FACT_OPS[op].label}</button>`).join('');
 
   document.querySelectorAll('#factStyleToggle button').forEach(b => b.classList.toggle('active', b.dataset.style === factStyle));
 
@@ -1440,7 +1458,7 @@ function renderFactStudent() {
     return `<tr>
       <td class="fact-nowrap">${fmtWhen(s.started)}</td>
       <td class="fact-nowrap">${FACT_SITES[s.game]}</td>
-      <td class="fact-nowrap">${s.op === 'Mult' ? '×' : '÷'} ${escHtml(s.set)}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
+      <td class="fact-nowrap">${FACT_OPS[s.op]?.sym ?? '?'} ${escHtml(s.set)}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
       <td style="color:var(--green)">${s.correct}</td>
       <td style="color:var(--red)">${s.total - s.correct}</td>
       <td><span class="fact-pill" style="background:${factCellColor(s.percent)}">${s.percent}%</span></td>
