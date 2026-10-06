@@ -1230,6 +1230,8 @@ const FACT_OPS = {
   Sub:  { sym: '−', word: 'subtraction',    label: '− Subtraction' },
 };
 const FACT_SETS = ['2','3','4','5','6','7','8','9','10','11','12','Mixed 2-4','Mixed 5-7','Mixed 8-10','Mixed 11-12','All 2-12'];
+// The Add & Subtract site also has a single-number 1s set.
+const factSetsFor = site => site === 'facts-addsub' ? ['1', ...FACT_SETS] : FACT_SETS;
 let factSite = 'facts-review';
 let factOp   = 'Mult';
 let factStyle = 'type'; // 'type' | 'choice' | 'all' — multiple choice is easier, so don't mix by default
@@ -1408,11 +1410,11 @@ function renderFacts() {
 
   const guests = [...new Set(all.map(s => s.name))].filter(n => !ROSTER.includes(n));
   const names  = [...ROSTER, ...guests];
-  const head = `<tr><th>Student</th>${FACT_SETS.map(set => `<th class="fact-col">${set.replace(' 2-12', '').replace('Mixed ', 'Mix ')}</th>`).join('')}<th>Last Practiced</th></tr>`;
+  const head = `<tr><th>Student</th>${factSetsFor(factSite).map(set => `<th class="fact-col">${set.replace(' 2-12', '').replace('Mixed ', 'Mix ')}</th>`).join('')}<th>Last Practiced</th></tr>`;
   const rows = names.map(name => {
     const mine = all.filter(s => s.name === name);
     const last = mine[mine.length - 1];
-    const cells = FACT_SETS.map(set => {
+    const cells = factSetsFor(factSite).map(set => {
       const list = byKey[name + '|' + set];
       if (!list) return '<td class="fact-cell fact-empty">·</td>';
       const cur = list[list.length - 1], prev = list[list.length - 2];
