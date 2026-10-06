@@ -64,6 +64,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .tab-btn{padding:8px 18px;border:2px solid var(--border);border-radius:50px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;cursor:pointer;transition:all .2s;}
 .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent2);}
 .tab-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+.form-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 18px;padding:8px 10px;border:1px dashed var(--border);border-radius:14px;}
+.form-tabs:empty{display:none;}
+.form-tab{padding:5px 14px;border:1.5px solid var(--border);border-radius:50px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;}
+.form-tab.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+.form-tab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
 
 /* ── STATS ROW ── */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
@@ -226,6 +231,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .asgn-card-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px;}
 .asgn-card-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .4s;}
 .asgn-card-pills{display:flex;gap:4px;flex-wrap:wrap;}
+.asgn-card.asgn-family{max-width:340px;flex:1 1 280px;}
+.fam-line{display:grid;grid-template-columns:40px minmax(30px,1fr) auto auto auto;gap:3px 5px;align-items:center;padding:6px 6px;border-top:1px dashed var(--border);border-radius:8px;cursor:pointer;}
+.fam-line:hover{background:var(--surface2);}
+.fam-form{grid-column:1/-1;font-size:.76rem;font-weight:800;color:var(--text);}
+.fam-line:hover .fam-form{text-decoration:underline;}
+.fam-avg{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--accent);}
+.fam-bar{height:6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;overflow:hidden;}
+.fam-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));}
 .asgn-pill{font-size:.62rem;font-weight:800;padding:2px 6px;border-radius:8px;border:1px solid;}
 .asgn-pill.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .asgn-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
@@ -366,6 +379,10 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <!-- ASSIGNMENT VIEW -->
     <div id="view-assignment" style="display:none;">
       <div class="assignment-tabs" id="assignmentTabs"></div>
+      <!-- A / B / C forms of one assignment: their own row of buttons, and a pick-a-form page -->
+      <div class="form-tabs" id="formTabs"></div>
+      <div id="familyChooser" style="display:none;"></div>
+      <div id="assignmentMain">
 
       <!-- Assignment stats -->
       <div class="stats-row" id="assignmentStats"></div>
@@ -421,6 +438,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           <div class="legend-item"><div class="legend-dot heat-4" style="background:#ffcdd2;"></div>81–100%</div>
         </div>
       </div>
+
+      </div><!-- /assignmentMain -->
 
       <!-- Student detail panel -->
       <div class="detail-panel" id="detailPanel">
@@ -1171,6 +1190,7 @@ function toggleAutoRefresh() {
 // ═══════════════════════════════════════════════════
 function toggleView(view) {
   closeDetail(); closeProfile(); // a student window never outlives the page it came from
+  familyChooserOpen = null;      // arriving from Overview / a card opens that exact form
   currentView = view;
   document.getElementById('view-overview').style.display   = view === 'overview'   ? 'block' : 'none';
   document.getElementById('view-assignment').style.display = view === 'assignment' ? 'block' : 'none';
@@ -1501,15 +1521,68 @@ function getWrittenBadge(game, name) {
 }
 
 // One assignment summary card (class avg, done / in progress / not started).
-function buildAssignmentCard(game) {
-  const totalStudents = STUDENT_ROSTER.length;
+// Class summary for one assignment: done / in progress / not started + class average
+function cardStats(game) {
   const data     = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name));
   const complete = data.filter(s => s.status === 'complete').length;
   const inprog   = data.filter(s => s.status === 'inprogress').length;
-  const notstart = totalStudents - complete - inprog;
   const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
   const max      = MAX_SCORES[game] || 100;
-  const avgPct   = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0) / scores.length / max * 100) : 0;
+  return {
+    complete, inprog, notstart: STUDENT_ROSTER.length - complete - inprog,
+    hasAvg: scores.length > 0,
+    avgPct: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length / max * 100) : 0,
+  };
+}
+
+// Overview card for an A / B / C group: one line per form. A form line opens that form;
+// the rest of the card opens the group's pick-a-form page.
+function buildFamilyCard(fam, members) {
+  const famLabel = familyLabel(fam, members);
+  const card = document.createElement('div');
+  card.className = 'asgn-card asgn-family';
+  card.onclick = () => { toggleView('assignment'); familyChooserOpen = fam; renderAssignment(); };
+  card.innerHTML = `<div class="asgn-card-title">${escHtml(famLabel)} · ${members.length} forms ▸</div>` +
+    members.map(g => {
+      const st = cardStats(g);
+      return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
+        <span class="fam-form">${escHtml(formShortLabel(famLabel, g))}</span>
+        <span class="fam-avg">${st.hasAvg ? st.avgPct + '%' : '—'}</span>
+        <span class="fam-bar"><span style="width:${st.avgPct}%"></span></span>
+        <span class="asgn-pill complete">✅ ${st.complete}</span>
+        <span class="asgn-pill inprogress">🔄 ${st.inprog}</span>
+        <span class="asgn-pill notstarted">⬜ ${st.notstart}</span>
+      </div>`;
+    }).join('');
+  card.querySelectorAll('.fam-line').forEach(line => {
+    line.onclick = e => { e.stopPropagation(); currentGame = line.dataset.game; toggleView('assignment'); };
+  });
+  return card;
+}
+
+// "📝 MM1 Test — Retake B" in the MM1 Test group → "Retake B"; bare letters → "Form B"
+function formShortLabel(famLabel, game) {
+  const full = GAME_LABELS[game] || game;
+  let rest = full.startsWith(famLabel) ? full.slice(famLabel.length) : '';
+  rest = rest.replace(/^[\s—–-]+/, '').replace(/^\((.*)\)$/, '$1').trim();
+  if (!rest || /^[ABC]$/.test(rest)) return 'Form ' + formLetterOf(game);
+  return rest;
+}
+
+// Groups (2+ forms present) among a list of games, each sorted A → C
+function groupFamilies(games) {
+  const families = {};
+  games.forEach(g => { const f = familyOf(g); if (f) (families[f] = families[f] || []).push(g); });
+  Object.keys(families).forEach(f => {
+    if (families[f].length < 2) delete families[f];
+    else families[f].sort((a, b) => formLetterOf(a).localeCompare(formLetterOf(b)));
+  });
+  return families;
+}
+
+function buildAssignmentCard(game) {
+  const { complete, inprog, notstart, hasAvg, avgPct } = cardStats(game);
+  const scores   = hasAvg ? [1] : [];
   const label    = GAME_LABELS[game] || game.toUpperCase();
 
   const card = document.createElement('div');
@@ -1559,9 +1632,18 @@ function renderOverview() {
   `;
 
   // ── Assignment cards ──
+  // A / B / C forms share one card, placed where the group's first form sits
   const cardsEl = document.getElementById('assignmentCards');
   cardsEl.innerHTML = '';
-  games.forEach(game => cardsEl.appendChild(buildAssignmentCard(game)));
+  const families = groupFamilies(games.filter(g => !HIDDEN_GAMES.has(g)));
+  const placedFam = new Set();
+  games.forEach(game => {
+    const fam = families[familyOf(game)] ? familyOf(game) : null;
+    if (!fam) return cardsEl.appendChild(buildAssignmentCard(game));
+    if (placedFam.has(fam)) return;
+    placedFam.add(fam);
+    cardsEl.appendChild(buildFamilyCard(fam, families[fam]));
+  });
 
   // ── Student dot grid ──
   const dotEl = document.getElementById('dotGrid');
@@ -1606,6 +1688,35 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════
 //  ASSIGNMENT TABS
 // ═══════════════════════════════════════════════════
+// ── A / B / C forms share one tab ──
+// Keys with a form letter before -review / -test (mod1a-review, rliabb-review, mod1c-test …)
+// group automatically, so future A/B/C builds need nothing here; FORM_FAMILY_EXTRA groups
+// sets named another way. Clicking a group opens a pick-a-form page.
+const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding' };
+const FORM_FAMILY_LABELS = {
+  'mod1-test':     '📝 MM1 Test',
+  'mod1-review':   '🔢 MM1 Review',
+  'rliab-review':  '📚 SBAC Read Literary',
+  'ilfiab-review': '🔍 SBAC Inferences (Lit)',
+  'pvfiab-review': '🔢 SBAC Place Value',
+  'rounding':      '🎯 Rounding',
+};
+let familyChooserOpen = null; // group whose pick-a-form page is showing
+
+function familyOf(game) {
+  if (FORM_FAMILY_EXTRA[game]) return FORM_FAMILY_EXTRA[game];
+  const m = /^(.+?)([abc])-(review|test)$/.exec(game);
+  return m ? `${m[1]}-${m[3]}` : null;
+}
+function formLetterOf(game) {
+  const m = /^.+?([abc])-(review|test)$/.exec(game) || /Form ([ABC])/.exec(GAME_LABELS[game] || '');
+  return m ? m[1].toUpperCase() : 'Z';
+}
+function familyLabel(fam, members) {
+  if (FORM_FAMILY_LABELS[fam]) return FORM_FAMILY_LABELS[fam];
+  return (GAME_LABELS[members[0]] || members[0]).replace(/\s*\(Form [ABC]\)|\s*—\s*Retake [ABC]$|\s+[ABC]$|(?<=\S)[ABC](?=-Review)/, '');
+}
+
 function buildAssignmentTabs() {
   const allGames = Object.keys(dashData);
   const inGk = GK_GAMES.includes(currentGame);
@@ -1623,12 +1734,65 @@ function buildAssignmentTabs() {
     back.onclick = () => toggleView('gk');
     tabsEl.appendChild(back);
   }
+
+  // Groups with 2+ forms on the dashboard get one tab, placed where their first form sat
+  const families = {};
+  if (!inGk) games.forEach(g => { const f = familyOf(g); if (f) (families[f] = families[f] || []).push(g); });
+  Object.keys(families).forEach(f => {
+    if (families[f].length < 2) delete families[f];
+    else families[f].sort((a, b) => formLetterOf(a).localeCompare(formLetterOf(b)));
+  });
+  const placed = new Set();
   games.forEach(game => {
+    const fam = families[familyOf(game)] ? familyOf(game) : null;
+    if (fam && placed.has(fam)) return;
     const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (game === currentGame ? ' active' : '');
-    btn.textContent = GAME_LABELS[game] || game;
-    btn.onclick = () => { currentGame = game; renderAssignment(); };
+    if (fam) {
+      placed.add(fam);
+      const active = familyChooserOpen === fam || families[fam].includes(currentGame) && !familyChooserOpen;
+      btn.className = 'tab-btn' + (active ? ' active' : '');
+      btn.textContent = `${familyLabel(fam, families[fam])} · ${families[fam].length} forms ▸`;
+      btn.onclick = () => { familyChooserOpen = fam; renderAssignment(); };
+    } else {
+      btn.className = 'tab-btn' + (game === currentGame && !familyChooserOpen ? ' active' : '');
+      btn.textContent = GAME_LABELS[game] || game;
+      btn.onclick = () => { familyChooserOpen = null; currentGame = game; renderAssignment(); };
+    }
     tabsEl.appendChild(btn);
+  });
+
+  // Second row: the forms of the open group (switch A / B / C directly, or back to the cards)
+  const formRow = document.getElementById('formTabs');
+  formRow.innerHTML = '';
+  const openFam = familyChooserOpen || (families[familyOf(currentGame)] ? familyOf(currentGame) : null);
+  if (openFam && families[openFam]) {
+    const all = document.createElement('button');
+    all.className = 'form-tab' + (familyChooserOpen ? ' active' : '');
+    all.textContent = '← All forms';
+    all.onclick = () => { familyChooserOpen = openFam; renderAssignment(); };
+    formRow.appendChild(all);
+    families[openFam].forEach(g => {
+      const b = document.createElement('button');
+      b.className = 'form-tab' + (!familyChooserOpen && g === currentGame ? ' active' : '');
+      b.textContent = GAME_LABELS[g] || g;
+      b.onclick = () => { familyChooserOpen = null; currentGame = g; renderAssignment(); };
+      formRow.appendChild(b);
+    });
+  }
+  return families;
+}
+
+// The pick-a-form page: one summary card per form (class avg, done / in progress / not started)
+function renderFamilyChooser(fam, members) {
+  const el = document.getElementById('familyChooser');
+  el.innerHTML = `<div class="section-title">${escHtml(familyLabel(fam, members))} — pick a form
+      <span style="font-size:.72rem;color:var(--muted);font-weight:700;">${members.length} forms · click one to open its results</span></div>
+    <div class="assignment-cards" id="familyCards"></div>`;
+  const cards = el.querySelector('#familyCards');
+  members.forEach(g => {
+    const card = buildAssignmentCard(g);
+    card.onclick = () => { familyChooserOpen = null; currentGame = g; renderAssignment(); };
+    cards.appendChild(card);
   });
 }
 
@@ -1652,7 +1816,12 @@ function letterGrade(pct) {
 }
 
 function renderAssignment() {
-  buildAssignmentTabs(); // regular tabs, or the GK group when a GK test is open
+  const families = buildAssignmentTabs(); // regular tabs, or the GK group when a GK test is open
+  const choosing = familyChooserOpen && families && families[familyChooserOpen];
+  document.getElementById('familyChooser').style.display = choosing ? 'block' : 'none';
+  document.getElementById('assignmentMain').style.display = choosing ? 'none' : 'block';
+  if (choosing) { renderFamilyChooser(familyChooserOpen, families[familyChooserOpen]); return; }
+  familyChooserOpen = null;
   if (!currentGame) return;
   const data     = (dashData[currentGame] || []).filter(s => ROSTER.includes(s.name));
   const maxScore = MAX_SCORES[currentGame] || 100;
