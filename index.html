@@ -1207,7 +1207,7 @@ function renderGk() {
 //  FACT FLUENCY VIEW
 //  Math Fact Review sites send one row per practice session:
 //    game  'facts-review' | 'facts-tens' | 'facts-addsub'
-//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4 · Choice' | 'Add · All 2-12' | 'Sub · 9s'
+//    form  'Mult · 7s · Timed' | 'Div · Mixed 2-4 · Choice' | 'Add · All 1-12' | 'Sub · 9s'
 //    sessionId 'F-<epoch ms>-XXXXX'  (the epoch is the session start time)
 //    score/correct = right answers, total = right + wrong tries,
 //    wrongQuestions = '7 × 8 (54) | 63 ÷ 9 (6) | 15 − 7 (9)'  (fact + what they typed)
@@ -1230,8 +1230,9 @@ const FACT_OPS = {
   Sub:  { sym: '−', word: 'subtraction',    label: '− Subtraction' },
 };
 const FACT_SETS = ['2','3','4','5','6','7','8','9','10','11','12','Mixed 2-4','Mixed 5-7','Mixed 8-10','Mixed 11-12','All 2-12'];
-// The Add & Subtract site also has a single-number 1s set.
-const factSetsFor = site => site === 'facts-addsub' ? ['1', ...FACT_SETS] : FACT_SETS;
+// The Add & Subtract site starts its sets at 1 (1s, Mixed 1-4, All 1-12).
+const ADDSUB_SETS = ['1', ...FACT_SETS.map(s => s === 'Mixed 2-4' ? 'Mixed 1-4' : s === 'All 2-12' ? 'All 1-12' : s)];
+const factSetsFor = site => site === 'facts-addsub' ? ADDSUB_SETS : FACT_SETS;
 let factSite = 'facts-review';
 let factOp   = 'Mult';
 let factStyle = 'type'; // 'type' | 'choice' | 'all' — multiple choice is easier, so don't mix by default
@@ -1410,7 +1411,7 @@ function renderFacts() {
 
   const guests = [...new Set(all.map(s => s.name))].filter(n => !ROSTER.includes(n));
   const names  = [...ROSTER, ...guests];
-  const head = `<tr><th>Student</th>${factSetsFor(factSite).map(set => `<th class="fact-col">${set.replace(' 2-12', '').replace('Mixed ', 'Mix ')}</th>`).join('')}<th>Last Practiced</th></tr>`;
+  const head = `<tr><th>Student</th>${factSetsFor(factSite).map(set => `<th class="fact-col">${set.replace(/^All .*/, 'All').replace('Mixed ', 'Mix ')}</th>`).join('')}<th>Last Practiced</th></tr>`;
   const rows = names.map(name => {
     const mine = all.filter(s => s.name === name);
     const last = mine[mine.length - 1];
