@@ -527,6 +527,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'rounding-quiz', 'rounding-practice',
   'mod1a-test', 'mod1b-test', 'mod1c-test',
   'rliaba-review', 'rliabb-review', 'rliabc-review',
   'rad_quiz1',
@@ -604,6 +605,8 @@ const GAME_LABELS = {
   'gk-civics':    '🏛️ GK — Civics',
   'gk-math':      '➕ GK — Math',
   'gk-ela':       '📚 GK — Lang Arts',
+  'rounding-practice': '🎯 Rounding — Practice (Form A)',
+  'rounding-quiz':     '🎯 Rounding Quiz (Form B)',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -647,6 +650,8 @@ const MAX_SCORES = {
   'gk-civics':    25,
   'gk-math':      33,
   'gk-ela':       27,
+  'rounding-practice': 20,
+  'rounding-quiz':     20,
   'mod1a-test': 20,
   'mod1b-test': 20,
   'mod1c-test': 20,
@@ -1009,7 +1014,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'rounding-practice': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1917,6 +1922,68 @@ const MOD1T_SKILL_BANK = {};
 Object.entries(MOD1T_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1T_SKILL_BANK[id] = `(${skill}) ${MOD1T_QUESTIONS[id]}`; }));
 
+// ── Rounding Quiz (math-rounding-quiz) — Form A practice + Form B official quiz.
+// Same skill in the same slot on both forms (A01 ↔ B01 …), all 4.NBT.3.
+// Mirrors math-rounding-quiz/data/form_a.js, form_b.js and skills.js.
+const ROUNDQ_QUESTIONS = {
+  A01: "You are rounding 4,627 to the nearest hundred. Which digit do you look at to decide whether to round up or down?",
+  A02: "When you round to the nearest thousand, which place do you look at to decide whether to round up or down?",
+  A03: "You are rounding to the nearest thousand. The digit in the thousands place is 8. What can happen to the 8?",
+  A04: "You are rounding to the nearest ten thousand. The digit in the ten thousands place is 2, and the digit you look at is 3. What happens to the 2?",
+  A05: "The digit you look at is 5. What do you do?",
+  A06: "Which digits tell you to round DOWN?",
+  A07: "You round 63,482 to the nearest thousand. What happens to the digits in the hundreds, tens, and ones places?",
+  A08: "You round 52,736 to the nearest hundred. What happens to the 5 and the 2 (the digits in the ten thousands and thousands places)?",
+  A09: "Rounded to the nearest hundred, 8,215 will be one of which two numbers?",
+  A10: "What number is exactly halfway between 3,000 and 4,000?",
+  A11: "You round 39,621 to the nearest thousand. The hundreds digit is 6, so the 9 in the thousands place has to go up by one. What is the answer?",
+  A12: "What is 3,486 rounded to the nearest ten?",
+  A13: "What is 7,349 rounded to the nearest hundred?",
+  A14: "What is 2,961 rounded to the nearest hundred?",
+  A15: "What is 58,512 rounded to the nearest thousand?",
+  A16: "What is 476,215 rounded to the nearest ten thousand?",
+  A17: "What is 649,870 rounded to the nearest hundred thousand?",
+  A18: "Which number rounds to 5,000 when it is rounded to the nearest thousand?",
+  A19: "Kai rounded 3,482 to the nearest hundred and got 3,400. What mistake did Kai make?",
+  A20: "A number rounded to the nearest ten is 750. Which of these could be the number?",
+  B01: "You are rounding 8,354 to the nearest hundred. Which digit do you look at to decide whether to round up or down?",
+  B02: "When you round to the nearest ten thousand, which place do you look at to decide whether to round up or down?",
+  B03: "You are rounding to the nearest hundred. The digit in the hundreds place is 6. What can happen to the 6?",
+  B04: "You are rounding to the nearest thousand. The digit in the thousands place is 4, and the digit you look at is 7. What happens to the 4?",
+  B05: "The digit you look at is 4. What do you do?",
+  B06: "Which digits tell you to round UP?",
+  B07: "You round 85,267 to the nearest hundred. What happens to the digits in the tens and ones places?",
+  B08: "You round 371,548 to the nearest thousand. What happens to the 3 and the 7 (the digits in the hundred thousands and ten thousands places)?",
+  B09: "Rounded to the nearest thousand, 26,418 will be one of which two numbers?",
+  B10: "What number is exactly halfway between 600 and 700?",
+  B11: "You round 69,507 to the nearest thousand. The hundreds digit is 5, so the 9 in the thousands place has to go up by one. What is the answer?",
+  B12: "What is 5,273 rounded to the nearest ten?",
+  B13: "What is 6,248 rounded to the nearest hundred?",
+  B14: "What is 5,972 rounded to the nearest hundred?",
+  B15: "What is 81,604 rounded to the nearest thousand?",
+  B16: "What is 352,890 rounded to the nearest ten thousand?",
+  B17: "What is 751,320 rounded to the nearest hundred thousand?",
+  B18: "Which number rounds to 8,000 when it is rounded to the nearest thousand?",
+  B19: "Ana rounded 5,618 to the nearest thousand and got 6,618. What mistake did Ana make?",
+  B20: "A number rounded to the nearest hundred is 400. Which of these could be the number?",
+};
+const ROUNDQ_SKILLS = {
+  "Which digit to look at": ['A01','A02','B01','B02'],
+  "What the rounding digit can become": ['A03','A04','B03','B04'],
+  "Round up or round down": ['A05','A06','B05','B06'],
+  "Digits to the left and right": ['A07','A08','B07','B08'],
+  "Between which two numbers": ['A09','A10','B09','B10'],
+  "Rounding up a 9": ['A11','A14','B11','B14'],
+  "Round to tens and hundreds": ['A12','A13','B12','B13'],
+  "Round to thousands and greater": ['A15','A16','A17','B15','B16','B17'],
+  "Reasoning about rounding": ['A18','A20','B18','B20'],
+  "Find the mistake": ['A19','B19'],
+};
+const ROUNDQ_STANDARDS = Object.fromEntries(Object.keys(ROUNDQ_SKILLS).map(k => [k, '4.NBT.3']));
+const ROUNDQ_SKILL_BANK = {};
+Object.entries(ROUNDQ_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { ROUNDQ_SKILL_BANK[id] = `(${skill}) ${ROUNDQ_QUESTIONS[id]}`; }));
+
 const STANDARD_NAMES = {
   'RL.4.1': 'Refer to details & examples to explain and support inferences',
   'RL.4.2': 'Determine a theme; summarize the text',
@@ -1943,6 +2010,8 @@ const SKILL_REPORTS = {
   'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
+  'rounding-practice': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
+  'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1b-test':     { bank: MOD1T_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1c-test':     { bank: MOD1T_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
@@ -2911,6 +2980,8 @@ function getQuestionText(id) {
     'pvfiaba-review': PVFIAB_QUESTIONS,
     'pvfiabb-review': PVFIAB_QUESTIONS,
     'pvfiabc-review': PVFIAB_QUESTIONS,
+    'rounding-practice': ROUNDQ_QUESTIONS,
+    'rounding-quiz':     ROUNDQ_QUESTIONS,
     'mod1a-test': MOD1T_QUESTIONS,
     'mod1b-test': MOD1T_QUESTIONS,
     'mod1c-test': MOD1T_QUESTIONS,
