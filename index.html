@@ -628,8 +628,8 @@ const GAME_LABELS = {
   'gk-civics':    '🏛️ GK — Civics',
   'gk-math':      '➕ GK — Math',
   'gk-ela':       '📚 GK — Lang Arts',
-  'rounding-review': '🎯 Rounding — Review (Form A)',
-  'rounding-quiz':     '🎯 Rounding Quiz (Form B)',
+  'rounding-review': '🎯 Rounding 1 — Review (Form A)',
+  'rounding-quiz':     '🎯 Rounding 1 — Quiz (Form B)',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -1708,7 +1708,7 @@ const FORM_FAMILY_LABELS = {
   'rliab-review':  '📚 SBAC Read Literary',
   'ilfiab-review': '🔍 SBAC Inferences (Lit)',
   'pvfiab-review': '🔢 SBAC Place Value',
-  'rounding':      '🎯 Rounding',
+  'rounding':      '🎯 Rounding Review and Quiz 1',
   'awoc-review':   '🌋 A World of Change Review',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
@@ -2107,7 +2107,7 @@ const MOD1T_SKILL_BANK = {};
 Object.entries(MOD1T_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1T_SKILL_BANK[id] = `(${skill}) ${MOD1T_QUESTIONS[id]}`; }));
 
-// ── Rounding Quiz (math-rounding-quiz) — Form A review + Form B official quiz.
+// ── Rounding Review and Quiz 1 (math-rounding-quiz) — Form A review + Form B official quiz.
 // Same skill in the same slot on both forms (A01 ↔ B01 …), all 4.NBT.3.
 // Mirrors math-rounding-quiz/data/form_a.js, form_b.js and skills.js.
 const ROUNDQ_QUESTIONS = {
