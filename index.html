@@ -546,6 +546,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
   'rounding-quiz', 'rounding-review',
   'mod1a-test', 'mod1b-test', 'mod1c-test',
   'rliaba-review', 'rliabb-review', 'rliabc-review',
@@ -610,6 +611,9 @@ const WRITTEN_PROMPT_LABELS = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
+  'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
+  'awoc-review-cloze': '🌋 A World of Change Review — Cloze',
   'rliaba-review': '📚 SBAC Read Literary A',
   'rliabb-review': '📚 SBAC Read Literary B',
   'rliabc-review': '📚 SBAC Read Literary C',
@@ -652,6 +656,10 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  // the three parts of the A World of Change test, one question = one point
+  'awoc-review-vocab': 34,
+  'awoc-review-comp':  20,
+  'awoc-review-cloze': 34,
   // 15 items each: 2 EBSRs worth 2 + 12 one-point items (MC, choose-N, hot text);
   // the written answer (item 11) is scored by hand and is not in this total
   'rliaba-review': 16,
@@ -1033,7 +1041,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1542,7 +1550,7 @@ function buildFamilyCard(fam, members) {
   const card = document.createElement('div');
   card.className = 'asgn-card asgn-family';
   card.onclick = () => { toggleView('assignment'); familyChooserOpen = fam; renderAssignment(); };
-  card.innerHTML = `<div class="asgn-card-title">${escHtml(famLabel)} · ${members.length} forms ▸</div>` +
+  card.innerHTML = `<div class="asgn-card-title">${escHtml(famLabel)} · ${members.length} ${familyNoun(fam, true)} ▸</div>` +
     members.map(g => {
       const st = cardStats(g);
       return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
@@ -1692,7 +1700,8 @@ function renderOverview() {
 // Keys with a form letter before -review / -test (mod1a-review, rliabb-review, mod1c-test …)
 // group automatically, so future A/B/C builds need nothing here; FORM_FAMILY_EXTRA groups
 // sets named another way. Clicking a group opens a pick-a-form page.
-const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding' };
+const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
+  'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review' };
 const FORM_FAMILY_LABELS = {
   'mod1-test':     '📝 MM1 Test',
   'mod1-review':   '🔢 MM1 Review',
@@ -1700,7 +1709,14 @@ const FORM_FAMILY_LABELS = {
   'ilfiab-review': '🔍 SBAC Inferences (Lit)',
   'pvfiab-review': '🔢 SBAC Place Value',
   'rounding':      '🎯 Rounding',
+  'awoc-review':   '🌋 A World of Change Review',
 };
+// Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
+const FAMILY_NOUN = { 'awoc-review': ['part', 'parts'] };
+function familyNoun(fam, plural) {
+  const n = FAMILY_NOUN[fam] || ['form', 'forms'];
+  return plural ? n[1] : n[0];
+}
 let familyChooserOpen = null; // group whose pick-a-form page is showing
 
 function familyOf(game) {
@@ -1751,7 +1767,7 @@ function buildAssignmentTabs() {
       placed.add(fam);
       const active = familyChooserOpen === fam || families[fam].includes(currentGame) && !familyChooserOpen;
       btn.className = 'tab-btn' + (active ? ' active' : '');
-      btn.textContent = `${familyLabel(fam, families[fam])} · ${families[fam].length} forms ▸`;
+      btn.textContent = `${familyLabel(fam, families[fam])} · ${families[fam].length} ${familyNoun(fam, true)} ▸`;
       btn.onclick = () => { familyChooserOpen = fam; renderAssignment(); };
     } else {
       btn.className = 'tab-btn' + (game === currentGame && !familyChooserOpen ? ' active' : '');
@@ -1768,7 +1784,7 @@ function buildAssignmentTabs() {
   if (openFam && families[openFam]) {
     const all = document.createElement('button');
     all.className = 'form-tab' + (familyChooserOpen ? ' active' : '');
-    all.textContent = '← All forms';
+    all.textContent = `← All ${familyNoun(openFam, true)}`;
     all.onclick = () => { familyChooserOpen = openFam; renderAssignment(); };
     formRow.appendChild(all);
     families[openFam].forEach(g => {
@@ -1785,8 +1801,8 @@ function buildAssignmentTabs() {
 // The pick-a-form page: one summary card per form (class avg, done / in progress / not started)
 function renderFamilyChooser(fam, members) {
   const el = document.getElementById('familyChooser');
-  el.innerHTML = `<div class="section-title">${escHtml(familyLabel(fam, members))} — pick a form
-      <span style="font-size:.72rem;color:var(--muted);font-weight:700;">${members.length} forms · click one to open its results</span></div>
+  el.innerHTML = `<div class="section-title">${escHtml(familyLabel(fam, members))} — pick a ${familyNoun(fam)}
+      <span style="font-size:.72rem;color:var(--muted);font-weight:700;">${members.length} ${familyNoun(fam, true)} · click one to open its results</span></div>
     <div class="assignment-cards" id="familyCards"></div>`;
   const cards = el.querySelector('#familyCards');
   members.forEach(g => {
@@ -2154,12 +2170,205 @@ const ROUNDQ_SKILL_BANK = {};
 Object.entries(ROUNDQ_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { ROUNDQ_SKILL_BANK[id] = `(${skill}) ${ROUNDQ_QUESTIONS[id]}`; }));
 
+// ── A World of Change Review (Wonders U1 W1) — Vocabulary V01–V34, Comprehension P01–P20,
+//    Cloze C01–C34 (the test docs word for word). Tags mirror a-world-of-change-review/data/skills.js:
+//    Vocabulary + Cloze tag the target word by group (same word, same tag in both sections);
+//    Comprehension tags key details / conclusions (Part A) / text evidence (Part B).
+const AWOC_QUESTIONS = {
+  V01: "Which word means “to make something less tight”?",
+  V02: "Which word means “to change something”?",
+  V03: "Which word means “to stop something from happening”?",
+  V04: "Which word means “the top or outside part of something”?",
+  V05: "Which word means “made by nature, not by people”?",
+  V06: "Which word means “damage so bad that something is ruined”?",
+  V07: "Which word means “a strong push on something”?",
+  V08: "Which word means “something that can hurt you”?",
+  V09: "Which word means “going on all the time without stopping”?",
+  V10: "Which word means “when rain, snow, sun, and wind break rocks into smaller pieces”?",
+  V11: "Which word means “to fall down or cave in”?",
+  V12: "Which word means “when rocks and dirt slide down a hill or mountain”?",
+  V13: "Which word means “a dangerous time when people must act fast”?",
+  V14: "Which word means “very fast”?",
+  V15: "Which word means “when broken pieces of rock are carried away by water, wind, or ice”?",
+  V16: "Which word means “happening slowly over a long time”?",
+  V17: "Which word means “when dirt and rocks are dropped in a new place”?",
+  V18: "Families had to evacuate before the flood reached their street. What does evacuate mean in this sentence?",
+  V19: "The science fair is the biggest event of the year. What does event mean in this sentence?",
+  V20: "He stayed home from school with a severe headache. What does severe mean in this sentence?",
+  V21: "The storm dropped a substantial amount of snow on the city. What does substantial mean in this sentence?",
+  V22: "The ending of the movie was unpredictable. What does unpredictable mean in this sentence?",
+  V23: "Building a house is a process that takes many months. What does process mean in this sentence?",
+  V24: "The oil spill was a disaster for the fish and birds. What does disaster mean in this sentence?",
+  V25: "The hikers stopped to look at a landform called a canyon. What does landform mean in this sentence?",
+  V26: "Ash filled the sky during the eruption. What does eruption mean in this sentence?",
+  V27: "The loud siren was a warning to stay inside. What does warning mean in this sentence?",
+  V28: "The workers built a tall structure next to the school. What does structure mean in this sentence?",
+  V29: "It was unfortunate that the rain ruined our field trip. What does unfortunate mean in this sentence?",
+  V30: "Although it was cold, we played outside. What does although mean in this sentence?",
+  V31: "The medicine had a good effect on her cough. What does effect mean in this sentence?",
+  V32: "Our community held a parade on Main Street. What does community mean in this sentence?",
+  V33: "This puppy has the potential to become a great helper dog. What does potential mean in this sentence?",
+  V34: "There is a big contrast between the desert and the rain forest. What does contrast mean in this sentence?",
+  P01: "According to the text, what do natural changes do to Earth? (page 3)",
+  P02: "Which three natural processes change the surface of the world very slowly? (page 3)",
+  P03: "What breaks down rocks into smaller pieces during weathering? (page 3)",
+  P04: "What carved the Grand Canyon over thousands of years? (page 3)",
+  P05: "What can deposition by wind create? (page 3)",
+  P06: "How do plants help protect the shore from beach erosion? (page 4)",
+  P07: "Why are fast natural processes often called natural disasters? (page 4)",
+  P08: "What is magma? (page 4)",
+  P09: "What loosens the rocks and dirt that slide down in a landslide? (page 5)",
+  P10: "Why is it important for communities to have an emergency plan in place? (page 5)",
+  P11: "Part A: What can the reader conclude about erosion from the Grand Canyon? (page 3)",
+  P12: "Part B: Which sentence from page 3 best supports the answer to Part A?",
+  P13: "Part A: What can the reader infer about erosion that happens near where people live? (page 4)",
+  P14: "Part B: Which sentence from page 4 best supports the answer to Part A?",
+  P15: "Part A: How are fast natural processes different from slow natural processes? (page 4)",
+  P16: "Part B: Which sentence from page 4 best supports the answer to Part A?",
+  P17: "Part A: What can the reader conclude about landslides? (page 5)",
+  P18: "Part B: Which sentence from page 5 best supports the answer to Part A?",
+  P19: "Part A: Why do communities still need an emergency plan even though scientists try to predict natural disasters? (page 5)",
+  P20: "Part B: Which sentence from page 5 best supports the answer to Part A?",
+  C01: "The __________ melting of the snow took the whole month of March.",
+  C02: "Years of __________ from wind and rain wore the letters off the old stone wall.",
+  C03: "After the storm, a __________ sent rocks and mud sliding onto the road.",
+  C04: "The __________ deer ran across the field in just a few seconds.",
+  C05: "__________ she was tired, Maria finished all of her homework.",
+  C06: "An island is a __________ that has water on every side.",
+  C07: "The cave is a __________ shelter that was not built by people.",
+  C08: "The police told everyone to __________ the beach before the hurricane arrived.",
+  C09: "A broken step is a __________ because someone could trip and get hurt.",
+  C10: "The baby’s __________ crying did not stop for even one minute.",
+  C11: "The __________ cold froze the pipes and closed every school in the city.",
+  C12: "It was __________ that our team lost the game by only one point.",
+  C13: "The bright red door was a sharp __________ to the plain white house.",
+  C14: "Heavy rain caused __________ that carried the soil away from the hillside.",
+  C15: "Brushing your teeth every day helps __________ cavities.",
+  C16: "The fire caused so much __________ that the barn had to be torn down.",
+  C17: "A thin layer of ice covered the __________ of the pond.",
+  C18: "The spelling bee was the most exciting __________ of the school year.",
+  C19: "My cat is so __________ that I never know what she will do next.",
+  C20: "Lava poured down the side of the mountain after the __________.",
+  C21: "Mom will __________ the recipe by adding more cheese.",
+  C22: "Our __________ planted a garden that all the neighbors share.",
+  C23: "The bridge is the tallest __________ in our town.",
+  C24: "Grandpa ate a __________ breakfast of eggs, toast, fruit, and pancakes.",
+  C25: "Staying up too late had a bad __________ on my spelling test.",
+  C26: "The river slowed down, and __________ left a pile of sand where the water stopped.",
+  C27: "The sand castle began to __________ when the big wave hit it.",
+  C28: "The young singer has the __________ to become a star someday.",
+  C29: "He had to __________ his belt after eating a big dinner.",
+  C30: "The earthquake was a __________ that left thousands of people without homes.",
+  C31: "When the town ran out of drinking water, the mayor called it a __________ and asked for help right away.",
+  C32: "Making maple syrup is a long __________ with many steps.",
+  C33: "The flashing red light was a __________ that a train was coming.",
+  C34: "Too much __________ from the heavy books made the shelf crack.",
+};
+const AWOC_SKILLS_BY_ID = {
+  V01: "Academic words",
+  V02: "Academic words",
+  V03: "Danger & safety words",
+  V04: "Earth science words",
+  V05: "Earth science words",
+  V06: "Danger & safety words",
+  V07: "Earth science words",
+  V08: "Danger & safety words",
+  V09: "Describing words",
+  V10: "Earth science words",
+  V11: "Academic words",
+  V12: "Earth science words",
+  V13: "Danger & safety words",
+  V14: "Describing words",
+  V15: "Earth science words",
+  V16: "Describing words",
+  V17: "Earth science words",
+  V18: "Danger & safety words",
+  V19: "Academic words",
+  V20: "Describing words",
+  V21: "Describing words",
+  V22: "Danger & safety words",
+  V23: "Academic words",
+  V24: "Danger & safety words",
+  V25: "Earth science words",
+  V26: "Earth science words",
+  V27: "Danger & safety words",
+  V28: "Academic words",
+  V29: "Describing words",
+  V30: "Academic words",
+  V31: "Academic words",
+  V32: "Danger & safety words",
+  V33: "Academic words",
+  V34: "Academic words",
+  P01: "Key details",
+  P02: "Key details",
+  P03: "Key details",
+  P04: "Key details",
+  P05: "Key details",
+  P06: "Key details",
+  P07: "Key details",
+  P08: "Key details",
+  P09: "Key details",
+  P10: "Key details",
+  P11: "Drawing conclusions",
+  P12: "Finding text evidence",
+  P13: "Drawing conclusions",
+  P14: "Finding text evidence",
+  P15: "Drawing conclusions",
+  P16: "Finding text evidence",
+  P17: "Drawing conclusions",
+  P18: "Finding text evidence",
+  P19: "Drawing conclusions",
+  P20: "Finding text evidence",
+  C01: "Describing words",
+  C02: "Earth science words",
+  C03: "Earth science words",
+  C04: "Describing words",
+  C05: "Academic words",
+  C06: "Earth science words",
+  C07: "Earth science words",
+  C08: "Danger & safety words",
+  C09: "Danger & safety words",
+  C10: "Describing words",
+  C11: "Describing words",
+  C12: "Describing words",
+  C13: "Academic words",
+  C14: "Earth science words",
+  C15: "Danger & safety words",
+  C16: "Danger & safety words",
+  C17: "Earth science words",
+  C18: "Academic words",
+  C19: "Danger & safety words",
+  C20: "Earth science words",
+  C21: "Academic words",
+  C22: "Danger & safety words",
+  C23: "Academic words",
+  C24: "Describing words",
+  C25: "Academic words",
+  C26: "Earth science words",
+  C27: "Academic words",
+  C28: "Academic words",
+  C29: "Academic words",
+  C30: "Danger & safety words",
+  C31: "Danger & safety words",
+  C32: "Academic words",
+  C33: "Danger & safety words",
+  C34: "Earth science words",
+};
+const AWOC_VOCAB_STANDARDS = {"Earth science words":"L.4.6","Danger & safety words":"L.4.6","Describing words":"L.4.6","Academic words":"L.4.6"};
+const AWOC_CLOZE_STANDARDS = {"Earth science words":"L.4.4a","Danger & safety words":"L.4.4a","Describing words":"L.4.4a","Academic words":"L.4.4a"};
+const AWOC_COMP_STANDARDS  = { "Key details": "RI.4.1", "Drawing conclusions": "RI.4.1", "Finding text evidence": "RI.4.1" };
+const AWOC_SKILL_BANK = {};
+Object.keys(AWOC_QUESTIONS).forEach(id => { AWOC_SKILL_BANK[id] = `(${AWOC_SKILLS_BY_ID[id]}) ${AWOC_QUESTIONS[id]}`; });
+
 const STANDARD_NAMES = {
   'RL.4.1': 'Refer to details & examples to explain and support inferences',
   'RL.4.2': 'Determine a theme; summarize the text',
   'RL.4.3': 'Describe a character, setting or event using specific details',
   'RL.4.4': 'Determine the meaning of words, phrases & the author\'s word choice',
   'RL.4.7': 'Connect the text of a story to its pictures and visuals',
+  'RI.4.1': 'Refer to details & examples when explaining what an informational text says and when drawing inferences',
+  'L.4.4a': 'Use context (the rest of the sentence) as a clue to the meaning of a word',
+  'L.4.6':  'Know and use grade-level academic & science words',
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
   '4.NBT.2': 'Read, write & compare multi-digit numbers',
   '4.NBT.3': 'Round multi-digit numbers',
@@ -2171,6 +2380,10 @@ const STANDARD_NAMES = {
 // `site` is the student review's published repo — its data/form_X.js files hold the
 // passages, answer choices and explanations the question cards show.
 const SKILL_REPORTS = {
+  // one site, three parts — the id letter is the part: V = Vocabulary, P = Comprehension, C = Cloze
+  'awoc-review-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-review' },
+  'awoc-review-comp':  { bank: AWOC_SKILL_BANK, form: 'P', standards: AWOC_COMP_STANDARDS,  site: 'a-world-of-change-review' },
+  'awoc-review-cloze': { bank: AWOC_SKILL_BANK, form: 'C', standards: AWOC_CLOZE_STANDARDS, site: 'a-world-of-change-review' },
   'rliaba-review':  { bank: RLIT_QUESTIONS,   form: 'A', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'rliabb-review':  { bank: RLIT_QUESTIONS,   form: 'B', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'rliabc-review':  { bank: RLIT_QUESTIONS,   form: 'C', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
@@ -2457,6 +2670,15 @@ let skillQuestionPicks = {};
 // Sites whose question file isn't data/form_x.js → window.FORM_X. `adapt` turns the
 // file's globals into the { items, passages } shape findReviewElement reads.
 const REVIEW_FILES = {
+  // A World of Change Review: all three parts in data/banks.js (answer = index into choices)
+  'a-world-of-change-review': {
+    file: 'data/banks.js',
+    adapt: box => box.VOCAB_BANK && {
+      items: [...box.VOCAB_BANK, ...box.COMP_BANK, ...box.CLOZE_BANK].map(q => ({
+        id: q.id, q: q.q, choices: q.choices, answer: q.choices[q.answer],
+      })),
+    },
+  },
   // One quiz: window.RAD_MC (story questions marked story:true) + window.RAD_PASSAGE
   'rad-online-quiz-1': {
     file: 'data/quiz.js',
@@ -3141,6 +3363,9 @@ function getSortedRoster(data, maxScore) {
 
 function getQuestionText(id) {
   const banks = {
+    'awoc-review-vocab': AWOC_QUESTIONS,
+    'awoc-review-comp':  AWOC_QUESTIONS,
+    'awoc-review-cloze': AWOC_QUESTIONS,
     'rliaba-review': RLIT_QUESTIONS,
     'rliabb-review': RLIT_QUESTIONS,
     'rliabc-review': RLIT_QUESTIONS,
