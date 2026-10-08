@@ -547,7 +547,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
-  'rounding2-quiz', 'rounding2-review', 'rounding2-practice',
+  'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
   'rounding-quiz', 'rounding-review',
   'mod1a-test', 'mod1b-test', 'mod1c-test',
@@ -635,7 +635,8 @@ const GAME_LABELS = {
   'gk-civics':    '🏛️ GK — Civics',
   'gk-math':      '➕ GK — Math',
   'gk-ela':       '📚 GK — Lang Arts',
-  'rounding2-practice': '🧭 Rounding 2 — Practice',
+  'rounding2-practice-a': '🌱 Rounding 2 — Practice A',
+  'rounding2-practice': '🧭 Rounding 2 — Practice B',
   'rounding2-review':   '🎯 Rounding 2 — Review (Form A)',
   'rounding2-quiz':     '🎯 Rounding 2 — Quiz (Form B)',
   'rounding-review': '🎯 Rounding 1 — Review (Form A)',
@@ -691,6 +692,7 @@ const MAX_SCORES = {
   'gk-civics':    25,
   'gk-math':      33,
   'gk-ela':       27,
+  'rounding2-practice-a': 20,
   'rounding2-practice': 16,
   'rounding2-review':   20,
   'rounding2-quiz':     20,
@@ -1058,7 +1060,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1720,7 +1722,7 @@ function renderOverview() {
 // group automatically, so future A/B/C builds need nothing here; FORM_FAMILY_EXTRA groups
 // sets named another way. Clicking a group opens a pick-a-form page.
 const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
-  'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
+  'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test' };
 const FORM_FAMILY_LABELS = {
@@ -1748,7 +1750,8 @@ function familyOf(game) {
   return m ? `${m[1]}-${m[3]}` : null;
 }
 function formLetterOf(game) {
-  if (/-practice$/.test(game)) return '0';   // a practice comes before Form A
+  if (/-practice-a$/.test(game)) return '0';  // Practice A, then Practice B, then Form A
+  if (/-practice$/.test(game)) return '1';
   const m = /^.+?([abc])-(review|test)$/.exec(game) || /Form ([ABC])/.exec(GAME_LABELS[game] || '');
   return m ? m[1].toUpperCase() : 'Z';
 }
@@ -2194,10 +2197,30 @@ const ROUNDQ_SKILL_BANK = {};
 Object.entries(ROUNDQ_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { ROUNDQ_SKILL_BANK[id] = `(${skill}) ${ROUNDQ_QUESTIONS[id]}`; }));
 
-// ── Rounding Review and Quiz 2 (math-rounding-quiz-2) — Practice (P) + Form A review + Form B official quiz.
+// ── Rounding Review and Quiz 2 (math-rounding-quiz-2) — Practice A (E) + Practice B (P) + Form A review + Form B official quiz.
 // Number-line model: benchmarks → halfway → closer → round. Same skill in the same slot A01 ↔ B01 …;
-// practice uses the same skill names. All 4.NBT.3. Mirrors math-rounding-quiz-2/data/form_p.js, form_a.js, form_b.js, skills.js.
+// practice uses the same skill names. All 4.NBT.3. Mirrors math-rounding-quiz-2/data/form_e.js, form_p.js, form_a.js, form_b.js, skills.js.
 const ROUND2_QUESTIONS = {
+  E01: "Count by tens: 30, 40, 50. What comes next?",
+  E02: "47 is between which two tens?",
+  E03: "How many tens are in 47?",
+  E04: "4 tens is 40. What is the next ten after 40?",
+  E05: "Count by hundreds: 200, 300, 400. What comes next?",
+  E06: "362 is between which two hundreds?",
+  E07: "4,718 is between which two thousands?",
+  E08: "We round 6,284 to the nearest ten. What is the ten just before 6,284?",
+  E09: "The ten just before 6,284 is 6,280. What is the next ten?",
+  E10: "For the nearest ten, the two benchmarks are 10 apart. Which pair is 10 apart?",
+  E11: "We round 5,736 to the nearest hundred. What is the hundred just before 5,736?",
+  E12: "We round 649,870 to the nearest hundred thousand. What is the hundred thousand just before it?",
+  E13: "For the nearest hundred thousand, the benchmarks are 100,000 apart. Which pair is 100,000 apart?",
+  E14: "What number is halfway between 40 and 50?",
+  E15: "What number is halfway between 300 and 400?",
+  E16: "What number is halfway between 600,000 and 700,000?",
+  E17: "Round 47 to the nearest ten.",
+  E18: "Round 362 to the nearest hundred.",
+  E19: "Round 4,218 to the nearest thousand.",
+  E20: "Round 6,284 to the nearest ten.",
   P01: "Round 3,476 to the nearest hundred. Step 1: Which two hundreds does 3,476 live between?",
   P02: "Round 3,476 to the nearest hundred. Step 2: What number is halfway between 3,400 and 3,500?",
   P03: "Round 3,476 to the nearest hundred. Step 3: Which benchmark is 3,476 closer to?",
@@ -2256,10 +2279,13 @@ const ROUND2_QUESTIONS = {
   B20: "When you round to the nearest thousand, why do you look at the hundreds digit?",
 };
 const ROUND2_SKILLS = {
-  "Find the two benchmarks": ['P01','P05','P09','P13','A01','A02','A03','A04','B01','B02','B03','B04'],
-  "Find the halfway point": ['P02','P06','P10','P14','A05','A06','B05','B06'],
+  "Count by tens, hundreds, thousands": ['E01','E05'],
+  "Find the two benchmarks": ['E02','E04','E06','E07','E09','P01','P05','P09','P13','A01','A02','A03','A04','B01','B02','B03','B04'],
+  "Find the benchmark before the number": ['E03','E08','E11','E12'],
+  "How far apart the benchmarks are": ['E10','E13'],
+  "Find the halfway point": ['E14','E15','E16','P02','P06','P10','P14','A05','A06','B05','B06'],
+  "Round to the place named": ['E17','E18','E19','E20','P04','P08','P12','P16','A13','A14','A15','A16','B13','B14','B15','B16'],
   "Which benchmark is closer": ['P03','P11','A09','A10','B09','B10'],
-  "Round to the place named": ['P04','P08','P12','P16','A13','A14','A15','A16','B13','B14','B15','B16'],
   "Before or past halfway": ['P07','P15','A07','A08','B07','B08'],
   "Rounding down stays at the lower benchmark": ['A11','A12','B11','B12'],
   "Which numbers round to it": ['A17','B17'],
@@ -2499,6 +2525,7 @@ const SKILL_REPORTS = {
   'pvfiaba-review': { bank: PVFIAB_QUESTIONS, form: 'A', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabb-review': { bank: PVFIAB_QUESTIONS, form: 'B', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
   'pvfiabc-review': { bank: PVFIAB_QUESTIONS, form: 'C', standards: PVFIAB_STANDARDS, site: 'sbac-place-value-fiab-review' },
+  'rounding2-practice-a': { bank: ROUND2_SKILL_BANK, form: 'E', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
   'rounding2-practice': { bank: ROUND2_SKILL_BANK, form: 'P', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
   'rounding2-review':   { bank: ROUND2_SKILL_BANK, form: 'A', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
   'rounding2-quiz':     { bank: ROUND2_SKILL_BANK, form: 'B', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
@@ -3488,6 +3515,7 @@ function getQuestionText(id) {
     'pvfiaba-review': PVFIAB_QUESTIONS,
     'pvfiabb-review': PVFIAB_QUESTIONS,
     'pvfiabc-review': PVFIAB_QUESTIONS,
+    'rounding2-practice-a': ROUND2_QUESTIONS,
     'rounding2-practice': ROUND2_QUESTIONS,
     'rounding2-review':   ROUND2_QUESTIONS,
     'rounding2-quiz':     ROUND2_QUESTIONS,
