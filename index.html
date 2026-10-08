@@ -549,7 +549,7 @@ const GAME_ORDER = [
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
-  'rounding-quiz', 'rounding-review',
+  'rounding-quiz', 'rounding-review', 'rounding-practice',
   'mod1a-test', 'mod1b-test', 'mod1c-test',
   'rliaba-review', 'rliabb-review', 'rliabc-review',
   'rad_quiz1',
@@ -639,6 +639,7 @@ const GAME_LABELS = {
   'rounding2-practice': '🧭 Numberline — Practice B',
   'rounding2-review':   '🎯 Numberline — Review (Form A)',
   'rounding2-quiz':     '🎯 Numberline — Quiz (Form B)',
+  'rounding-practice': '🧭 Mechanics — Practice',
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   'mod1a-test':   '📝 MM1 Test (Form A)',
@@ -696,6 +697,7 @@ const MAX_SCORES = {
   'rounding2-practice': 16,
   'rounding2-review':   20,
   'rounding2-quiz':     20,
+  'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
   'mod1a-test': 20,
@@ -1060,7 +1062,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1721,7 +1723,7 @@ function renderOverview() {
 // Keys with a form letter before -review / -test (mod1a-review, rliabb-review, mod1c-test …)
 // group automatically, so future A/B/C builds need nothing here; FORM_FAMILY_EXTRA groups
 // sets named another way. Clicking a group opens a pick-a-form page.
-const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
+const FORM_FAMILY_EXTRA = { 'rounding-practice': 'rounding', 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test' };
@@ -2138,6 +2140,27 @@ Object.entries(MOD1T_SKILLS).forEach(([skill, ids]) =>
 // Same skill in the same slot on both forms (A01 ↔ B01 …), all 4.NBT.3.
 // Mirrors math-rounding-quiz/data/form_a.js, form_b.js and skills.js.
 const ROUNDQ_QUESTIONS = {
+  // Practice (Form P, added 10/8)
+  P01: "Round 4,627 to the nearest hundred. Step 1: Which digit is in the hundreds place?",
+  P02: "Round 4,627 to the nearest hundred. Step 2: Which digit do you look at?",
+  P03: "Round 4,627 to the nearest hundred. Step 3: The digit you look at is 2. Round up or round down?",
+  P04: "Round 4,627 to the nearest hundred. Step 4: We round down. What happens to the 6?",
+  P05: "Round 4,627 to the nearest hundred. Step 5: What is 4,627 rounded to the nearest hundred?",
+  P06: "Round 23,418 to the nearest ten thousand. Step 1: Which digit is in the ten thousands place?",
+  P07: "Round 23,418 to the nearest ten thousand. Step 2: Which digit do you look at?",
+  P08: "Round 23,418 to the nearest ten thousand. Step 3: The digit you look at is 3. Round up or round down?",
+  P09: "Round 23,418 to the nearest ten thousand. Step 4: We round down. What happens to the 2?",
+  P10: "Round 23,418 to the nearest ten thousand. Step 5: What is 23,418 rounded to the nearest ten thousand?",
+  P11: "Round 58,512 to the nearest thousand. Step 1: Which digit is in the thousands place?",
+  P12: "Round 58,512 to the nearest thousand. Step 2: Which digit do you look at?",
+  P13: "Round 58,512 to the nearest thousand. Step 3: The digit you look at is 5. Round up or round down?",
+  P14: "Round 58,512 to the nearest thousand. Step 4: We round up. What happens to the 8?",
+  P15: "Round 58,512 to the nearest thousand. Step 5: What is 58,512 rounded to the nearest thousand?",
+  P16: "Round 649,870 to the nearest hundred thousand. Step 1: Which digit is in the hundred thousands place?",
+  P17: "Round 649,870 to the nearest hundred thousand. Step 2: Which digit do you look at?",
+  P18: "Round 649,870 to the nearest hundred thousand. Step 3: The digit you look at is 4. Round up or round down?",
+  P19: "Round 649,870 to the nearest hundred thousand. Step 4: We round down. What happens to the 6?",
+  P20: "Round 649,870 to the nearest hundred thousand. Step 5: What is 649,870 rounded to the nearest hundred thousand?",
   A01: "You are rounding 4,627 to the nearest hundred. Which digit do you look at to decide whether to round up or down?",
   A02: "When you round to the nearest thousand, which place do you look at to decide whether to round up or down?",
   A03: "You are rounding to the nearest thousand. The digit in the thousands place is 8. What can happen to the 8?",
@@ -2180,15 +2203,15 @@ const ROUNDQ_QUESTIONS = {
   B20: "A number rounded to the nearest hundred is 400. Which of these could be the number?",
 };
 const ROUNDQ_SKILLS = {
-  "Which digit to look at": ['A01','A02','B01','B02'],
-  "What the rounding digit can become": ['A03','A04','B03','B04'],
-  "Round up or round down": ['A05','A06','B05','B06'],
+  "Which digit to look at": ['A01','A02','B01','B02','P02','P07','P12','P17'],
+  "What the rounding digit can become": ['A03','A04','B03','B04','P04','P09','P14','P19'],
+  "Round up or round down": ['A05','A06','B05','B06','P03','P08','P13','P18'],
   "Digits to the left and right": ['A07','A08','B07','B08'],
   "Between which two numbers": ['A09','A10','B09','B10'],
-  "Find the rounding digit": ['A11','B11'],
-  "Round to tens and hundreds": ['A12','A13','B12','B13'],
+  "Find the rounding digit": ['A11','B11','P01','P06','P11','P16'],
+  "Round to tens and hundreds": ['A12','A13','B12','B13','P05'],
   "Rounding up a 9": ['A14','B14'],
-  "Round to thousands and greater": ['A15','A16','A17','B15','B16','B17'],
+  "Round to thousands and greater": ['A15','A16','A17','B15','B16','B17','P10','P15','P20'],
   "Reasoning about rounding": ['A18','A20','B18','B20'],
   "Find the mistake": ['A19','B19'],
 };
@@ -2529,6 +2552,7 @@ const SKILL_REPORTS = {
   'rounding2-practice': { bank: ROUND2_SKILL_BANK, form: 'P', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
   'rounding2-review':   { bank: ROUND2_SKILL_BANK, form: 'A', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
   'rounding2-quiz':     { bank: ROUND2_SKILL_BANK, form: 'B', standards: ROUND2_STANDARDS, site: 'math-rounding-quiz-2' },
+  'rounding-practice': { bank: ROUNDQ_SKILL_BANK, form: 'P', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
@@ -3519,6 +3543,7 @@ function getQuestionText(id) {
     'rounding2-practice': ROUND2_QUESTIONS,
     'rounding2-review':   ROUND2_QUESTIONS,
     'rounding2-quiz':     ROUND2_QUESTIONS,
+    'rounding-practice': ROUNDQ_QUESTIONS,
     'rounding-review': ROUNDQ_QUESTIONS,
     'rounding-quiz':     ROUNDQ_QUESTIONS,
     'mod1a-test': MOD1T_QUESTIONS,
