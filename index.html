@@ -1592,7 +1592,7 @@ function buildFamilyCard(fam, members) {
 // "📝 MM1 Test — Retake B" in the MM1 Test group → "Retake B"; bare letters → "Form B"
 function formShortLabel(famLabel, game) {
   const full = GAME_LABELS[game] || game;
-  // "🎯 Mechanics — Review (Form A)" under "🎯 Rounding Review and Quiz - The Mechanics Edition" → "Review (Form A)"
+  // "🎯 Mechanics — Review (Form A)" under "🎯 Rounding Review and Quiz - Mechanics Edition" → "Review (Form A)"
   let rest = full.startsWith(famLabel) ? full.slice(famLabel.length)
     : FORM_FAMILY_EXTRA[game] ? full.split(' — ').slice(1).join(' — ') : '';
   rest = rest.replace(/^[\s—–-]+/, '').replace(/^\((.*)\)$/, '$1').trim();
@@ -1733,7 +1733,7 @@ const FORM_FAMILY_LABELS = {
   'rliab-review':  '📚 SBAC Read Literary',
   'ilfiab-review': '🔍 SBAC Inferences (Lit)',
   'pvfiab-review': '🔢 SBAC Place Value',
-  'rounding':      '🎯 Rounding Review and Quiz - The Mechanics Edition',
+  'rounding':      '🎯 Rounding Review and Quiz - Mechanics Edition',
   'rounding2':     '🎯 Rounding Review and Quiz - Numberline Edition',
   'awoc-review':   '🌋 A World of Change Review',
   'awoc-test':     '🌋 A World of Change Test',
@@ -2136,7 +2136,7 @@ const MOD1T_SKILL_BANK = {};
 Object.entries(MOD1T_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1T_SKILL_BANK[id] = `(${skill}) ${MOD1T_QUESTIONS[id]}`; }));
 
-// ── Rounding Review and Quiz - The Mechanics Edition (math-rounding-quiz; was "Rounding Review and Quiz 1") — Form A review + Form B official quiz.
+// ── Rounding Review and Quiz - Mechanics Edition (math-rounding-quiz; was "Rounding Review and Quiz 1") — Form A review + Form B official quiz.
 // Same skill in the same slot on both forms (A01 ↔ B01 …), all 4.NBT.3.
 // Mirrors math-rounding-quiz/data/form_a.js, form_b.js and skills.js.
 const ROUNDQ_QUESTIONS = {
