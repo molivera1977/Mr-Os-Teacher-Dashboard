@@ -164,6 +164,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qx-tag{font-size:.7rem;font-weight:800;white-space:nowrap;}
 .qx-wrong{background:#ffe0b2;color:#5a3000;}
 .qx-who{font-size:.74rem;font-weight:800;color:#b45400;margin-top:2px;}
+.hint-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:#fff6d6;color:#7a5a00;border:1px solid #f0c14b;margin-left:6px;}
+.qx-hints{font-size:.78rem;font-weight:700;color:#7a5a00;background:#fff8e1;border:1px dashed #f0c14b;border-radius:8px;padding:5px 9px;margin:4px 0 6px;}
 .qx-pill{padding:1px 8px;border-radius:6px;}
 .qx-line{font-size:.84rem;color:var(--text);margin:4px 0;line-height:1.45;}
 .qx-why{font-size:.8rem;color:var(--muted);margin-top:6px;line-height:1.45;}
@@ -1914,11 +1916,13 @@ function renderAssignment() {
       const bestSess = student.sessions.reduce((b,s) => s.score > (b?.score||0) ? s : b, null);
       const elapsed  = bestSess?.elapsed;
       const flagBadge = isFlagged(student) ? `<span class="flag-badge">⚑ Review</span>` : '';
+      const hintN     = hintOpensOf(student.sessions).length;
+      const hintBadge = hintN ? `<span class="hint-badge" title="Hints opened, all attempts">💡 ${hintN}</span>` : '';
       const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
       const writtenBadge = student.status === 'complete' ? getWrittenBadge(currentGame, name) : '';
 
       tr.innerHTML = `
-        <td style="font-weight:800;">${name}${flagBadge}${writtenBadge}</td>
+        <td style="font-weight:800;">${name}${flagBadge}${hintBadge}${writtenBadge}</td>
         <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
         <td>
           <div class="score-bar-wrap">
@@ -2590,7 +2594,7 @@ function buildSkillReport(data) {
     if (!done.length) return;
     if (heatmapAttempt === 2 && done.length < 2) return;
     const sess = heatmapAttempt === 2 ? done[done.length - 1] : done[0];
-    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions(sess.wrongQuestions, {})), picks: parsePicks(sess.wrongQuestions) });
+    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions(sess.wrongQuestions, {})), picks: parsePicks(sess.wrongQuestions), hints: new Set(hintOpensOf([sess])) });
   });
   if (!attempts.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
@@ -2665,6 +2669,16 @@ function renderSkillHighlights() {
 // The questions behind one skill: wording, passage, class % right, and who missed it.
 // One card per question behind a skill / standard row: wording, passage, class % right,
 // who missed it, and a slot fillQuestionExtras fills with the answer choices and picks.
+// "💡 Hint opened by 3: Ana ✓, Ben ✗, Cal ✓" — ✓ = then answered it right, ✗ = still missed it
+function hintLine(attempts, id) {
+  const used = attempts.filter(a => a.hints && a.hints.has(id));
+  if (!used.length) return '';
+  const right = used.filter(a => !a.missed.has(id)).length;
+  return `<div class="qx-hints">💡 Hint opened by ${used.length}: ` +
+    used.map(a => escHtml(a.name) + (a.missed.has(id) ? ' ✗' : ' ✓')).join(', ') +
+    ` <span style="font-weight:600;opacity:.8;">(${right} then got it right)</span></div>`;
+}
+
 function skillQuestionCards(row) {
   const { attempts, bank } = skillReportContext;
   // Who missed each question and what they chose (only attempts that saved their pick)
@@ -2681,6 +2695,7 @@ function skillQuestionCards(row) {
         <span class="hl-pct" style="background:${factCellColor(pct)}">${pct}% right</span>
       </div>
       <div style="font-size:.92rem;font-weight:700;color:var(--text);margin:6px 0;line-height:1.45;">${escHtml(m[3] || bank[id] || id)}</div>
+      ${hintLine(attempts, id)}
       <div class="qx" data-qid="${escHtml(id)}"><div class="qx-note">Loading answer choices…</div></div>
       <div style="font-size:.78rem;color:var(--muted);font-weight:700;margin-top:6px;">${missedBy.length ? 'Missed by: ' + missedBy.map(escHtml).join(', ') : 'Nobody missed it'}</div>
     </div>`;
@@ -3567,7 +3582,20 @@ function getQuestionText(id) {
    Renders the session event log a student's attempt carries:
    started, left, returned, resumed, closed, finished. Rows
    recorded before the log existed simply render nothing. */
+// 💡 Hint opens (Marcos 10/8): sites log { e:'hint', id:'P07', q:7 } in the attempt's events.
+// An attempt is saved twice (running row + final row) with the same log, so count each open once.
+function hintOpensOf(sessions) {
+  const seen = new Map();
+  (sessions || []).forEach(sess => {
+    let list = [];
+    try { list = JSON.parse(sess.events || '[]'); } catch (e) { list = []; }
+    list.forEach(ev => { if (ev && ev.e === 'hint' && ev.id) seen.set(ev.at + '|' + ev.id, ev.id); });
+  });
+  return [...seen.values()];
+}
+
 const EVENT_LOOK = {
+  hint:   { icon:'💡', text:'Opened a hint',  color:'#b7950b' },
   start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
   resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
   leave:  { icon:'⏸',  text:'Left the page',  color:'var(--orange)' },
@@ -3623,7 +3651,7 @@ function renderChronology(student) {
   const rows = events.map(function(ev) {
     const look = EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' };
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
-    const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q);
+    const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : ''));
     return '<tr>' +
       '<td style="padding:5px 10px;font-size:.8rem;color:var(--muted);white-space:nowrap;">' + clockOf(ev.at) + '</td>' +
       '<td style="padding:5px 8px;font-size:.9rem;">' + look.icon + '</td>' +
