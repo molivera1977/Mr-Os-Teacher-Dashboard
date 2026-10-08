@@ -546,6 +546,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice',
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
   'rounding-quiz', 'rounding-review',
@@ -569,7 +570,7 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
+const HIDDEN_GAMES = new Set(['awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens', 'facts-addsub']);
 
@@ -580,6 +581,7 @@ const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
 const WRITTEN_GAME_MAP = {
+  'awoc-test-comp': 'awoc_test_written',
   'mod1a-test':    'mod1a_test_written',
   'mod1b-test':    'mod1b_test_written',
   'mod1c-test':    'mod1c_test_written',
@@ -594,6 +596,7 @@ const WRITTEN_GAME_MAP = {
 
 // Labels shown above each written answer (W1, W2, W3) in the student detail view.
 const WRITTEN_PROMPT_LABELS = {
+  'awoc-test-comp': ['21. The text says, “Whether they are slow or fast, both kinds of changes have a great effect on our planet.” Explain how slow changes and fast changes each affect the surface of Earth. Use details from the text to support your answer.', '22. What do the letters R.A.D. stand for? Explain what you do for each letter when you write an answer.'],
   'mod1a-test': ["Jayden rounded 364,872 to the nearest thousand. He wrote 364,000. Jayden says: \"I just changed all the digits after the thousands place to zeros.\" Is Jayden correct? Explain his mistake and tell the correct answer.", "Which number is greater: 48,307 or 48,370? Explain how you know. Use place value words like thousands, hundreds, tens, and ones."],
   'mod1b-test': ["Mia says: \"3,400 is the same as 34 tens.\" Is Mia correct? Explain her mistake and tell what 34 tens really equals.", "Look at the digit 5 in 50,000 and the digit 5 in 5,000. How does the value of the 5 in 50,000 compare to the value of the 5 in 5,000? Explain how you know."],
   'mod1c-test': ["Leo wrote the number six hundred five thousand, forty as 605,400. Is Leo correct? Explain his mistake and write the number correctly.", "Ana and Ben both rounded 2,451 to the nearest hundred. Ana got 2,500. Ben got 2,400. Who is correct? Explain the mistake the other student made."],
@@ -612,6 +615,9 @@ const WRITTEN_PROMPT_LABELS = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
+  'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
+  'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
   'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
   'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
   'awoc-review-cloze': '🌋 A World of Change Review — Cloze',
@@ -660,6 +666,10 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  // A World of Change Test: same items as the review; the 2 written answers are graded by hand
+  'awoc-test-vocab': 34,
+  'awoc-test-comp':  20,
+  'awoc-test-cloze': 34,
   // the three parts of the A World of Change test, one question = one point
   'awoc-review-vocab': 34,
   'awoc-review-comp':  20,
@@ -1048,7 +1058,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1711,7 +1721,8 @@ function renderOverview() {
 // sets named another way. Clicking a group opens a pick-a-form page.
 const FORM_FAMILY_EXTRA = { 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
   'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
-  'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review' };
+  'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
+  'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test' };
 const FORM_FAMILY_LABELS = {
   'mod1-test':     '📝 MM1 Test',
   'mod1-review':   '🔢 MM1 Review',
@@ -1721,9 +1732,10 @@ const FORM_FAMILY_LABELS = {
   'rounding':      '🎯 Rounding Review and Quiz 1',
   'rounding2':     '🎯 Rounding Review and Quiz 2',
   'awoc-review':   '🌋 A World of Change Review',
+  'awoc-test':     '🌋 A World of Change Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'awoc-review': ['part', 'parts'] };
+const FAMILY_NOUN = { 'awoc-review': ['part', 'parts'], 'awoc-test': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -2470,6 +2482,10 @@ const STANDARD_NAMES = {
 // `site` is the student review's published repo — its data/form_X.js files hold the
 // passages, answer choices and explanations the question cards show.
 const SKILL_REPORTS = {
+  // the test reuses the review's ids + skill tags, so review → test compares skill by skill
+  'awoc-test-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-unit-test' },
+  'awoc-test-comp':  { bank: AWOC_SKILL_BANK, form: 'P', standards: AWOC_COMP_STANDARDS,  site: 'a-world-of-change-unit-test' },
+  'awoc-test-cloze': { bank: AWOC_SKILL_BANK, form: 'C', standards: AWOC_CLOZE_STANDARDS, site: 'a-world-of-change-unit-test' },
   // one site, three parts — the id letter is the part: V = Vocabulary, P = Comprehension, C = Cloze
   'awoc-review-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-review' },
   'awoc-review-comp':  { bank: AWOC_SKILL_BANK, form: 'P', standards: AWOC_COMP_STANDARDS,  site: 'a-world-of-change-review' },
@@ -2762,16 +2778,17 @@ const reviewFormCache = {};
 let skillQuestionPicks = {};
 // Sites whose question file isn't data/form_x.js → window.FORM_X. `adapt` turns the
 // file's globals into the { items, passages } shape findReviewElement reads.
+function awocBankItems(box) {
+  return box.VOCAB_BANK && {
+    items: [...box.VOCAB_BANK, ...box.COMP_BANK, ...box.CLOZE_BANK].map(q => ({
+      id: q.id, q: q.q, choices: q.choices, answer: q.choices[q.answer],
+    })),
+  };
+}
 const REVIEW_FILES = {
-  // A World of Change Review: all three parts in data/banks.js (answer = index into choices)
-  'a-world-of-change-review': {
-    file: 'data/banks.js',
-    adapt: box => box.VOCAB_BANK && {
-      items: [...box.VOCAB_BANK, ...box.COMP_BANK, ...box.CLOZE_BANK].map(q => ({
-        id: q.id, q: q.q, choices: q.choices, answer: q.choices[q.answer],
-      })),
-    },
-  },
+  // A World of Change Review + Test: all three parts in data/banks.js (answer = index into choices)
+  'a-world-of-change-review':    { file: 'data/banks.js', adapt: box => awocBankItems(box) },
+  'a-world-of-change-unit-test': { file: 'data/banks.js', adapt: box => awocBankItems(box) },
   // One quiz: window.RAD_MC (story questions marked story:true) + window.RAD_PASSAGE
   'rad-online-quiz-1': {
     file: 'data/quiz.js',
@@ -3456,6 +3473,9 @@ function getSortedRoster(data, maxScore) {
 
 function getQuestionText(id) {
   const banks = {
+    'awoc-test-vocab':   AWOC_QUESTIONS,
+    'awoc-test-comp':    AWOC_QUESTIONS,
+    'awoc-test-cloze':   AWOC_QUESTIONS,
     'awoc-review-vocab': AWOC_QUESTIONS,
     'awoc-review-comp':  AWOC_QUESTIONS,
     'awoc-review-cloze': AWOC_QUESTIONS,
