@@ -2306,8 +2306,9 @@ const ROUND2_QUESTIONS = {
   A16: "Round 4,736 to the nearest ten.",
   A17: "Which number rounds to 5,000 when it is rounded to the nearest thousand?",
   A18: "Round 68,749 to the nearest hundred.",
-  A19: "Round each number to the nearest hundred, then add to estimate: 3,476 + 2,812",
+  A19: "Round each number to the nearest hundred, then add to estimate: 3,476 + 2,812",   // retired 10/8 (estimation) — kept so past results read
   A20: "When you round to the nearest hundred, why do you look at the tens digit?",
+  A21: "Round 41,276 to the nearest thousand.",
   B01: "8,354 is between which two hundreds?",
   B02: "47,385 is between which two thousands?",
   B03: "184,630 is between which two ten thousands?",
@@ -2326,8 +2327,9 @@ const ROUND2_QUESTIONS = {
   B16: "Round 8,953 to the nearest ten.",
   B17: "Which number rounds to 400 when it is rounded to the nearest hundred?",
   B18: "Round 47,385 to the nearest hundred.",
-  B19: "Round each number to the nearest hundred, then subtract to estimate: 8,742 − 3,186",
+  B19: "Round each number to the nearest hundred, then subtract to estimate: 8,742 − 3,186",   // retired 10/8 (estimation) — kept so past results read
   B20: "When you round to the nearest thousand, why do you look at the hundreds digit?",
+  B21: "Round 72,318 to the nearest thousand.",
 };
 const ROUND2_SKILLS = {
   "Count by tens, hundreds, thousands": ['E01','E05'],
@@ -2338,10 +2340,9 @@ const ROUND2_SKILLS = {
   "Round to the place named": ['E17','E18','E19','E20','P04','P08','P12','P16','A13','A14','A15','A16','B13','B14','B15','B16'],
   "Which benchmark is closer": ['P03','P11','A09','A10','B09','B10'],
   "Before or past halfway": ['P07','P15','A07','A08','B07','B08'],
-  "Rounding down stays at the lower benchmark": ['A11','A12','B11','B12'],
+  "Rounding down stays at the lower benchmark": ['A11','A12','B11','B12','A21','B21'],
   "Which numbers round to it": ['A17','B17'],
   "Same number, different places": ['A18','B18'],
-  "Estimate with rounding": ['A19','B19'],
   "Why the shortcut works": ['A20','B20'],
 };
 const ROUND2_STANDARDS = Object.fromEntries(Object.keys(ROUND2_SKILLS).map(k => [k, '4.NBT.3']));
