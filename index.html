@@ -164,6 +164,18 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qx-tag{font-size:.7rem;font-weight:800;white-space:nowrap;}
 .qx-wrong{background:#ffe0b2;color:#5a3000;}
 .qx-who{font-size:.74rem;font-weight:800;color:#b45400;margin-top:2px;}
+.nm-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--border);}
+.nm-row:first-child{border-top:none;}
+.nm-tag{flex:0 0 260px;font-size:.9rem;font-weight:800;color:var(--text);line-height:1.35;}
+.nm-count{display:block;font-size:.72rem;font-weight:700;color:var(--muted);margin-top:2px;}
+.nm-names{flex:1;display:flex;flex-wrap:wrap;gap:6px;}
+.nm-name{font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;}
+.nm-name:hover{border-color:var(--accent);color:var(--accent);}
+.nm-name.nm-repeat{background:#fde8e8;border-color:#e57373;color:#8e1b1b;}
+.nm-head{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 2px;}
+.nm-head:first-child{margin-top:0;}
+.nm-empty{font-size:.85rem;color:var(--muted);font-weight:700;padding:6px 0;}
+@media(max-width:700px){.nm-row{flex-direction:column;gap:6px;}.nm-tag{flex:none;}}
 .hint-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:#fff6d6;color:#7a5a00;border:1px solid #f0c14b;margin-left:6px;}
 .qx-hints{font-size:.78rem;font-weight:700;color:#7a5a00;background:#fff8e1;border:1px dashed #f0c14b;border-radius:8px;padding:5px 9px;margin:4px 0 6px;}
 .qx-pill{padding:1px 8px;border-radius:6px;}
@@ -410,6 +422,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
         </table>
       </div>
 
+      <!-- 🙋 Who needs me (only for sites whose data names the mistake behind each wrong choice) -->
+      <div class="heatmap-wrap" id="needsMeWrap" style="display:none;">
+        <div class="section-title">🙋 Who Needs Me
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="needsMeSubtitle"></span>
+        </div>
+        <div id="needsMeBody"></div>
+      </div>
+
       <!-- Standards & skills (only for assignments listed in SKILL_REPORTS) -->
       <div class="heatmap-wrap" id="skillReportWrap" style="display:none;">
         <div class="section-title">📐 Standards &amp; Skills
@@ -548,7 +568,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
-  'mod2t-test', 'mod2u-test', 'mod2a-review', 'mod2b-review',
+  'mod2t-test', 'mod2u-test', 'mod2a-review', 'mod2b-review', 'mod2-practice',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
@@ -654,6 +674,7 @@ const GAME_LABELS = {
   'mod2u-test':   '📝 MM2 Test B — Retake',
   'mod2a-review': '🧮 MM2 Review A — Hints',
   'mod2b-review': '🧮 MM2 Review B — No Hints',
+  'mod2-practice': '🌱 MM2 — Practice',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -717,6 +738,7 @@ const MAX_SCORES = {
   'mod2u-test': 18,
   'mod2a-review': 18,
   'mod2b-review': 18,
+  'mod2-practice': 18,
   'mod1a-test': 20,
   'mod1b-test': 20,
   'mod1c-test': 20,
@@ -1079,7 +1101,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1746,7 +1768,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
-  'mod2t-test': 'mod2-test', 'mod2u-test': 'mod2-test' };
+  'mod2t-test': 'mod2-test', 'mod2u-test': 'mod2-test', 'mod2-practice': 'mod2-review' };
 const FORM_FAMILY_LABELS = {
   'mod2-test':     '📝 MM2 Test',
   'mod2-review':   '🧮 MM2 Review',
@@ -2138,11 +2160,31 @@ const MOD1_SKILL_BANK = {};
 Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
 
-// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Review A (hints) + Review B (no hints),
-// Test A (official; ids T01–T18, key mod2t-test) and Test B (retake; ids U01–U18, key mod2u-test). Same kind of question in the same slot on all four (A01 ↔ B01 ↔ T01 ↔ U01), so
-// review → test compares skill by skill. Slots follow the HMH Module 2 Test; numbers and stories are our own.
-// Mirrors math-module-2/data/form_a.js, form_b.js, form_t.js, form_u.js, skills.js.
+// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Practice (ids P01–P18, key mod2-practice),
+// Review A (hints) + Review B (no hints), Test A (official; ids T01–T18, key mod2t-test) and Test B (retake; ids U01–U18,
+// key mod2u-test). Same kind of question in the same slot on A / B / T / U, so review → test compares skill by skill.
+// X01–X18 / Y01–Y18 are the "try one like it" questions a student gets after a miss in Review A / B — never scored;
+// they are listed here only so the timeline can name them. Numbers and stories are our own, not HMH's.
+// Mirrors math-module-2/data/form_p.js, form_a.js, form_b.js, form_t.js, form_u.js, twin_x.js, twin_y.js, skills.js.
 const MOD2_QUESTIONS = {
+  P01: "Add. 2,314 + 1,253",
+  P02: "Add. 2,438 + 1,325",
+  P03: "Add. 5,263 + 2,384",
+  P04: "Add. 24,318 + 3,457",
+  P05: "Subtract. 6,879 − 2,431",
+  P06: "Subtract. 5,462 − 2,318",
+  P07: "Subtract. 7,638 − 2,254",
+  P08: "Subtract. 4,507 − 1,243",
+  P09: "5,462 − 2,318 = 3,144. Which addition checks this answer?",
+  P10: "Ana has 850 stickers. Ben has 320 stickers. How many more stickers does Ana have than Ben? What should you do?",
+  P11: "Town A has 2,480 people. Town B has 1,250 people. How many more people live in Town A than in Town B?",
+  P12: "Mia read 1,362 pages. Jon read 1,145 pages. How many fewer pages did Jon read than Mia?",
+  P13: "Round 4,682 to the nearest thousand.",
+  P14: "Round each number to the nearest thousand. Then add. 3,612 + 2,590",
+  P15: "Round each number to the nearest thousand. Then subtract. 8,725 − 2,380",
+  P16: "Look at the rectangle. What is the perimeter?",
+  P17: "A rectangle is 8 meters long and 3 meters wide. What is the perimeter?",
+  P18: "Each side of a square is 5 inches. What is the perimeter?",
   A01: "What is the sum of 35,468 + 2,374?",
   A02: "How much greater is 648,527 than 213,419?",
   A03: "A rectangle is 9 meters long and 4 meters wide. What is the perimeter?",
@@ -2215,15 +2257,51 @@ const MOD2_QUESTIONS = {
   U16: "A big tank holds 7,105 gallons of water. A small tank holds 3,462 gallons. How many more gallons does the big tank hold than the small tank?",
   U17: "A class wants to collect 3,450 cans. The class has 286 cans so far. The class writes 3,500 + 300 to estimate how many more cans it needs. Is the estimate reasonable?",
   U18: "A class wants to collect 3,450 cans. The class has 286 cans so far. How many more cans does the class need to collect?",
+  X01: "What is the sum of 43,257 + 3,465?",
+  X02: "How much greater is 875,462 than 342,138?",
+  X03: "A rectangle is 10 meters long and 3 meters wide. What is the perimeter?",
+  X04: "A field is 18 yards wide. Its length is 6 yards longer than its width. What is the perimeter of the field?",
+  X05: "What is the difference? 645,327 − 81,563",
+  X06: "What is the sum? 7,459 + 26,873",
+  X07: "Round each number to the nearest thousand. Then subtract. 65,712 − 7,384",
+  X08: "Round each number to the nearest thousand. Then add. 48,390 + 8,275",
+  X09: "Round each number to the nearest thousand. Then add. 27,604 + 30,815",
+  X10: "The picture shows Kai's square rug. How many feet of tape does Kai need to go all the way around it?",
+  X11: "Ivy wrote the number 326,480. Max wrote the number 451,730. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  X12: "The length of a rectangle is 8 inches. The width is 3 inches. What is the perimeter?",
+  X13: "A museum had 163,418 visitors in June. It had 157,692 visitors in July. How many fewer visitors came in July than in June?",
+  X14: "Uma has a towel shaped like a rectangle. It is 5 feet long and 2 feet wide. Which expression finds the perimeter?",
+  X15: "Uma has a towel shaped like a rectangle. It is 5 feet long and 2 feet wide. How many feet is the perimeter of the towel?",
+  X16: "A bus weighs 6,318 pounds. A van weighs 4,592 pounds. How many more pounds does the bus weigh than the van?",
+  X17: "Lee wants to walk 3,650 steps. Lee has walked 427 steps so far. Lee writes 3,700 + 400 to estimate how many more steps are needed. Is the estimate reasonable?",
+  X18: "Lee wants to walk 3,650 steps. Lee has walked 427 steps so far. How many more steps does Lee need to walk?",
+  Y01: "What is the sum of 61,738 + 5,486?",
+  Y02: "How much greater is 694,573 than 251,347?",
+  Y03: "A rectangle is 12 meters long and 5 meters wide. What is the perimeter?",
+  Y04: "A pool is 14 yards wide. Its length is 7 yards longer than its width. What is the perimeter of the pool?",
+  Y05: "What is the difference? 538,264 − 62,718",
+  Y06: "What is the sum? 4,687 + 37,548",
+  Y07: "Round each number to the nearest thousand. Then subtract. 51,640 − 7,315",
+  Y08: "Round each number to the nearest thousand. Then add. 35,472 + 7,380",
+  Y09: "Round each number to the nearest thousand. Then add. 18,730 + 25,610",
+  Y10: "The picture shows Zed's square window. How many inches of trim does Zed need to go all the way around it?",
+  Y11: "Pia wrote the number 265,390. Ray wrote the number 418,720. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  Y12: "The length of a rectangle is 14 inches. The width is 6 inches. What is the perimeter?",
+  Y13: "A shop sold 245,107 pens last year. It sold 251,463 pens this year. How many fewer pens did the shop sell last year than this year?",
+  Y14: "Val has a banner shaped like a rectangle. It is 10 feet long and 3 feet wide. Which expression finds the perimeter?",
+  Y15: "Val has a banner shaped like a rectangle. It is 10 feet long and 3 feet wide. How many feet is the perimeter of the banner?",
+  Y16: "A stadium has 8,024 seats. An arena has 5,671 seats. How many more seats does the stadium have than the arena?",
+  Y17: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. The club writes 2,400 + 600 to estimate how many more tickets it needs to sell. Is the estimate reasonable?",
+  Y18: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. How many more tickets does the club need to sell?",
 };
 const MOD2_SKILLS = {
-  "Add whole numbers": ['A01','A06','B01','B06','T01','T06','U01','U06'],
-  "Subtract whole numbers": ['A05','A18','B05','B18','T05','T18','U05','U18'],
-  "Comparison problems": ['A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
-  "Estimate by rounding": ['A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
+  "Add whole numbers": ['P01','P02','P03','P04','A01','A06','B01','B06','T01','T06','U01','U06'],
+  "Subtract whole numbers": ['P05','P06','P07','P08','P09','A05','A18','B05','B18','T05','T18','U05','U18'],
+  "Comparison problems": ['P10','P11','P12','A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
+  "Estimate by rounding": ['P13','P14','P15','A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
   "Is the estimate reasonable?": ['A17','B17','T17','U17'],
-  "Perimeter of a rectangle": ['A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
-  "Perimeter of a square": ['A10','B10','T10','U10'],
+  "Perimeter of a rectangle": ['P16','P17','A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
+  "Perimeter of a square": ['P18','A10','B10','T10','U10'],
   "Two-step perimeter": ['A04','B04','T04','U04'],
   "Perimeter expression": ['A14','B14','T14','U14'],
 };
@@ -2771,6 +2849,7 @@ const SKILL_REPORTS = {
   'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2b-review':   { bank: MOD2_SKILL_BANK,   form: 'B', standards: MOD2_STANDARDS,   site: 'math-module-2' },
+  'mod2-practice':  { bank: MOD2_SKILL_BANK,   form: 'P', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1b-test':     { bank: MOD1T_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1c-test':     { bank: MOD1T_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
@@ -2789,6 +2868,7 @@ function buildSkillReport(data) {
   const cfg  = SKILL_REPORTS[currentGame];
   document.getElementById('skillReportDetail').innerHTML = '';
   document.getElementById('skillHighlightDetail').innerHTML = '';
+  renderNeedsMe(cfg, data);
   if (!cfg) { wrap.style.display = 'none'; return; }
 
   // Scored parts on this form, grouped by skill
@@ -3779,6 +3859,7 @@ function getQuestionText(id) {
     'mod2u-test': MOD2_QUESTIONS,
     'mod2a-review': MOD2_QUESTIONS,
     'mod2b-review': MOD2_QUESTIONS,
+    'mod2-practice': MOD2_QUESTIONS,
     'mod1a-test': MOD1T_QUESTIONS,
     'mod1b-test': MOD1T_QUESTIONS,
     'mod1c-test': MOD1T_QUESTIONS,
@@ -3812,8 +3893,124 @@ function hintOpensOf(sessions) {
   return [...seen.values()];
 }
 
+// ── 🙋 Who Needs Me (Marcos 10/10) ──
+// A site can give every wrong choice the mistake it stands for (its data: `slips`, wrong choice →
+// { tag, say } — math-module-2 does). That lets this list group students by the MISTAKE behind their
+// wrong answers, so a small group can be pulled while the rest keep working.
+// Who counts: each student's 1st finished try (or the 2nd-try toggle, same as the heatmap); a student
+// who is still working counts from the running row, which the site saves every 5 questions (marked ⏳).
+// Also shown when the site logs them: students who missed the "try one like it" question that follows
+// a miss (event "twin"), and which words students opened in word help (event "word").
+let needsMeToken = 0;
+function eventsOf(sess) {
+  try { const list = JSON.parse((sess && sess.events) || '[]'); return Array.isArray(list) ? list : []; } catch (e) { return []; }
+}
+function renderNeedsMe(cfg, data) {
+  const wrap = document.getElementById('needsMeWrap');
+  const body = document.getElementById('needsMeBody');
+  wrap.style.display = 'none';
+  body.innerHTML = '';
+  const token = ++needsMeToken, game = currentGame;
+  if (!cfg || !cfg.site) return;
+  loadReviewForm(cfg.site, cfg.form).then(loaded => {
+    if (token !== needsMeToken || game !== currentGame) return;   // another tab was opened meanwhile
+    const items = Array.isArray(loaded) ? loaded : (loaded && loaded.items) || [];
+    const byId = {};
+    items.forEach(q => { if (q && q.id && q.slips) byId[q.id] = q; });
+    if (!Object.keys(byId).length) return;                         // this site does not name its mistakes
+
+    const people = [];
+    (data || []).forEach(student => {
+      if (student.name === 'Mr. O (Teacher)') return;
+      const all  = student.sessions || [];
+      const done = all.filter(s => s.status === 'complete');
+      let sess, working = false;
+      if (done.length) {
+        if (heatmapAttempt === 2 && done.length < 2) return;
+        sess = heatmapAttempt === 2 ? done[done.length - 1] : done[0];
+      } else {
+        if (heatmapAttempt === 2 || !all.length) return;
+        sess = all[all.length - 1]; working = true;
+      }
+      people.push({ name: student.name, working, picks: parsePicks(sess.wrongQuestions), events: eventsOf(sess) });
+    });
+    if (!people.length) return;
+
+    const squash = t => String(t).replace(/\s+/g, ' ').trim();
+    const groups = new Map();      // mistake → Map(name → ids)
+    const again  = new Map();      // name → ids missed, then missed again on "try one like it"
+    const words  = new Map();      // word → Set(names)
+    let fixed = 0, missedAgain = 0;
+    const add = (map, key, name, id) => {
+      if (!map.has(key)) map.set(key, new Map());
+      const m = map.get(key);
+      if (!m.has(name)) m.set(name, []);
+      if (!m.get(name).includes(id)) m.get(name).push(id);
+    };
+    people.forEach(p => {
+      Object.entries(p.picks).forEach(([id, pick]) => {
+        const q = byId[id];
+        if (!q) return;
+        const key  = Object.keys(q.slips).find(k => k === pick || squash(k) === squash(pick));
+        const slip = key && q.slips[key];
+        if (slip && slip.tag) add(groups, slip.tag, p.name, id);
+      });
+      const seen = new Set();
+      p.events.forEach(ev => {
+        if (!ev) return;
+        const k = ev.at + '|' + ev.e + '|' + (ev.id || '') + '|' + (ev.w || '');
+        if (seen.has(k)) return;
+        seen.add(k);
+        if (ev.e === 'twin') {
+          if (ev.ok) fixed++;
+          else { missedAgain++; if (!again.has(p.name)) again.set(p.name, []); again.get(p.name).push(ev.of || ev.id); }
+        }
+        if (ev.e === 'word' && ev.w) { if (!words.has(ev.w)) words.set(ev.w, new Set()); words.get(ev.w).add(p.name); }
+      });
+    });
+
+    const isWorking = name => (people.find(p => p.name === name) || {}).working;
+    const chip = (name, ids) =>
+      `<button type="button" class="nm-name${ids.length > 1 ? ' nm-repeat' : ''}" data-name="${escHtml(name)}" data-ids="${escHtml(ids.join(','))}" ` +
+      `title="${escHtml(ids.join(', '))} — click to see their answers" onclick="openDetailAt(this.dataset.name, this.dataset.ids.split(','))">` +
+      `${isWorking(name) ? '⏳ ' : ''}${escHtml(name)}${ids.length > 1 ? ' ×' + ids.length : ''}</button>`;
+    const byRosterOrder = (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]);
+
+    let html = '';
+    if (again.size) {
+      html += `<div class="nm-head">🔁 Missed it, then missed the next one like it — start here</div>
+        <div class="nm-row"><div class="nm-tag">Still stuck after the explanation<span class="nm-count">${again.size} student${again.size > 1 ? 's' : ''}</span></div>
+        <div class="nm-names">${[...again.entries()].sort(byRosterOrder).map(([n, ids]) => chip(n, ids)).join('')}</div></div>`;
+    }
+    const rows = [...groups.entries()].map(([tag, m]) => {
+      const list = [...m.entries()].sort(byRosterOrder);
+      return { tag, list, repeat: list.filter(e => e[1].length > 1).length, total: list.reduce((t, e) => t + e[1].length, 0) };
+    }).sort((a, b) => b.repeat - a.repeat || b.list.length - a.list.length || b.total - a.total || a.tag.localeCompare(b.tag));
+    if (rows.length) {
+      html += `<div class="nm-head">By the mistake behind the wrong answer</div>` + rows.map(r =>
+        `<div class="nm-row"><div class="nm-tag">${escHtml(r.tag)}<span class="nm-count">${r.list.length} student${r.list.length > 1 ? 's' : ''} · ${r.total} time${r.total > 1 ? 's' : ''}</span></div>
+        <div class="nm-names">${r.list.map(([n, ids]) => chip(n, ids)).join('')}</div></div>`).join('');
+    }
+    if (words.size) {
+      html += `<div class="nm-head">📖 Word help opened</div>` + [...words.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0])).map(([w, names]) =>
+        `<div class="nm-row"><div class="nm-tag">${escHtml(w)}<span class="nm-count">${names.size} student${names.size > 1 ? 's' : ''}</span></div>
+        <div class="nm-names">${[...names].sort().map(n => `<span class="nm-name" style="cursor:default">${isWorking(n) ? '⏳ ' : ''}${escHtml(n)}</span>`).join('')}</div></div>`).join('');
+    }
+    if (!html) html = `<div class="nm-empty">No wrong answers to group yet.</div>`;
+    body.innerHTML = html;
+    const twinNote = fixed + missedAgain ? ` · "try one like it": ${fixed} fixed, ${missedAgain} missed again` : '';
+    const stillWorking = people.filter(p => p.working).length;
+    document.getElementById('needsMeSubtitle').textContent =
+      `grouped by the mistake behind each wrong answer · ${people.length} student${people.length > 1 ? 's' : ''}` +
+      `${stillWorking ? ` (${stillWorking} still working ⏳)` : ''} · ${heatmapAttempt === 2 ? '2nd Try' : '1st Try'}${twinNote} · red = same mistake more than once · click a name`;
+    wrap.style.display = 'block';
+  }).catch(() => {});
+}
+
 const EVENT_LOOK = {
   hint:   { icon:'💡', text:'Opened a hint',  color:'#b7950b' },
+  twin:   { icon:'🔁', text:'Tried one like it', color:'#7d3c98' },
+  word:   { icon:'📖', text:'Opened word help',  color:'#1f5f99' },
   start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
   resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
   leave:  { icon:'⏸',  text:'Left the page',  color:'var(--orange)' },
@@ -3867,7 +4064,9 @@ function renderChronology(student) {
   }
 
   const rows = events.map(function(ev) {
-    const look = EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' };
+    const look = Object.assign({}, EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' });
+    if (ev.e === 'twin') look.text += ev.ok ? ' — got it' : ' — missed again';
+    if (ev.e === 'word' && ev.w) look.text += ': ' + escHtml(ev.w);
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
     const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : ''));
     return '<tr>' +
