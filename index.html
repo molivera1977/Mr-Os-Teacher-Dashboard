@@ -734,10 +734,10 @@ const MAX_SCORES = {
   'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
-  'mod2t-test': 18,
-  'mod2u-test': 18,
-  'mod2a-review': 18,
-  'mod2b-review': 18,
+  'mod2t-test': 17,
+  'mod2u-test': 17,
+  'mod2a-review': 17,
+  'mod2b-review': 17,
   'mod2-practice': 18,
   'mod1a-test': 20,
   'mod1b-test': 20,
@@ -2161,9 +2161,9 @@ Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
 
 // ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Practice (ids P01–P18, key mod2-practice),
-// Review A (hints) + Review B (no hints), Test A (official; ids T01–T18, key mod2t-test) and Test B (retake; ids U01–U18,
-// key mod2u-test). Same kind of question in the same slot on A / B / T / U, so review → test compares skill by skill.
-// X01–X18 / Y01–Y18 are the "try one like it" questions a student gets after a miss in Review A / B — never scored;
+// Review A (hints) + Review B (no hints), Test A (official; ids T01–T17, key mod2t-test) and Test B (retake; ids U01–U17,
+// key mod2u-test). 17 questions on each review and test — the "is the estimate reasonable?" question was removed 10/10. Same kind of question in the same slot on A / B / T / U, so review → test compares skill by skill.
+// X01–X17 / Y01–Y17 are the "try one like it" questions a student gets after a miss in Review A / B — never scored;
 // they are listed here only so the timeline can name them. Numbers and stories are our own, not HMH's.
 // Mirrors math-module-2/data/form_p.js, form_a.js, form_b.js, form_t.js, form_u.js, twin_x.js, twin_y.js, skills.js.
 const MOD2_QUESTIONS = {
@@ -2201,8 +2201,7 @@ const MOD2_QUESTIONS = {
   A14: "Ava has a rug shaped like a rectangle. It is 6 feet long and 4 feet wide. Which expression finds the perimeter?",
   A15: "Ava has a rug shaped like a rectangle. It is 6 feet long and 4 feet wide. How many feet is the perimeter of the rug?",
   A16: "A truck weighs 4,925 pounds. A car weighs 3,187 pounds. How many more pounds does the truck weigh than the car?",
-  A17: "Kim wants to save 2,750 pennies. She has saved 418 pennies so far. Kim writes 2,800 + 400 to estimate how many more pennies she needs. Is the estimate reasonable?",
-  A18: "Kim wants to save 2,750 pennies. She has saved 418 pennies so far. How many more pennies does Kim need to save?",
+  A17: "Kim wants to save 2,750 pennies. She has saved 418 pennies so far. How many more pennies does Kim need to save?",
   B01: "What is the sum of 52,679 + 4,185?",
   B02: "How much greater is 857,341 than 524,126?",
   B03: "A rectangle is 11 meters long and 6 meters wide. What is the perimeter?",
@@ -2219,8 +2218,7 @@ const MOD2_QUESTIONS = {
   B14: "Dan has a blanket shaped like a rectangle. It is 8 feet long and 5 feet wide. Which expression finds the perimeter?",
   B15: "Dan has a blanket shaped like a rectangle. It is 8 feet long and 5 feet wide. How many feet is the perimeter of the blanket?",
   B16: "The city library has 6,043 books. The school library has 4,381 books. How many more books does the city library have than the school library?",
-  B17: "A bus trip is 1,864 miles long. The bus has gone 529 miles so far. The driver writes 1,900 + 500 to estimate how many more miles are left. Is the estimate reasonable?",
-  B18: "A bus trip is 1,864 miles long. The bus has gone 529 miles so far. How many more miles does the bus have to go?",
+  B17: "A bus trip is 1,864 miles long. The bus has gone 529 miles so far. How many more miles does the bus have to go?",
   T01: "What is the sum of 64,257 + 3,586?",
   T02: "How much greater is 763,482 than 251,357?",
   T03: "A rectangle is 8 meters long and 5 meters wide. What is the perimeter?",
@@ -2237,8 +2235,7 @@ const MOD2_QUESTIONS = {
   T14: "Rosa has a mat shaped like a rectangle. It is 7 feet long and 2 feet wide. Which expression finds the perimeter?",
   T15: "Rosa has a mat shaped like a rectangle. It is 7 feet long and 2 feet wide. How many feet is the perimeter of the mat?",
   T16: "A gym has 5,206 seats. A theater has 2,864 seats. How many more seats does the gym have than the theater?",
-  T17: "Omar wants to read 4,150 pages. He has read 672 pages so far. Omar writes 4,200 + 700 to estimate how many more pages he needs to read. Is the estimate reasonable?",
-  T18: "Omar wants to read 4,150 pages. He has read 672 pages so far. How many more pages does Omar need to read?",
+  T17: "Omar wants to read 4,150 pages. He has read 672 pages so far. How many more pages does Omar need to read?",
   U01: "What is the sum of 27,496 + 1,358?",
   U02: "How much greater is 936,254 than 412,138?",
   U03: "A rectangle is 13 meters long and 7 meters wide. What is the perimeter?",
@@ -2255,8 +2252,7 @@ const MOD2_QUESTIONS = {
   U14: "Eli has a flag shaped like a rectangle. It is 9 feet long and 6 feet wide. Which expression finds the perimeter?",
   U15: "Eli has a flag shaped like a rectangle. It is 9 feet long and 6 feet wide. How many feet is the perimeter of the flag?",
   U16: "A big tank holds 7,105 gallons of water. A small tank holds 3,462 gallons. How many more gallons does the big tank hold than the small tank?",
-  U17: "A class wants to collect 3,450 cans. The class has 286 cans so far. The class writes 3,500 + 300 to estimate how many more cans it needs. Is the estimate reasonable?",
-  U18: "A class wants to collect 3,450 cans. The class has 286 cans so far. How many more cans does the class need to collect?",
+  U17: "A class wants to collect 3,450 cans. The class has 286 cans so far. How many more cans does the class need to collect?",
   X01: "What is the sum of 43,257 + 3,465?",
   X02: "How much greater is 875,462 than 342,138?",
   X03: "A rectangle is 10 meters long and 3 meters wide. What is the perimeter?",
@@ -2273,8 +2269,7 @@ const MOD2_QUESTIONS = {
   X14: "Uma has a towel shaped like a rectangle. It is 5 feet long and 2 feet wide. Which expression finds the perimeter?",
   X15: "Uma has a towel shaped like a rectangle. It is 5 feet long and 2 feet wide. How many feet is the perimeter of the towel?",
   X16: "A bus weighs 6,318 pounds. A van weighs 4,592 pounds. How many more pounds does the bus weigh than the van?",
-  X17: "Lee wants to walk 3,650 steps. Lee has walked 427 steps so far. Lee writes 3,700 + 400 to estimate how many more steps are needed. Is the estimate reasonable?",
-  X18: "Lee wants to walk 3,650 steps. Lee has walked 427 steps so far. How many more steps does Lee need to walk?",
+  X17: "Lee wants to walk 3,650 steps. Lee has walked 427 steps so far. How many more steps does Lee need to walk?",
   Y01: "What is the sum of 61,738 + 5,486?",
   Y02: "How much greater is 694,573 than 251,347?",
   Y03: "A rectangle is 12 meters long and 5 meters wide. What is the perimeter?",
@@ -2291,15 +2286,13 @@ const MOD2_QUESTIONS = {
   Y14: "Val has a banner shaped like a rectangle. It is 10 feet long and 3 feet wide. Which expression finds the perimeter?",
   Y15: "Val has a banner shaped like a rectangle. It is 10 feet long and 3 feet wide. How many feet is the perimeter of the banner?",
   Y16: "A stadium has 8,024 seats. An arena has 5,671 seats. How many more seats does the stadium have than the arena?",
-  Y17: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. The club writes 2,400 + 600 to estimate how many more tickets it needs to sell. Is the estimate reasonable?",
-  Y18: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. How many more tickets does the club need to sell?",
+  Y17: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. How many more tickets does the club need to sell?",
 };
 const MOD2_SKILLS = {
   "Add whole numbers": ['P01','P02','P03','P04','A01','A06','B01','B06','T01','T06','U01','U06'],
-  "Subtract whole numbers": ['P05','P06','P07','P08','P09','A05','A18','B05','B18','T05','T18','U05','U18'],
+  "Subtract whole numbers": ['P05','P06','P07','P08','P09','A05','A17','B05','B17','T05','T17','U05','U17'],
   "Comparison problems": ['P10','P11','P12','A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
   "Estimate by rounding": ['P13','P14','P15','A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
-  "Is the estimate reasonable?": ['A17','B17','T17','U17'],
   "Perimeter of a rectangle": ['P16','P17','A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
   "Perimeter of a square": ['P18','A10','B10','T10','U10'],
   "Two-step perimeter": ['A04','B04','T04','U04'],
@@ -2310,7 +2303,6 @@ const MOD2_STANDARDS = {
   "Subtract whole numbers": '4.NBT.4',
   "Comparison problems": '4.NBT.4',
   "Estimate by rounding": '4.OA.3',
-  "Is the estimate reasonable?": '4.OA.3',
   "Perimeter of a rectangle": '4.MD.3',
   "Perimeter of a square": '4.MD.3',
   "Two-step perimeter": '4.MD.3',
