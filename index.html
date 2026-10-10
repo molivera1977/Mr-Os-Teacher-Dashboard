@@ -548,6 +548,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'mod2t-test', 'mod2u-test', 'mod2a-review', 'mod2b-review',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
@@ -645,6 +646,10 @@ const GAME_LABELS = {
   'rounding-practice': '🧭 Mechanics — Practice B',
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
+  'mod2t-test':   '📝 MM2 Test — Official',
+  'mod2u-test':   '📝 MM2 Test — Retake',
+  'mod2a-review': '🧮 MM2 Review (Form A)',
+  'mod2b-review': '🧮 MM2 Review (Form B)',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -704,6 +709,10 @@ const MAX_SCORES = {
   'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
+  'mod2t-test': 18,
+  'mod2u-test': 18,
+  'mod2a-review': 18,
+  'mod2b-review': 18,
   'mod1a-test': 20,
   'mod1b-test': 20,
   'mod1c-test': 20,
@@ -1066,7 +1075,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -1730,8 +1739,11 @@ function renderOverview() {
 const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practice': 'rounding', 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
-  'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test' };
+  'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
+  'mod2t-test': 'mod2-test', 'mod2u-test': 'mod2-test' };
 const FORM_FAMILY_LABELS = {
+  'mod2-test':     '📝 MM2 Test',
+  'mod2-review':   '🧮 MM2 Review',
   'mod1-test':     '📝 MM1 Test',
   'mod1-review':   '🔢 MM1 Review',
   'rliab-review':  '📚 SBAC Read Literary',
@@ -2119,6 +2131,110 @@ const MOD1_SKILLS = {
 const MOD1_SKILL_BANK = {};
 Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
+
+// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Review Forms A + B, the test (Form T)
+// and its retake form (Form U). Same kind of question in the same slot on all four (A01 ↔ B01 ↔ T01 ↔ U01), so
+// review → test compares skill by skill. Slots follow the HMH Module 2 Test; numbers and stories are our own.
+// Mirrors math-module-2/data/form_a.js, form_b.js, form_t.js, form_u.js, skills.js.
+const MOD2_QUESTIONS = {
+  A01: "What is the sum of 35,468 + 2,374?",
+  A02: "How much greater is 648,527 than 213,419?",
+  A03: "A rectangle is 9 meters long and 4 meters wide. What is the perimeter?",
+  A04: "A garden is 12 yards wide. Its length is 5 yards longer than its width. What is the perimeter of the garden?",
+  A05: "What is the difference? 536,418 − 72,645",
+  A06: "What is the sum? 8,346 + 27,598",
+  A07: "Round each number to the nearest thousand. Then subtract. 52,614 − 6,389",
+  A08: "Round each number to the nearest thousand. Then add. 38,472 + 7,236",
+  A09: "Round each number to the nearest thousand. Then add. 21,805 + 24,510",
+  A10: "The picture shows Maya's square sandbox. How many feet of wood does Maya need to go all the way around it?",
+  A11: "Jada wrote the number 218,640. Marco wrote the number 574,305. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  A12: "The length of a rectangle is 9 inches. The width is 5 inches. What is the perimeter?",
+  A13: "A zoo had 174,326 visitors last year. It had 168,594 visitors this year. How many fewer visitors came this year than last year?",
+  A14: "Ava has a rug shaped like a rectangle. It is 6 feet long and 4 feet wide. Which expression finds the perimeter?",
+  A15: "Ava has a rug shaped like a rectangle. It is 6 feet long and 4 feet wide. How many feet is the perimeter of the rug?",
+  A16: "A truck weighs 4,925 pounds. A car weighs 3,187 pounds. How many more pounds does the truck weigh than the car?",
+  A17: "Kim wants to save 2,750 pennies. She has saved 418 pennies so far. Kim writes 2,800 + 400 to estimate how many more pennies she needs. Is the estimate reasonable?",
+  A18: "Kim wants to save 2,750 pennies. She has saved 418 pennies so far. How many more pennies does Kim need to save?",
+  B01: "What is the sum of 52,679 + 4,185?",
+  B02: "How much greater is 857,341 than 524,126?",
+  B03: "A rectangle is 11 meters long and 6 meters wide. What is the perimeter?",
+  B04: "A playground is 20 yards wide. Its length is 10 yards longer than its width. What is the perimeter of the playground?",
+  B05: "What is the difference? 427,356 − 83,172",
+  B06: "What is the sum? 5,728 + 46,395",
+  B07: "Round each number to the nearest thousand. Then subtract. 41,507 − 8,264",
+  B08: "Round each number to the nearest thousand. Then add. 26,389 + 5,402",
+  B09: "Round each number to the nearest thousand. Then add. 14,720 + 17,655",
+  B10: "The picture shows Leo's square poster. How many inches of tape does Leo need to go all the way around it?",
+  B11: "Tia wrote the number 146,370. Ben wrote the number 583,920. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  B12: "The length of a rectangle is 10 inches. The width is 7 inches. What is the perimeter?",
+  B13: "A library had 236,418 books last year. It has 241,165 books this year. How many fewer books did the library have last year than this year?",
+  B14: "Dan has a blanket shaped like a rectangle. It is 8 feet long and 5 feet wide. Which expression finds the perimeter?",
+  B15: "Dan has a blanket shaped like a rectangle. It is 8 feet long and 5 feet wide. How many feet is the perimeter of the blanket?",
+  B16: "The city library has 6,043 books. The school library has 4,381 books. How many more books does the city library have than the school library?",
+  B17: "A bus trip is 1,864 miles long. The bus has gone 529 miles so far. The driver writes 1,900 + 500 to estimate how many more miles are left. Is the estimate reasonable?",
+  B18: "A bus trip is 1,864 miles long. The bus has gone 529 miles so far. How many more miles does the bus have to go?",
+  T01: "What is the sum of 64,257 + 3,586?",
+  T02: "How much greater is 763,482 than 251,357?",
+  T03: "A rectangle is 8 meters long and 5 meters wide. What is the perimeter?",
+  T04: "A parking lot is 16 yards wide. Its length is 4 yards longer than its width. What is the perimeter of the parking lot?",
+  T05: "What is the difference? 752,836 − 91,452",
+  T06: "What is the sum? 9,167 + 34,856",
+  T07: "Round each number to the nearest thousand. Then subtract. 74,618 − 6,471",
+  T08: "Round each number to the nearest thousand. Then add. 59,438 + 7,245",
+  T09: "Round each number to the nearest thousand. Then add. 32,506 + 35,711",
+  T10: "The picture shows Nia's square garden. How many feet of fence does Nia need to go all the way around it?",
+  T11: "Luis wrote the number 352,816. Zoe wrote the number 271,490. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  T12: "The length of a rectangle is 12 inches. The width is 8 inches. What is the perimeter?",
+  T13: "A stadium sold 153,208 tickets in May. It sold 147,631 tickets in June. How many fewer tickets did the stadium sell in June than in May?",
+  T14: "Rosa has a mat shaped like a rectangle. It is 7 feet long and 2 feet wide. Which expression finds the perimeter?",
+  T15: "Rosa has a mat shaped like a rectangle. It is 7 feet long and 2 feet wide. How many feet is the perimeter of the mat?",
+  T16: "A gym has 5,206 seats. A theater has 2,864 seats. How many more seats does the gym have than the theater?",
+  T17: "Omar wants to read 4,150 pages. He has read 672 pages so far. Omar writes 4,200 + 700 to estimate how many more pages he needs to read. Is the estimate reasonable?",
+  T18: "Omar wants to read 4,150 pages. He has read 672 pages so far. How many more pages does Omar need to read?",
+  U01: "What is the sum of 27,496 + 1,358?",
+  U02: "How much greater is 936,254 than 412,138?",
+  U03: "A rectangle is 13 meters long and 7 meters wide. What is the perimeter?",
+  U04: "A dog park is 15 yards wide. Its length is 8 yards longer than its width. What is the perimeter of the dog park?",
+  U05: "What is the difference? 618,257 − 45,683",
+  U06: "What is the sum? 6,485 + 18,739",
+  U07: "Round each number to the nearest thousand. Then subtract. 61,530 − 7,286",
+  U08: "Round each number to the nearest thousand. Then add. 44,391 + 8,417",
+  U09: "Round each number to the nearest thousand. Then add. 23,612 + 30,845",
+  U10: "The picture shows Sam's square picture frame. How many inches of ribbon does Sam need to go all the way around it?",
+  U11: "Gus wrote the number 437,215. Ana wrote the number 386,940. Round each number to the nearest hundred thousand. What is the estimated sum?",
+  U12: "The length of a rectangle is 11 inches. The width is 4 inches. What is the perimeter?",
+  U13: "A farm picked 182,745 apples last fall. It picked 186,312 apples this fall. How many fewer apples did the farm pick last fall than this fall?",
+  U14: "Eli has a flag shaped like a rectangle. It is 9 feet long and 6 feet wide. Which expression finds the perimeter?",
+  U15: "Eli has a flag shaped like a rectangle. It is 9 feet long and 6 feet wide. How many feet is the perimeter of the flag?",
+  U16: "A big tank holds 7,105 gallons of water. A small tank holds 3,462 gallons. How many more gallons does the big tank hold than the small tank?",
+  U17: "A class wants to collect 3,450 cans. The class has 286 cans so far. The class writes 3,500 + 300 to estimate how many more cans it needs. Is the estimate reasonable?",
+  U18: "A class wants to collect 3,450 cans. The class has 286 cans so far. How many more cans does the class need to collect?",
+};
+const MOD2_SKILLS = {
+  "Add whole numbers": ['A01','A06','B01','B06','T01','T06','U01','U06'],
+  "Subtract whole numbers": ['A05','A18','B05','B18','T05','T18','U05','U18'],
+  "Comparison problems": ['A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
+  "Estimate by rounding": ['A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
+  "Is the estimate reasonable?": ['A17','B17','T17','U17'],
+  "Perimeter of a rectangle": ['A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
+  "Perimeter of a square": ['A10','B10','T10','U10'],
+  "Two-step perimeter": ['A04','B04','T04','U04'],
+  "Perimeter expression": ['A14','B14','T14','U14'],
+};
+const MOD2_STANDARDS = {
+  "Add whole numbers": '4.NBT.4',
+  "Subtract whole numbers": '4.NBT.4',
+  "Comparison problems": '4.NBT.4',
+  "Estimate by rounding": '4.OA.3',
+  "Is the estimate reasonable?": '4.OA.3',
+  "Perimeter of a rectangle": '4.MD.3',
+  "Perimeter of a square": '4.MD.3',
+  "Two-step perimeter": '4.MD.3',
+  "Perimeter expression": '4.MD.3',
+};
+const MOD2_SKILL_BANK = {};
+Object.entries(MOD2_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD2_SKILL_BANK[id] = `(${skill}) ${MOD2_QUESTIONS[id]}`; }));
 
 // ── Math Module 1 TEST bank — the review's 51 questions + 3 per form added to the
 // test only (10/5). Kept separate so the review's skill reports never count
@@ -2552,6 +2668,9 @@ const STANDARD_NAMES = {
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
   '4.NBT.2': 'Read, write & compare multi-digit numbers',
   '4.NBT.3': 'Round multi-digit numbers',
+  '4.NBT.4': 'Add & subtract multi-digit numbers',
+  '4.OA.3':  'Solve multistep problems; check with estimates',
+  '4.MD.3':  'Use the perimeter formula for rectangles',
   'W.4.4':   'Write clearly for the task: answer the question fully',
   'L.4.1f':  'Write complete sentences; fix fragments',
 };
@@ -2585,6 +2704,11 @@ const SKILL_REPORTS = {
   'rounding-practice': { bank: ROUNDQ_SKILL_BANK, form: 'P', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
+  // one site, four forms — the id letter is the form: A/B = review, T = the test, U = its retake form
+  'mod2t-test':     { bank: MOD2_SKILL_BANK,   form: 'T', standards: MOD2_STANDARDS,   site: 'math-module-2' },
+  'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
+  'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
+  'mod2b-review':   { bank: MOD2_SKILL_BANK,   form: 'B', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1b-test':     { bank: MOD1T_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1c-test':     { bank: MOD1T_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
@@ -3588,6 +3712,10 @@ function getQuestionText(id) {
     'rounding-practice': ROUNDQ_QUESTIONS,
     'rounding-review': ROUNDQ_QUESTIONS,
     'rounding-quiz':     ROUNDQ_QUESTIONS,
+    'mod2t-test': MOD2_QUESTIONS,
+    'mod2u-test': MOD2_QUESTIONS,
+    'mod2a-review': MOD2_QUESTIONS,
+    'mod2b-review': MOD2_QUESTIONS,
     'mod1a-test': MOD1T_QUESTIONS,
     'mod1b-test': MOD1T_QUESTIONS,
     'mod1c-test': MOD1T_QUESTIONS,
