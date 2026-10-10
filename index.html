@@ -646,10 +646,10 @@ const GAME_LABELS = {
   'rounding-practice': '🧭 Mechanics — Practice B',
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
-  'mod2t-test':   '📝 MM2 Test — Official',
-  'mod2u-test':   '📝 MM2 Test — Retake',
-  'mod2a-review': '🧮 MM2 Review (Form A)',
-  'mod2b-review': '🧮 MM2 Review (Form B)',
+  'mod2t-test':   '📝 MM2 Test A — Official',
+  'mod2u-test':   '📝 MM2 Test B — Retake',
+  'mod2a-review': '🧮 MM2 Review A — Hints',
+  'mod2b-review': '🧮 MM2 Review B — No Hints',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -2132,8 +2132,8 @@ const MOD1_SKILL_BANK = {};
 Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
 
-// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Review Forms A + B, the test (Form T)
-// and its retake form (Form U). Same kind of question in the same slot on all four (A01 ↔ B01 ↔ T01 ↔ U01), so
+// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Review A (hints) + Review B (no hints),
+// Test A (official; ids T01–T18, key mod2t-test) and Test B (retake; ids U01–U18, key mod2u-test). Same kind of question in the same slot on all four (A01 ↔ B01 ↔ T01 ↔ U01), so
 // review → test compares skill by skill. Slots follow the HMH Module 2 Test; numbers and stories are our own.
 // Mirrors math-module-2/data/form_a.js, form_b.js, form_t.js, form_u.js, skills.js.
 const MOD2_QUESTIONS = {
@@ -2704,7 +2704,7 @@ const SKILL_REPORTS = {
   'rounding-practice': { bank: ROUNDQ_SKILL_BANK, form: 'P', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
-  // one site, four forms — the id letter is the form: A/B = review, T = the test, U = its retake form
+  // one site, four copies — the id letter is the copy: A/B = Review A/B, T = Test A (official), U = Test B (retake)
   'mod2t-test':     { bank: MOD2_SKILL_BANK,   form: 'T', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
