@@ -550,6 +550,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 const GAME_ORDER = [
   'mod2t-test', 'mod2u-test', 'mod2a-review', 'mod2b-review',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
+  'startstop-lesson',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
   'rounding-quiz', 'rounding-review', 'rounding-practice', 'rounding-practice-a',
@@ -573,7 +574,7 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
+const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens', 'facts-addsub']);
 
@@ -585,6 +586,7 @@ const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 // Add an entry here whenever a new assignment has a written section.
 const WRITTEN_GAME_MAP = {
   'awoc-test-comp': 'awoc_test_written',
+  'startstop-lesson': 'startstop_written',
   'mod1a-test':    'mod1a_test_written',
   'mod1b-test':    'mod1b_test_written',
   'mod1c-test':    'mod1c_test_written',
@@ -600,6 +602,7 @@ const WRITTEN_GAME_MAP = {
 // Labels shown above each written answer (W1, W2, W3) in the student detail view.
 const WRITTEN_PROMPT_LABELS = {
   'awoc-test-comp': ['21. The text says, “Whether they are slow or fast, both kinds of changes have a great effect on our planet.” Explain how slow changes and fast changes each affect the surface of Earth. Use details from the text to support your answer.', '22. What do the letters R.A.D. stand for? Explain what you do for each letter when you write an answer.'],
+  'startstop-lesson': ['Explain why the cart stopped much sooner on sand than on ice, even though you gave it the same push every time. (Claim \u2014 Evidence \u2014 Reasoning)'],
   'mod1a-test': ["Jayden rounded 364,872 to the nearest thousand. He wrote 364,000. Jayden says: \"I just changed all the digits after the thousands place to zeros.\" Is Jayden correct? Explain his mistake and tell the correct answer.", "Which number is greater: 48,307 or 48,370? Explain how you know. Use place value words like thousands, hundreds, tens, and ones."],
   'mod1b-test': ["Mia says: \"3,400 is the same as 34 tens.\" Is Mia correct? Explain her mistake and tell what 34 tens really equals.", "Look at the digit 5 in 50,000 and the digit 5 in 5,000. How does the value of the 5 in 50,000 compare to the value of the 5 in 5,000? Explain how you know."],
   'mod1c-test': ["Leo wrote the number six hundred five thousand, forty as 605,400. Is Leo correct? Explain his mistake and write the number correctly.", "Ana and Ben both rounded 2,451 to the nearest hundred. Ana got 2,500. Ben got 2,400. Who is correct? Explain the mistake the other student made."],
@@ -621,6 +624,7 @@ const GAME_LABELS = {
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
   'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
   'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
+  'startstop-lesson': '🔬 Science 1.1 — Starting and Stopping',
   'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
   'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
   'awoc-review-cloze': '🌋 A World of Change Review — Cloze',
@@ -1182,6 +1186,8 @@ async function refreshData() {
     const raw  = await res.json();
     dashData   = {};
     Object.entries(raw).forEach(([k, v]) => { dashData[k.toLowerCase()] = v; });
+    // "<game>_draft" tabs are autosaves of written answers still being typed — never an assignment
+    Object.keys(dashData).forEach(k => { if (/_draft$/.test(k)) HIDDEN_GAMES.add(k); });
     collapseSavedCopies(dashData);
     // Show every current assignment, even before its first submission creates a sheet tab
     GAME_ORDER.forEach(g => { if (!dashData[g] && !HIDDEN_GAMES.has(g)) dashData[g] = []; });
@@ -2678,6 +2684,62 @@ const STANDARD_NAMES = {
 // is labeled "(Skill) …", so % correct = parts right ÷ parts asked.
 // `site` is the student review's published repo — its data/form_X.js files hold the
 // passages, answer choices and explanations the question cards show.
+// ── Science Lesson 1.1 "Starting and Stopping" (NGSS 4-PS3-1) ──────────────
+//    One game key, one form letter: ids L01–L28 in the order students meet them —
+//    L01–L05 word check, L06–L19 data analysis across FOUR investigations
+//    (A surfaces, B push, C ramp height, D car vs truck), L20–L22 claim and
+//    evidence, L23–L28 exit ticket. Two of the three written answers became
+//    selected response on 10/7, so only ONE hand-graded explanation remains.
+//    L06/L07/L09/L12/L15/L21 resolve from the student's own table; L22 is adaptive.
+//    4-PS3-3 (collisions) belongs to Lesson 1.4, not this one.
+const STARTSTOP_QUESTIONS = {
+  L01: "What is a force?",
+  L02: "What is friction?",
+  L03: "An object is in motion when it &hellip;",
+  L04: "What does an object need in order to move or do work?",
+  L05: "What is gravity?",
+  L06: "Look at your Investigation A table. Which surface let the cart roll the farthest?",
+  L07: "Which surface stopped the cart the soonest?",
+  L08: "In Investigation A you gave the cart the same medium push every single time. So what caused the distances to be so different?",
+  L09: "Friction is the force that pushes back on the rolling cart. On which surface was friction the strongest?",
+  L10: "In Investigation B the surface never changed &mdash; only the push did. When the push got bigger, what happened to the distance?",
+  L11: "Which push sent the cart the farthest on wood?",
+  L12: "Look at your Investigation C table. Which ramp sent the car the farthest?",
+  L13: "In Investigation C the car and the surface never changed. You did not push it at all &mdash; you let it go. So what made the distances different?",
+  L14: "A taller ramp means the car starts higher up. Starting higher gives the car more &hellip;",
+  L15: "Look at your Investigation D table. With the same push, which one travelled farther?",
+  L16: "The car and the truck got the exact same push. Why did the truck stop sooner?",
+  L17: "What could you do to make the truck travel as far as the car?",
+  L18: "A cart is rolling across smooth ice. Nothing is in its way and almost no friction is pushing back. What will the cart do?",
+  L19: "Two carts get the exact same push. One rolls on carpet and one rolls on ice. Which cart has more friction working against it?",
+  L20: "A friend tells you, &ldquo;Once something is moving it will just keep moving forever.&rdquo; Is your friend right?",
+  L21: "Now show it. Which piece of your own data best backs up the answer you just picked?",
+  L22: "(built from the student's own predictions) Which best explains what happened?",
+  L23: "Which of these is a force?",
+  L24: "A soccer ball rolls across the grass. It slows down and stops. Which force slowed it down?",
+  L25: "Two carts roll on the same wooden floor. Cart A gets a small push. Cart B gets a big push. Which cart travels farther?",
+  L26: "Why does a sled go farther on snow than on grass?",
+  L27: "An object that is moving will keep moving unless &hellip;",
+  L28: "Two carts are the same size. One is pushed hard and one is pushed softly. Which cart has more energy of motion?",
+};
+const STARTSTOP_SKILLS = {
+  "Identify forces": ["L01","L23"],
+  "Friction slows motion": ["L02","L08","L09","L19","L24","L26"],
+  "Motion and position": ["L03"],
+  "Energy and work": ["L04","L28"],
+  "Gravity": ["L05"],
+  "Read data to compare": ["L06","L07","L11","L12","L15"],
+  "More force = more distance": ["L10","L25"],
+  "Height gives an object energy": ["L13","L14"],
+  "Mass changes how far it goes": ["L16","L17"],
+  "Objects keep moving unless a force acts": ["L18","L20","L27"],
+  "Back a claim with evidence": ["L21","L22"],
+};
+const STARTSTOP_STANDARDS = Object.fromEntries(Object.keys(STARTSTOP_SKILLS).map(k => [k, "4-PS3-1"]));
+const STARTSTOP_SKILL_BANK = {};
+Object.entries(STARTSTOP_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { STARTSTOP_SKILL_BANK[id] = `(${skill}) ${STARTSTOP_QUESTIONS[id]}`; }));
+
 const SKILL_REPORTS = {
   // the test reuses the review's ids + skill tags, so review → test compares skill by skill
   'awoc-test-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-unit-test' },
@@ -2716,6 +2778,7 @@ const SKILL_REPORTS = {
   'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   rad_quiz1:        { bank: RAD_QUESTIONS,    form: 'Q', standards: RAD_STANDARDS,    site: 'rad-online-quiz-1' }, // ids Q01–Q23, one form
+  'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // ids L01–L19, one form
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
