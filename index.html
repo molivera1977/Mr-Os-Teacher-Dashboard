@@ -2759,21 +2759,22 @@ const STANDARD_NAMES = {
 // passages, answer choices and explanations the question cards show.
 // ── Science Lesson 1.1 "Starting and Stopping" (NGSS 4-PS3-1) ──────────────
 //    One game key, one form letter. THIS LIST IS EXACTLY THE QUESTIONS THE LESSON
-//    ASKS (27 as of 10/11), not the lesson's whole bank: the report counts every
+//    ASKS (28 as of 10/11), not the lesson's whole bank: the report counts every
 //    id here as a part the student was asked, so an id the lesson does not ask
 //    would be marked right for everyone, and an id missing here would never count.
 //    Until 10/11 this held L01–L28 while the lesson asked 15 of those plus L29–L31.
 //    It is generated from the lesson's own files (data/questions.js, data/form_l.js);
 //    the lesson's qa.js C27 checks form_l.js has every asked id.
 //      L34 L35 L36 what we talked about · L32 L33 cart check · L37 L38 plan check
-//      L01 L02 word check · L06 L08 L09 Test 1 · L11 L10 Test 2
+//      L03 L04 L05 word check (motion, energy, gravity) · L06 L08 L09 Test 1 · L11 L10 Test 2
 //      L12 L14 Test 3 · L15 L16 Test 4 · L18 L19 look back
 //      L20 L21 L29 L30 L31 explanation · L26 L28 exit ticket
 //    L06/L09/L12/L15/L21/L29/L30 are answered from the student's own data table.
 //    4-PS3-3 (collisions) belongs to Lesson 1.4, not this one.
 const STARTSTOP_QUESTIONS = {
-  L01: "What is a force?",
-  L02: "What is friction?",
+  L03: "An object is in motion when the object &hellip;",
+  L04: "What does an object need in order to move or do work?",
+  L05: "What is gravity?",
   L06: "Look at your Test 1 data table. Which surface let the cart roll the farthest?",
   L08: "In Test 1 you gave the cart the same medium push every single time. So what caused the cart to travel such different distances?",
   L09: "Friction is the force that pushes back on the rolling cart. On which surface was friction the strongest?",
@@ -2801,16 +2802,18 @@ const STARTSTOP_QUESTIONS = {
   L38: "What do you do every single time the cart stops?",
 };
 const STARTSTOP_SKILLS = {
-  "Identify forces": ["L01","L34"],
-  "Friction slows motion": ["L02","L08","L09","L19","L26","L31","L35","L36"],
+  "Motion and position": ["L03"],
+  "Energy and work": ["L04","L28"],
+  "Gravity": ["L05"],
   "Read data to compare": ["L06","L11","L12","L15"],
+  "Friction slows motion": ["L08","L09","L19","L26","L31","L35","L36"],
   "More force = more distance": ["L10"],
   "Height gives an object energy": ["L14"],
   "Mass changes how far it goes": ["L16"],
   "Objects keep moving unless a force acts": ["L18","L20"],
   "Back a claim with evidence": ["L21","L29","L30"],
-  "Energy and work": ["L28"],
   "What the distance tells us": ["L32","L33"],
+  "Identify forces": ["L34"],
   "Plan a fair test": ["L37","L38"],
 };
 const STARTSTOP_STANDARDS = Object.fromEntries(Object.keys(STARTSTOP_SKILLS).map(k => [k, "4-PS3-1"]));
