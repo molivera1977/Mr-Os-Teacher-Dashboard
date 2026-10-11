@@ -2758,55 +2758,53 @@ const STANDARD_NAMES = {
 // `site` is the student review's published repo — its data/form_X.js files hold the
 // passages, answer choices and explanations the question cards show.
 // ── Science Lesson 1.1 "Starting and Stopping" (NGSS 4-PS3-1) ──────────────
-//    One game key, one form letter: ids L01–L28 in the order students meet them —
-//    L01–L05 word check, L06–L19 data analysis across FOUR investigations
-//    (A surfaces, B push, C ramp height, D car vs truck), L20–L22 claim and
-//    evidence, L23–L28 exit ticket. Two of the three written answers became
-//    selected response on 10/7, so only ONE hand-graded explanation remains.
-//    L06/L07/L09/L12/L15/L21 resolve from the student's own table; L22 is adaptive.
+//    One game key, one form letter. THIS LIST IS EXACTLY THE QUESTIONS THE LESSON
+//    ASKS (22 as of 10/11), not the lesson's whole bank: the report counts every
+//    id here as a part the student was asked, so an id the lesson does not ask
+//    would be marked right for everyone, and an id missing here would never count.
+//    Until 10/11 this held L01–L28 while the lesson asked 15 of those plus L29–L31.
+//    It is generated from the lesson's own files (data/questions.js, data/form_l.js);
+//    the lesson's qa.js C27 checks form_l.js has every asked id.
+//      L32 L33 cart check · L01 L02 word check · L06 L08 L09 Test 1 · L11 L10 Test 2
+//      L12 L14 Test 3 · L15 L16 Test 4 · L18 L19 look back
+//      L20 L21 L29 L30 L31 explanation · L26 L28 exit ticket
+//    L06/L09/L12/L15/L21/L29/L30 are answered from the student's own data table.
 //    4-PS3-3 (collisions) belongs to Lesson 1.4, not this one.
 const STARTSTOP_QUESTIONS = {
   L01: "What is a force?",
   L02: "What is friction?",
-  L03: "An object is in motion when it &hellip;",
-  L04: "What does an object need in order to move or do work?",
-  L05: "What is gravity?",
-  L06: "Look at your Investigation A table. Which surface let the cart roll the farthest?",
-  L07: "Which surface stopped the cart the soonest?",
-  L08: "In Investigation A you gave the cart the same medium push every single time. So what caused the distances to be so different?",
+  L06: "Look at your Test 1 data table. Which surface let the cart roll the farthest?",
+  L08: "In Test 1 you gave the cart the same medium push every single time. So what caused the cart to travel such different distances?",
   L09: "Friction is the force that pushes back on the rolling cart. On which surface was friction the strongest?",
-  L10: "In Investigation B the surface never changed &mdash; only the push did. When the push got bigger, what happened to the distance?",
+  L10: "In Test 2 the surface never changed &mdash; only the push did. When the push got bigger, what happened to the distance the cart traveled?",
   L11: "Which push sent the cart the farthest on wood?",
-  L12: "Look at your Investigation C table. Which ramp sent the car the farthest?",
-  L13: "In Investigation C the car and the surface never changed. You did not push it at all &mdash; you let it go. So what made the distances different?",
+  L12: "Look at your Test 3 data table. Which ramp sent the car the farthest?",
   L14: "A taller ramp means the car starts higher up. Starting higher gives the car more &hellip;",
-  L15: "Look at your Investigation D table. With the same push, which one travelled farther?",
+  L15: "Look at your Test 4 data table. With the same push, did the car or the truck travel farther?",
   L16: "The car and the truck got the exact same push. Why did the truck stop sooner?",
-  L17: "What could you do to make the truck travel as far as the car?",
-  L18: "A cart is rolling across smooth ice. Nothing is in its way and almost no friction is pushing back. What will the cart do?",
-  L19: "Two carts get the exact same push. One rolls on carpet and one rolls on ice. Which cart has more friction working against it?",
-  L20: "A friend tells you, &ldquo;Once something is moving it will just keep moving forever.&rdquo; Is your friend right?",
-  L21: "Now show it. Which piece of your own data best backs up the answer you just picked?",
-  L22: "(built from the student's own predictions) Which best explains what happened?",
-  L23: "Which of these is a force?",
-  L24: "A soccer ball rolls across the grass. It slows down and stops. Which force slowed it down?",
-  L25: "Two carts roll on the same wooden floor. Cart A gets a small push. Cart B gets a big push. Which cart travels farther?",
+  L18: "A cart is rolling across smooth ice. Nothing is in the way of the cart and almost no friction is pushing back. What will the cart do?",
+  L19: "Two carts get the exact same push. One rolls on carpet and one rolls on ice. Which cart has more friction pushing back?",
+  L20: "A friend tells you, &ldquo;Once something is moving, that thing will just keep moving forever.&rdquo; Is your friend right?",
+  L21: "Now show your proof. Which piece of your own data best backs up the answer you just picked?",
   L26: "Why does a sled go farther on snow than on grass?",
-  L27: "An object that is moving will keep moving unless &hellip;",
   L28: "Two carts are the same size. One is pushed hard and one is pushed softly. Which cart has more energy of motion?",
+  L29: "Start with your claim. Which surface stopped the cart the soonest?",
+  L30: "Now the evidence. Which two distances from your own data table show your claim best?",
+  L31: "Last part, the reasoning. WHY did that surface stop the cart soonest?",
+  L32: "What do we measure after every push?",
+  L33: "The cart travels a short distance. What does a short distance tell us?",
 };
 const STARTSTOP_SKILLS = {
-  "Identify forces": ["L01","L23"],
-  "Friction slows motion": ["L02","L08","L09","L19","L24","L26"],
-  "Motion and position": ["L03"],
-  "Energy and work": ["L04","L28"],
-  "Gravity": ["L05"],
-  "Read data to compare": ["L06","L07","L11","L12","L15"],
-  "More force = more distance": ["L10","L25"],
-  "Height gives an object energy": ["L13","L14"],
-  "Mass changes how far it goes": ["L16","L17"],
-  "Objects keep moving unless a force acts": ["L18","L20","L27"],
-  "Back a claim with evidence": ["L21","L22"],
+  "Identify forces": ["L01"],
+  "Friction slows motion": ["L02","L08","L09","L19","L26","L31"],
+  "Read data to compare": ["L06","L11","L12","L15"],
+  "More force = more distance": ["L10"],
+  "Height gives an object energy": ["L14"],
+  "Mass changes how far it goes": ["L16"],
+  "Objects keep moving unless a force acts": ["L18","L20"],
+  "Back a claim with evidence": ["L21","L29","L30"],
+  "Energy and work": ["L28"],
+  "What the distance tells us": ["L32","L33"],
 };
 const STARTSTOP_STANDARDS = Object.fromEntries(Object.keys(STARTSTOP_SKILLS).map(k => [k, "4-PS3-1"]));
 const STARTSTOP_SKILL_BANK = {};
@@ -2852,7 +2850,7 @@ const SKILL_REPORTS = {
   'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   rad_quiz1:        { bank: RAD_QUESTIONS,    form: 'Q', standards: RAD_STANDARDS,    site: 'rad-online-quiz-1' }, // ids Q01–Q23, one form
-  'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // ids L01–L19, one form
+  'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // the 22 asked ids, one form
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
