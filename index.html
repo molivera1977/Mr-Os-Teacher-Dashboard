@@ -569,7 +569,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
-  'mod2t-test', 'mod2u-test', 'mod2a-review', 'mod2b-review', 'mod2-practice',
+  'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
@@ -671,11 +671,12 @@ const GAME_LABELS = {
   'rounding-practice': '🧭 Mechanics — Practice B',
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
-  'mod2t-test':   '📝 MM2 Test A — Official',
-  'mod2u-test':   '📝 MM2 Test B — Retake',
-  'mod2a-review': '🧮 MM2 Review A — Hints',
-  'mod2b-review': '🧮 MM2 Review B — No Hints',
-  'mod2-practice': '🌱 MM2 — Practice',
+  // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'mod2-practice': '🌱 MM2 — Practice A',
+  'mod2a-review': '🧭 MM2 — Practice B',
+  'mod2b-review': '📘 MM2 — Review',
+  'mod2t-test':   '📝 MM2 — Test',
+  'mod2u-test':   '📝 MM2 — Test (Retake)',
   'mod1a-test':   '📝 MM1 Test (Form A)',
   'mod1b-test':   '📝 MM1 Test — Retake B',
   'mod1c-test':   '📝 MM1 Test — Retake C',
@@ -1769,10 +1770,9 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
-  'mod2t-test': 'mod2-test', 'mod2u-test': 'mod2-test', 'mod2-practice': 'mod2-review' };
+  'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2' };
 const FORM_FAMILY_LABELS = {
-  'mod2-test':     '📝 MM2 Test',
-  'mod2-review':   '🧮 MM2 Review',
+  'mod2':          '🧮 Math Module 2 Review and Test',
   'mod1-test':     '📝 MM1 Test',
   'mod1-review':   '🔢 MM1 Review',
   'rliab-review':  '📚 SBAC Read Literary',
@@ -1784,7 +1784,7 @@ const FORM_FAMILY_LABELS = {
   'awoc-test':     '🌋 A World of Change Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'awoc-review': ['part', 'parts'], 'awoc-test': ['part', 'parts'] };
+const FAMILY_NOUN = { 'awoc-review': ['part', 'parts'], 'awoc-test': ['part', 'parts'], 'mod2': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -2161,11 +2161,13 @@ const MOD1_SKILL_BANK = {};
 Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD1_SKILL_BANK[id] = `(${skill}) ${MOD1_QUESTIONS[id]}`; }));
 
-// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site: Practice (ids P01–P18, key mod2-practice),
-// Review A (hints) + Review B (no hints), Test A (official; ids T01–T17, key mod2t-test) and Test B (retake; ids U01–U17,
-// key mod2u-test). 17 questions on each review and test — the "is the estimate reasonable?" question was removed 10/10. Same kind of question in the same slot on A / B / T / U, so review → test compares skill by skill.
-// X01–X17 / Y01–Y17 are the "try one like it" questions a student gets after a miss in Review A / B — never scored;
-// they are listed here only so the timeline can name them. Numbers and stories are our own, not HMH's.
+// ── Math Module 2 Review and Test (math-module-2, built 10/9) — ONE site, four parts, named the same on every
+// math site (Marcos 10/10): Practice A (key mod2-practice, ids P01–P18) · Practice B (mod2a-review, A01–A17) ·
+// Review (mod2b-review, B01–B17) · Test (mod2t-test, T01–T17; retake = mod2u-test, U01–U17). The keys and ids kept
+// their old letters when the parts were renamed (Practice → Practice A, Review A → Practice B, Review B → Review, Test A → Test).
+// Practice B, Review and Test ask the same 17 kinds of question in the same slots, so they compare skill by skill.
+// X01–X17 / Y01–Y17 are the "try one like it" questions a student gets after a miss in Practice B / the Review — never
+// scored; they are listed here only so the timeline can name them. Numbers and stories are our own, not HMH's.
 // Mirrors math-module-2/data/form_p.js, form_a.js, form_b.js, form_t.js, form_u.js, twin_x.js, twin_y.js, skills.js.
 const MOD2_QUESTIONS = {
   P01: "Add. 2,314 + 1,253",
@@ -2837,7 +2839,7 @@ const SKILL_REPORTS = {
   'rounding-practice': { bank: ROUNDQ_SKILL_BANK, form: 'P', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
-  // one site, four copies — the id letter is the copy: A/B = Review A/B, T = Test A (official), U = Test B (retake)
+  // one site — the id letter is the part: P = Practice A, A = Practice B, B = Review, T = Test, U = its retake
   'mod2t-test':     { bank: MOD2_SKILL_BANK,   form: 'T', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
@@ -3894,16 +3896,16 @@ function hintOpensOf(sessions) {
 // who is still working counts from the running row, which the site saves every 5 questions (marked ⏳).
 // Also shown when the site logs them: students who missed the "try one like it" question that follows
 // a miss (event "twin"), and which words students opened in word help (event "word").
-// 🚦 Ready for the test? (Marcos 10/10: flag, don't gate) — a student whose BEST finished review is under
+// 🚦 Ready for the test? (Marcos 10/10: flag, don't gate) — a student whose BEST finished Practice B or Review is under
 // the cutoff is listed as "not ready yet" on every tab of that unit, so the teacher decides who tests.
-// (The site itself only asks for one finished review; a low score does not lock anyone out.)
+// (The site itself only asks for one finished Practice B or Review; a low score does not lock anyone out.)
 const TEST_READY = [
-  { test: 'Test A', reviews: ['mod2a-review', 'mod2b-review'], others: ['mod2-practice', 'mod2t-test', 'mod2u-test'], cutoff: 70 },
+  { test: 'the Test', steps: 'Practice B or Review', reviews: ['mod2a-review', 'mod2b-review'], others: ['mod2-practice', 'mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
 function readinessHTML(game) {
   const unit = TEST_READY.find(u => u.reviews.includes(game) || u.others.includes(game));
   if (!unit) return '';
-  const best = new Map();       // name → best finished review { pct, score, total }
+  const best = new Map();       // name → best finished Practice B / Review { pct, score, total }
   let anyone = false;
   unit.reviews.forEach(g => (dashData[g] || []).forEach(student => {
     if (student.name === 'Mr. O (Teacher)') return;
@@ -3922,9 +3924,9 @@ function readinessHTML(game) {
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
   const tag = (name, b, cls) => `<span class="nm-name ${cls}" style="cursor:default">${escHtml(name)}${b ? ` · ${b.score}/${b.total} · ${b.pct}%` : ''}</span>`;
   const row = (label, sub, chips) => `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${sub}</span></div><div class="nm-names">${chips}</div></div>`;
-  return `<div class="nm-head">🚦 Ready for ${escHtml(unit.test)}? — best finished review, ${unit.cutoff}% or better</div>` +
-    (low.length ? row('Not ready yet', `${plural(low.length)} · best review under ${unit.cutoff}%`, low.map(([n, b]) => tag(n, b, 'nm-repeat')).join('')) : '') +
-    (none.length ? row('No finished review yet', plural(none.length), none.map(n => tag(n, null, '')).join('')) : '') +
+  return `<div class="nm-head">🚦 Ready for ${escHtml(unit.test)}? — best finished ${escHtml(unit.steps)}, ${unit.cutoff}% or better</div>` +
+    (low.length ? row('Not ready yet', `${plural(low.length)} · best score under ${unit.cutoff}%`, low.map(([n, b]) => tag(n, b, 'nm-repeat')).join('')) : '') +
+    (none.length ? row(`No finished ${escHtml(unit.steps)} yet`, plural(none.length), none.map(n => tag(n, null, '')).join('')) : '') +
     row('Ready', `${plural(ready.length)} · ${unit.cutoff}% or better`, ready.length ? ready.map(([n, b]) => tag(n, b, 'nm-ready')).join('') : '<span class="nm-empty" style="padding:0">No one yet.</span>');
 }
 
