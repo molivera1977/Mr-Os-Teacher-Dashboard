@@ -2759,13 +2759,14 @@ const STANDARD_NAMES = {
 // passages, answer choices and explanations the question cards show.
 // ── Science Lesson 1.1 "Starting and Stopping" (NGSS 4-PS3-1) ──────────────
 //    One game key, one form letter. THIS LIST IS EXACTLY THE QUESTIONS THE LESSON
-//    ASKS (22 as of 10/11), not the lesson's whole bank: the report counts every
+//    ASKS (27 as of 10/11), not the lesson's whole bank: the report counts every
 //    id here as a part the student was asked, so an id the lesson does not ask
 //    would be marked right for everyone, and an id missing here would never count.
 //    Until 10/11 this held L01–L28 while the lesson asked 15 of those plus L29–L31.
 //    It is generated from the lesson's own files (data/questions.js, data/form_l.js);
 //    the lesson's qa.js C27 checks form_l.js has every asked id.
-//      L32 L33 cart check · L01 L02 word check · L06 L08 L09 Test 1 · L11 L10 Test 2
+//      L34 L35 L36 what we talked about · L32 L33 cart check · L37 L38 plan check
+//      L01 L02 word check · L06 L08 L09 Test 1 · L11 L10 Test 2
 //      L12 L14 Test 3 · L15 L16 Test 4 · L18 L19 look back
 //      L20 L21 L29 L30 L31 explanation · L26 L28 exit ticket
 //    L06/L09/L12/L15/L21/L29/L30 are answered from the student's own data table.
@@ -2793,10 +2794,15 @@ const STARTSTOP_QUESTIONS = {
   L31: "Last part, the reasoning. WHY did that surface stop the cart soonest?",
   L32: "What do we measure after every push?",
   L33: "The cart travels a short distance. What does a short distance tell us?",
+  L34: "A force is a push or a pull. Which one is a force?",
+  L35: "You rub your hands together. Your hands get warm. What is that rubbing called?",
+  L36: "Which surface has more friction?",
+  L37: "What changes in Test 1?",
+  L38: "What do you do every single time the cart stops?",
 };
 const STARTSTOP_SKILLS = {
-  "Identify forces": ["L01"],
-  "Friction slows motion": ["L02","L08","L09","L19","L26","L31"],
+  "Identify forces": ["L01","L34"],
+  "Friction slows motion": ["L02","L08","L09","L19","L26","L31","L35","L36"],
   "Read data to compare": ["L06","L11","L12","L15"],
   "More force = more distance": ["L10"],
   "Height gives an object energy": ["L14"],
@@ -2805,6 +2811,7 @@ const STARTSTOP_SKILLS = {
   "Back a claim with evidence": ["L21","L29","L30"],
   "Energy and work": ["L28"],
   "What the distance tells us": ["L32","L33"],
+  "Plan a fair test": ["L37","L38"],
 };
 const STARTSTOP_STANDARDS = Object.fromEntries(Object.keys(STARTSTOP_SKILLS).map(k => [k, "4-PS3-1"]));
 const STARTSTOP_SKILL_BANK = {};
@@ -2850,7 +2857,7 @@ const SKILL_REPORTS = {
   'mod1b-review':   { bank: MOD1_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   rad_quiz1:        { bank: RAD_QUESTIONS,    form: 'Q', standards: RAD_STANDARDS,    site: 'rad-online-quiz-1' }, // ids Q01–Q23, one form
-  'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // the 22 asked ids, one form
+  'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // exactly the asked ids, one form
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
