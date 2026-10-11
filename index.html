@@ -3896,8 +3896,9 @@ function hintOpensOf(sessions) {
 // who is still working counts from the running row, which the site saves every 5 questions (marked ⏳).
 // Also shown when the site logs them: students who missed the "try one like it" question that follows
 // a miss (event "twin"), and which words students opened in word help (event "word").
-// 🚦 Where each student is (Marcos 10/10). The site gates the steps: a finished Practice A + 70% on Practice B
-// opens the Review; 70% on the Review opens the Test (best try counts; the Teacher PIN lets one student past).
+// 🚦 Where each student is (Marcos 10/10–10/11). The site gates the steps: 70% on Practice A opens Practice B;
+// a finished Practice A + 70% on Practice B opens the Review; 70% on the Review opens the Test (best try counts;
+// the Teacher PIN lets one student past).
 // "This way we can visually see who is struggling just by who keeps getting gated" — so students stuck at a
 // gate are listed FIRST, with their best score and how many tries it has taken; red = stuck after 2+ tries.
 // The site remembers scores on the device; this list reads the sheet, so it stays right after a device change
@@ -3931,18 +3932,18 @@ function gatesHTML(game) {
   unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
   const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
 
-  const stage = { stuckReview: [], stuckB: [], needA: [], readyTest: [], readyReview: [], onlyA: [], none: [], tested: [] };
+  const stage = { stuckReview: [], stuckB: [], stuckA: [], needA: [], readyTest: [], readyReview: [], readyB: [], none: [], tested: [] };
   STUDENT_ROSTER.forEach(n => {
     if (T.has(n))                 stage.tested.push([n, T.get(n)]);
     else if (pass(R.get(n)))      stage.readyTest.push([n, R.get(n)]);
     else if (R.has(n))            stage.stuckReview.push([n, R.get(n)]);
     else if (pass(B.get(n)))      (A.has(n) ? stage.readyReview : stage.needA).push([n, B.get(n)]);
     else if (B.has(n))            stage.stuckB.push([n, B.get(n)]);
-    else if (A.has(n))            stage.onlyA.push([n, A.get(n)]);
+    else if (A.has(n))            (pass(A.get(n)) ? stage.readyB : stage.stuckA).push([n, A.get(n)]);
     else                          stage.none.push([n, null]);
   });
   const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
-  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst);
+  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
   const tries = v => `${v.tries} ${v.tries === 1 ? 'try' : 'tries'}`;
   const chip = (n, v, kind) => {
@@ -3953,13 +3954,14 @@ function gatesHTML(game) {
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
     `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
-  return `<div class="nm-head">🚦 Where each student is — ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
+  return `<div class="nm-head">🚦 Where each student is — ${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
     row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
     row('Stuck at the Review gate', `Practice B under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
-    row('Passed Practice B — still needs Practice A', 'the Review stays closed until Practice A is finished', stage.needA, '') +
+    row('Stuck at the Practice B gate', `Practice A under ${unit.cutoff}%`, stage.stuckA, 'stuck') +
+    row('Passed Practice B — still needs Practice A', 'let in by PIN; the Review stays closed until Practice A is finished', stage.needA, '') +
     row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
     row('Ready for the Review', `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
-    row('Finished Practice A — Practice B is next', '', stage.onlyA, '') +
+    row('Ready for Practice B', `Practice A ${unit.cutoff}% or better`, stage.readyB, 'ok') +
     row('Nothing finished yet', '', stage.none, '') +
     row('Took the Test', '', stage.tested, 'ok');
 }
