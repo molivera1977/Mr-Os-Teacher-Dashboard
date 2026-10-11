@@ -3896,38 +3896,72 @@ function hintOpensOf(sessions) {
 // who is still working counts from the running row, which the site saves every 5 questions (marked ⏳).
 // Also shown when the site logs them: students who missed the "try one like it" question that follows
 // a miss (event "twin"), and which words students opened in word help (event "word").
-// 🚦 Ready for the test? (Marcos 10/10: flag, don't gate) — a student whose BEST finished Practice B or Review is under
-// the cutoff is listed as "not ready yet" on every tab of that unit, so the teacher decides who tests.
-// (The site itself only asks for one finished Practice B or Review; a low score does not lock anyone out.)
-const TEST_READY = [
-  { test: 'the Test', steps: 'Practice B or Review', reviews: ['mod2a-review', 'mod2b-review'], others: ['mod2-practice', 'mod2t-test', 'mod2u-test'], cutoff: 70 },
+// 🚦 Where each student is (Marcos 10/10). The site gates the steps: a finished Practice A + 70% on Practice B
+// opens the Review; 70% on the Review opens the Test (best try counts; the Teacher PIN lets one student past).
+// "This way we can visually see who is struggling just by who keeps getting gated" — so students stuck at a
+// gate are listed FIRST, with their best score and how many tries it has taken; red = stuck after 2+ tries.
+// The site remembers scores on the device; this list reads the sheet, so it stays right after a device change
+// (a student shown here as ready who is still locked on a new Chromebook needs the PIN).
+const UNIT_GATES = [
+  { practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
-function readinessHTML(game) {
-  const unit = TEST_READY.find(u => u.reviews.includes(game) || u.others.includes(game));
+function gatesHTML(game) {
+  const unit = UNIT_GATES.find(u => [u.practiceA, u.practiceB, u.review, ...u.tests].includes(game));
   if (!unit) return '';
-  const best = new Map();       // name → best finished Practice B / Review { pct, score, total }
-  let anyone = false;
-  unit.reviews.forEach(g => (dashData[g] || []).forEach(student => {
-    if (student.name === 'Mr. O (Teacher)') return;
-    if ((student.sessions || []).length) anyone = true;
-    (student.sessions || []).filter(x => x.status === 'complete').forEach(x => {
-      const total = Number(x.total) || 0, score = Number(x.score) || 0;
-      const pct = total ? Math.round(score / total * 100) : Number(x.percent) || 0;
-      const cur = best.get(student.name);
-      if (!cur || pct > cur.pct) best.set(student.name, { pct, score, total });
+  const games = [unit.practiceA, unit.practiceB, unit.review, ...unit.tests];
+  const real = st => st.name !== 'Mr. O (Teacher)';
+  if (!games.some(g => (dashData[g] || []).some(st => real(st) && (st.sessions || []).length))) return '';   // nobody has started
+  // name → { tries, best: { score, total, pct } } from finished attempts
+  const tally = g => {
+    const m = new Map();
+    (dashData[g] || []).filter(real).forEach(student => {
+      let best = null, tries = 0;
+      (student.sessions || []).filter(x => x.status === 'complete').forEach(x => {
+        const total = Number(x.total) || 0, score = Number(x.score) || 0;
+        if (!total) return;
+        tries++;
+        if (!best || score / total > best.score / best.total) best = { score, total, pct: Math.round(score / total * 100) };
+      });
+      if (best) m.set(student.name, { tries, best });
     });
-  }));
-  if (!anyone) return '';       // nobody has started a review yet — nothing to say
-  const low   = [...best.entries()].filter(e => e[1].pct < unit.cutoff).sort((a, b) => a[1].pct - b[1].pct || a[0].localeCompare(b[0]));
-  const ready = [...best.entries()].filter(e => e[1].pct >= unit.cutoff).sort((a, b) => a[0].localeCompare(b[0]));
-  const none  = STUDENT_ROSTER.filter(n => !best.has(n));
+    return m;
+  };
+  const A = tally(unit.practiceA), B = tally(unit.practiceB), R = tally(unit.review);
+  const T = new Map();
+  unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
+  const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
+
+  const stage = { stuckReview: [], stuckB: [], needA: [], readyTest: [], readyReview: [], onlyA: [], none: [], tested: [] };
+  STUDENT_ROSTER.forEach(n => {
+    if (T.has(n))                 stage.tested.push([n, T.get(n)]);
+    else if (pass(R.get(n)))      stage.readyTest.push([n, R.get(n)]);
+    else if (R.has(n))            stage.stuckReview.push([n, R.get(n)]);
+    else if (pass(B.get(n)))      (A.has(n) ? stage.readyReview : stage.needA).push([n, B.get(n)]);
+    else if (B.has(n))            stage.stuckB.push([n, B.get(n)]);
+    else if (A.has(n))            stage.onlyA.push([n, A.get(n)]);
+    else                          stage.none.push([n, null]);
+  });
+  const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
+  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
-  const tag = (name, b, cls) => `<span class="nm-name ${cls}" style="cursor:default">${escHtml(name)}${b ? ` · ${b.score}/${b.total} · ${b.pct}%` : ''}</span>`;
-  const row = (label, sub, chips) => `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${sub}</span></div><div class="nm-names">${chips}</div></div>`;
-  return `<div class="nm-head">🚦 Ready for ${escHtml(unit.test)}? — best finished ${escHtml(unit.steps)}, ${unit.cutoff}% or better</div>` +
-    (low.length ? row('Not ready yet', `${plural(low.length)} · best score under ${unit.cutoff}%`, low.map(([n, b]) => tag(n, b, 'nm-repeat')).join('')) : '') +
-    (none.length ? row(`No finished ${escHtml(unit.steps)} yet`, plural(none.length), none.map(n => tag(n, null, '')).join('')) : '') +
-    row('Ready', `${plural(ready.length)} · ${unit.cutoff}% or better`, ready.length ? ready.map(([n, b]) => tag(n, b, 'nm-ready')).join('') : '<span class="nm-empty" style="padding:0">No one yet.</span>');
+  const tries = v => `${v.tries} ${v.tries === 1 ? 'try' : 'tries'}`;
+  const chip = (n, v, kind) => {
+    const cls = kind === 'stuck' ? (v.tries >= 2 ? 'nm-repeat' : '') : kind === 'ok' ? 'nm-ready' : '';
+    const detail = !v ? '' : kind === 'stuck' ? ` · best ${v.best.score}/${v.best.total} (${v.best.pct}%) · ${tries(v)}` : ` · ${v.best.score}/${v.best.total} (${v.best.pct}%)`;
+    return `<span class="nm-name ${cls}" style="cursor:default">${escHtml(n)}${detail}</span>`;
+  };
+  const row = (label, sub, list, kind) => !list.length ? '' :
+    `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
+    `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
+  return `<div class="nm-head">🚦 Where each student is — ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
+    row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
+    row('Stuck at the Review gate', `Practice B under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
+    row('Passed Practice B — still needs Practice A', 'the Review stays closed until Practice A is finished', stage.needA, '') +
+    row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
+    row('Ready for the Review', `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
+    row('Finished Practice A — Practice B is next', '', stage.onlyA, '') +
+    row('Nothing finished yet', '', stage.none, '') +
+    row('Took the Test', '', stage.tested, 'ok');
 }
 
 let needsMeToken = 0;
@@ -3963,7 +3997,7 @@ function renderNeedsMe(cfg, data) {
       }
       people.push({ name: student.name, working, picks: parsePicks(sess.wrongQuestions), events: eventsOf(sess) });
     });
-    const readiness = readinessHTML(game);
+    const readiness = gatesHTML(game);
     if (!people.length && !readiness) return;
 
     const squash = t => String(t).replace(/\s+/g, ' ').trim();
@@ -4030,7 +4064,7 @@ function renderNeedsMe(cfg, data) {
     body.innerHTML = html;
     const twinNote = fixed + missedAgain ? ` · "try one like it": ${fixed} fixed, ${missedAgain} missed again` : '';
     const stillWorking = people.filter(p => p.working).length;
-    document.getElementById('needsMeSubtitle').textContent = !people.length ? 'who is ready for the test' :
+    document.getElementById('needsMeSubtitle').textContent = !people.length ? 'where each student is' :
       `grouped by the mistake behind each wrong answer · ${people.length} student${people.length > 1 ? 's' : ''}` +
       `${stillWorking ? ` (${stillWorking} still working ⏳)` : ''} · ${heatmapAttempt === 2 ? '2nd Try' : '1st Try'}${twinNote} · red = same mistake more than once · click a name`;
     wrap.style.display = 'block';
