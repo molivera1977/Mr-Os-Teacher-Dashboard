@@ -4077,6 +4077,8 @@ const EVENT_LOOK = {
   hint:   { icon:'💡', text:'Opened a hint',  color:'#b7950b' },
   twin:   { icon:'🔁', text:'Tried one like it', color:'#7d3c98' },
   word:   { icon:'📖', text:'Opened word help',  color:'#1f5f99' },
+  heard:  { icon:'👂', text:'Heard the correction', color:'#922b21' },   // math-module-2: after a miss, Next waits for Listen
+
   start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
   resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
   leave:  { icon:'⏸',  text:'Left the page',  color:'var(--orange)' },
@@ -4133,6 +4135,7 @@ function renderChronology(student) {
     const look = Object.assign({}, EVENT_LOOK[ev.e] || { icon:'•', text:ev.e, color:'var(--muted)' });
     if (ev.e === 'twin') look.text += ev.ok ? ' — got it' : ' — missed again';
     if (ev.e === 'word' && ev.w) look.text += ': ' + escHtml(ev.w);
+    if (ev.e === 'heard' && ev.how === 'read') look.text = 'Read the correction (no sound on the device)';
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
     const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : ''));
     return '<tr>' +
