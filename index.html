@@ -64,6 +64,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .tab-btn{padding:8px 18px;border:2px solid var(--border);border-radius:50px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;cursor:pointer;transition:all .2s;}
 .tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 3px 0 var(--accent2);}
 .tab-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+.version-note{flex:1 1 100%;grid-column:1/-1;font-size:.82rem;font-weight:700;color:var(--text);background:var(--surface2);border:1px dashed var(--border);border-radius:12px;padding:10px 14px;line-height:1.5;}
+.version-earlier{font-weight:700;font-style:italic;}
+.version-box{margin-top:14px;border:1px dashed var(--border);border-radius:12px;padding:10px 12px;background:var(--surface2);}
+.version-box-title{font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.version-box-row{display:grid;grid-template-columns:1.2fr 1fr 1fr .8fr;gap:8px;font-size:.82rem;color:var(--text);padding:4px 0;border-top:1px solid var(--border);}
 .form-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 18px;padding:8px 10px;border:1px dashed var(--border);border-radius:14px;}
 .form-tabs:empty{display:none;}
 .form-tab{padding:5px 14px;border:1.5px solid var(--border);border-radius:50px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;}
@@ -605,9 +610,10 @@ const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
+// Science 1.1 (startstop-lesson) is NOT here on purpose: the 3-day lesson has no written
+// question — it still posts a blank row to startstop_written on finish, which stays hidden.
 const WRITTEN_GAME_MAP = {
   'awoc-test-comp': 'awoc_test_written',
-  'startstop-lesson': 'startstop_written',
   'mod1a-test':    'mod1a_test_written',
   'mod1b-test':    'mod1b_test_written',
   'mod1c-test':    'mod1c_test_written',
@@ -623,7 +629,6 @@ const WRITTEN_GAME_MAP = {
 // Labels shown above each written answer (W1, W2, W3) in the student detail view.
 const WRITTEN_PROMPT_LABELS = {
   'awoc-test-comp': ['21. The text says, “Whether they are slow or fast, both kinds of changes have a great effect on our planet.” Explain how slow changes and fast changes each affect the surface of Earth. Use details from the text to support your answer.', '22. What do the letters R.A.D. stand for? Explain what you do for each letter when you write an answer.'],
-  'startstop-lesson': ['Explain why the cart stopped much sooner on sand than on ice, even though you gave it the same push every time. (Claim \u2014 Evidence \u2014 Reasoning)'],
   'mod1a-test': ["Jayden rounded 364,872 to the nearest thousand. He wrote 364,000. Jayden says: \"I just changed all the digits after the thousands place to zeros.\" Is Jayden correct? Explain his mistake and tell the correct answer.", "Which number is greater: 48,307 or 48,370? Explain how you know. Use place value words like thousands, hundreds, tens, and ones."],
   'mod1b-test': ["Mia says: \"3,400 is the same as 34 tens.\" Is Mia correct? Explain her mistake and tell what 34 tens really equals.", "Look at the digit 5 in 50,000 and the digit 5 in 5,000. How does the value of the 5 in 50,000 compare to the value of the 5 in 5,000? Explain how you know."],
   'mod1c-test': ["Leo wrote the number six hundred five thousand, forty as 605,400. Is Leo correct? Explain his mistake and write the number correctly.", "Ana and Ben both rounded 2,451 to the nearest hundred. Ana got 2,500. Ben got 2,400. Who is correct? Explain the mistake the other student made."],
@@ -1212,6 +1217,7 @@ async function refreshData() {
     Object.entries(raw).forEach(([k, v]) => { dashData[k.toLowerCase()] = v; });
     // "<game>_draft" tabs are autosaves of written answers still being typed — never an assignment
     Object.keys(dashData).forEach(k => { if (/_draft$/.test(k)) HIDDEN_GAMES.add(k); });
+    setAsideEarlierVersions(dashData);
     collapseSavedCopies(dashData);
     // Show every current assignment, even before its first submission creates a sheet tab
     GAME_ORDER.forEach(g => { if (!dashData[g] && !HIDDEN_GAMES.has(g)) dashData[g] = []; });
@@ -1222,6 +1228,74 @@ async function refreshData() {
   } catch(e) {
     document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
   }
+}
+
+// ── A lesson rebuilt in place keeps its sheet tab ──
+// Attempts saved before `since` were on the earlier version of that lesson: a different set
+// of questions and a different total. They are kept and shown (labeled), but set aside from
+// every count, average, 1st / 2nd Try, heat map and skills panel, so the current version
+// starts clean. `max` is the current version's question total, used until a finished
+// current attempt reports its own.
+const LESSON_VERSIONS = {
+  // Science 1.1 became the 3-day lesson on 10/10 at 1:04 PM ET; the 2-day lesson was taught 10/9
+  'startstop-lesson': { since: '2026-10-10T17:04:00Z', was: 'earlier 2-day version', now: '3-day lesson', max: 28 },
+};
+let archivedAttempts = {}; // game → student name → [attempts on the earlier version]
+
+function setAsideEarlierVersions(data) {
+  archivedAttempts = {};
+  Object.entries(LESSON_VERSIONS).forEach(([game, v]) => {
+    const rows = data[game];
+    if (!Array.isArray(rows)) return;
+    const since = new Date(v.since).getTime();
+    archivedAttempts[game] = {};
+    const kept = [];
+    rows.forEach(student => {
+      const old = [], cur = [];
+      (student.sessions || []).forEach(s => {
+        const t = new Date(s.timestamp).getTime();
+        (!isNaN(t) && t < since ? old : cur).push(s);
+      });
+      if (old.length) archivedAttempts[game][student.name] = old;
+      if (!cur.length) return; // only the earlier version → Not Started on the current one
+      kept.push(Object.assign({}, student, {
+        sessions:  cur,
+        status:    cur.some(s => s.status === 'complete') ? 'complete' : 'inprogress',
+        bestScore: cur.reduce((m, s) => Math.max(m, Number(s.score) || 0), 0),
+      }));
+    });
+    data[game] = kept;
+    // Score out of what the current version asks: the most common total on finished attempts
+    const count = {};
+    kept.forEach(st => st.sessions.forEach(s => {
+      if (s.status === 'complete' && Number(s.total) > 0) count[s.total] = (count[s.total] || 0) + 1;
+    }));
+    const common = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+    MAX_SCORES[game] = common ? Number(common) : v.max;
+    // Written answers are matched to a student by name, so an answer typed on the earlier
+    // version must not show under an attempt on the current one.
+    const writtenKey = WRITTEN_GAME_MAP[game];
+    if (writtenKey && Array.isArray(data[writtenKey])) {
+      data[writtenKey] = data[writtenKey].filter(r => {
+        const t = new Date(r.timestamp).getTime();
+        return isNaN(t) || t >= since;
+      });
+    }
+  });
+}
+
+// One student's attempts on the earlier version, as a short line: their best finished one
+// (out of ITS OWN question total), or how far an unfinished one got.
+function earlierVersionSummary(game, name) {
+  const list = (archivedAttempts[game] || {})[name];
+  if (!list || !list.length) return '';
+  const pct = s => Number(s.total) > 0 ? Math.round(Number(s.score) / Number(s.total) * 100) : 0;
+  const done = list.filter(s => s.status === 'complete').sort((a, b) => pct(b) - pct(a))[0];
+  const s = done || list.slice().sort((a, b) => Number(b.score) - Number(a.score))[0];
+  const when = formatSessionDate(sessionDate(s));
+  return done
+    ? `finished ${s.score}/${s.total} (${pct(s)}%) on ${when}`
+    : `started, not finished (${s.score}/${s.total}) on ${when}`;
 }
 
 // While a student works, the review keeps a running "in progress" row; finishing saves a
@@ -1937,6 +2011,16 @@ function renderAssignment() {
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
   `;
 
+  // A lesson rebuilt in place: say that the earlier version's attempts are set aside
+  const version  = LESSON_VERSIONS[currentGame];
+  const archived = archivedAttempts[currentGame] || {};
+  const archivedStudents = Object.keys(archived).filter(n => STUDENT_ROSTER.includes(n));
+  if (version && archivedStudents.length) {
+    document.getElementById('assignmentStats').insertAdjacentHTML('beforeend',
+      `<div class="version-note">ℹ️ This page shows the <b>${escHtml(version.now)}</b> only (attempts since ${formatSessionDate(new Date(version.since))}).
+        ${archivedStudents.length} student${archivedStudents.length > 1 ? 's have' : ' has'} work on the <b>${escHtml(version.was)}</b> — it is kept and shown on each student, but not counted here.</div>`);
+  }
+
   // Student rows
   const body = document.getElementById('assignmentBody');
   body.innerHTML = '';
@@ -1946,10 +2030,11 @@ function renderAssignment() {
     const tr = document.createElement('tr');
 
     if (!student) {
+      const earlier = version ? earlierVersionSummary(currentGame, name) : '';
       tr.innerHTML = `
         <td style="font-weight:800;">${name}</td>
         <td><span class="status-pill notstarted">⬜ Not Started</span></td>
-        <td colspan="6" style="color:var(--muted);font-size:.8rem;">—</td>`;
+        <td colspan="6" style="color:var(--muted);font-size:.8rem;">${earlier ? `<span class="version-earlier">${escHtml(version.was)}: ${escHtml(earlier)}</span>` : '—'}</td>`;
     } else {
       const best     = student.bestScore;
       const pct      = Math.round((best/maxScore)*100);
@@ -3592,6 +3677,20 @@ function openDetail(name) {
   } else {
     // One attempt: no attempts table, but its timeline still belongs here
     sessBreakEl.innerHTML = renderChronology(student);
+  }
+  // Work on the earlier version of a rebuilt lesson: listed, labeled, never counted
+  const earlierList = (archivedAttempts[currentGame] || {})[name];
+  if (earlierList && earlierList.length && LESSON_VERSIONS[currentGame]) {
+    const pctOf = s => Number(s.total) > 0 ? Math.round(Number(s.score) / Number(s.total) * 100) : 0;
+    sessBreakEl.insertAdjacentHTML('beforeend', `<div class="version-box">
+      <div class="version-box-title">🗄️ ${escHtml(LESSON_VERSIONS[currentGame].was)} — kept, not counted</div>
+      ${earlierList.map(s => `<div class="version-box-row">
+        <span>${formatSessionDate(sessionDate(s))}</span>
+        <span><b>${s.score}/${s.total}</b> (${pctOf(s)}%)</span>
+        <span>${s.status === 'complete' ? '✅ Finished' : '🔄 Not finished'}</span>
+        <span>${s.elapsed != null ? formatTime(s.elapsed) : ''}</span>
+      </div>`).join('')}
+    </div>`);
   }
 
   // Wrong questions
