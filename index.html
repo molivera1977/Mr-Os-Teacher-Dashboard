@@ -3281,7 +3281,7 @@ function vocabpQuestions(story, list, kind) {
 const VOCABP_QUESTION_BANKS = {};   // game → { id: question text }, read by getQuestionText
 VOCABP_STORIES.forEach(story => {
   const family = `vocab-${story.id}`;
-  FORM_FAMILY_LABELS[family] = `📚 Vocab Practice — ${story.title}`;
+  FORM_FAMILY_LABELS[family] = `📚 Wonders Vocabulary Practice — ${story.title}`;
   const games = [];
   story.lists.forEach(list => VOCABP_KINDS.forEach(k => {
     const game = `${family}-l${list.n}-${k.kind}`;
@@ -3289,7 +3289,7 @@ VOCABP_STORIES.forEach(story => {
     vocabpQuestions(story, list, k.kind).forEach(q => {
       bank[q.id] = `(${q.word}) ${q.q}`; standards[q.word] = k.standard; texts[q.id] = q.q;
     });
-    GAME_LABELS[game]         = `📚 Vocab — ${story.title} · List ${list.n} · ${k.label}`;
+    GAME_LABELS[game]         = `📚 Wonders Vocabulary — ${story.title} · List ${list.n} · ${k.label}`;
     MAX_SCORES[game]          = list.words.length;
     MIN_COMPLETION_SECS[game] = k.minSecs;
     FORM_FAMILY_EXTRA[game]   = family;
