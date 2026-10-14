@@ -3272,7 +3272,7 @@ function vocabpQuestions(story, list, kind) {
     }
     if (kind === 'yesno') {
       const it = list.usedRight[i];
-      return { id, word: w.word, q: `Is the dark word used the right way? “${it.sentence}”`, choices: ['Yes', 'No'], answer: it.answer };
+      return { id, word: w.word, q: `Is the underlined word used the right way? “${it.sentence}”`, choices: ['Yes', 'No'], answer: it.answer };
     }
     const it = list.endings[i];
     return { id, word: w.word, q: `${it.stem} ______`, choices: it.choices, answer: it.choices[it.answer] };
