@@ -574,6 +574,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'energymotion-lesson',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
@@ -650,6 +651,7 @@ const GAME_LABELS = {
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
   'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
   'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
+  'energymotion-lesson': '🔬 Science 1.2 — Energy and Motion',
   'startstop-lesson': '🔬 Science 1.1 — Starting and Stopping',
   'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
   'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
@@ -2906,6 +2908,81 @@ const STARTSTOP_SKILL_BANK = {};
 Object.entries(STARTSTOP_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { STARTSTOP_SKILL_BANK[id] = `(${skill}) ${STARTSTOP_QUESTIONS[id]}`; }));
 
+// ── Science Lesson 1.2 "Energy and Motion" (NGSS 4-PS3-1) ──────────────────
+//    Same rules as Lesson 1.1 above: EXACTLY the questions the lesson asks (all 39,
+//    E01–E39, as of 10/14). Generated from the lesson's data/questions.js (SKILLS)
+//    and data/form_e.js; the lesson's qa.js C27 checks form_e.js has every asked id.
+//    The lesson has no written question and posts no written row.
+//      Day 1: E01–E03 what we talked about · E04 E05 roller coaster · E06 E07 plan ·
+//             E08–E10 word check
+//      Day 2: E11–E13 high and low · E14–E16 never lost · E17–E19 forms · E32 E33 heat (noodles)
+//      Day 3: E20 E21 fuel · E22–E24 sort · E34–E36 both · E25 E26 measure ·
+//             E37–E39 bump · E27–E31 exit ticket
+const ENERGYMOTION_QUESTIONS = {
+  E01: "What makes things move or change?",
+  E02: "In the video, when did the roller coaster go the <b>fastest</b>?",
+  E03: "On the energy walk we found things that use energy. Which one uses energy?",
+  E04: "The roller coaster car sits still at the top of the tall hill. What kind of energy does the car have?",
+  E05: "The car rolls down the hill. What happens to the <b>stored energy</b> of the car?",
+  E06: "What do you learn <b>today</b>?",
+  E07: "What do you do after you listen to each part?",
+  E08: "What is <b>potential energy</b>?",
+  E09: "A ball rolls fast across the floor. The rolling ball has <b>kinetic energy</b>. Why?",
+  E10: "Mr. O pushes a chair. The chair moves across the floor. What did Mr. O do to the chair?",
+  E11: "Three kids sit at the top of three slides. Which kid has the <b>most potential energy</b>?",
+  E12: "A ball rolls off a high shelf and falls. What pulls the ball down?",
+  E13: "Two kids go down two slides. One slide is tall. One slide is short. Which kid has more <b>speed</b> at the bottom?",
+  E14: "You rub your hands together fast. Your hands get warm. What happened to the <b>kinetic energy</b> of your hands?",
+  E15: "A ball falls and stops on the floor. Where did the energy of the ball go?",
+  E16: "A rolling ball hits a still ball. The still ball starts to roll. Why?",
+  E17: "Which one has <b>chemical energy</b> stored inside?",
+  E18: "You turn on a flashlight. The chemical energy in the battery changes into what?",
+  E19: "You pull a rubber band back and hold the rubber band still. What kind of energy does the rubber band have?",
+  E20: "What does the engine of a car do with the chemical energy in gas?",
+  E21: "How is the food you eat like the gas in a car?",
+  E22: "A car is parked at the top of a hill. The car is not moving. What kind of energy does the car have?",
+  E23: "A car rolls down a long hill. What kind of energy does the moving car have?",
+  E24: "A battery sits on a shelf in a store. Nobody is using the battery. What kind of energy does the battery have?",
+  E25: "Two balls roll across the floor. One ball is fast. One ball is slow. Which ball has more <b>kinetic energy</b>?",
+  E26: "You push one swing gently. You push another swing very hard. What happens?",
+  E27: "Which one is a way to tell how much energy a moving object has?",
+  E28: "A roller coaster car sits still at the top of a hill. Then the car rolls down. What happens to the energy of the car?",
+  E29: "Two toy cars bump. One toy car stops. The other toy car starts to roll. What happened to the energy?",
+  E30: "What does <b>conservation of energy</b> mean?",
+  E31: "How do moving objects get energy?",
+  E32: "You cook noodles in a pan of water on the stove. Which one gets hot <b>first</b>?",
+  E33: "How does the heat get from the stove to the noodles?",
+  E34: "A sled sits still at the top of a snowy hill. Which one is true?",
+  E35: "A skater is in the middle of a high jump. What kinds of energy does the skater have?",
+  E36: "When does a skater have the <b>most kinetic energy</b>?",
+  E37: "A toy car rolls into a block. The block moves. What does this show?",
+  E38: "You want the block to move <b>farther</b>. What should the toy car do?",
+  E39: "You want to learn about energy when objects bump. Which question could you test?",
+};
+const ENERGYMOTION_SKILLS = {
+  "What energy is": ["E01","E03"],
+  "Energy and speed": ["E02","E13","E25","E27","E36","E38"],
+  "Stored or moving energy": ["E04"],
+  "Stored energy changes to moving energy": ["E05","E28"],
+  "Know the plan": ["E06","E07"],
+  "Potential energy": ["E08","E22","E24","E34"],
+  "Kinetic energy": ["E09","E23"],
+  "Work": ["E10"],
+  "Higher means more potential energy": ["E11"],
+  "Gravity changes potential to kinetic energy": ["E12"],
+  "Energy changes form": ["E14","E18","E20","E31"],
+  "Energy is never lost": ["E15","E30"],
+  "Energy moves between objects": ["E16","E29","E32","E33","E37"],
+  "Kinds of stored energy": ["E17","E19","E21"],
+  "More energy goes higher": ["E26"],
+  "Potential and kinetic energy together": ["E35"],
+  "Ask a question you can test": ["E39"],
+};
+const ENERGYMOTION_STANDARDS = Object.fromEntries(Object.keys(ENERGYMOTION_SKILLS).map(k => [k, "4-PS3-1"]));
+const ENERGYMOTION_SKILL_BANK = {};
+Object.entries(ENERGYMOTION_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { ENERGYMOTION_SKILL_BANK[id] = `(${skill}) ${ENERGYMOTION_QUESTIONS[id]}`; }));
+
 const SKILL_REPORTS = {
   // the test reuses the review's ids + skill tags, so review → test compares skill by skill
   'awoc-test-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-unit-test' },
@@ -2946,6 +3023,7 @@ const SKILL_REPORTS = {
   'mod1c-review':   { bank: MOD1_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-review' },
   rad_quiz1:        { bank: RAD_QUESTIONS,    form: 'Q', standards: RAD_STANDARDS,    site: 'rad-online-quiz-1' }, // ids Q01–Q23, one form
   'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // exactly the asked ids, one form
+  'energymotion-lesson': { bank: ENERGYMOTION_SKILL_BANK, form: 'E', standards: ENERGYMOTION_STANDARDS, site: 'science-energy-and-motion' }, // all 39 asked ids, one form
 };
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
