@@ -495,7 +495,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <!-- QPS VIEW — each student's QPS Literacy Hub track and Practice Checks -->
     <div id="view-qps" style="display:none;">
       <div class="section-title">📖 QPS Literacy Hub — Practice Checks</div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. 80% or better on the Practice Check = ready for your check.</p>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. 80% or better on the Practice Check = ready for your check. Students who passed every QPS level are on the comprehension track: the site moves their level (1–4) up and down on its own.</p>
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
     </div>
 
@@ -670,6 +670,8 @@ const GAME_LABELS = {
   'qps-9b': '📖 QPS 9b — Three-part words',
   'qps-9c': '📖 QPS 9c — Four-part words',
   'qps-10': '📖 QPS 10 — Word parts',
+  'qps-c-context': '📖 QPS Comprehension — Words in context',
+  'qps-levels': '📖 QPS — comprehension levels',
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
   'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
   'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
@@ -745,6 +747,7 @@ const MAX_SCORES = {
   'qps-9b': 10,
   'qps-9c': 10,
   'qps-10': 10,
+  'qps-c-context': 10,
   // A World of Change Test: same items as the review; the 2 written answers are graded by hand
   'awoc-test-vocab': 34,
   'awoc-test-comp':  20,
@@ -1428,43 +1431,81 @@ function qpsStopName(id) {
   return (GAME_LABELS['qps-' + id] || ('QPS ' + id)).replace(/^📖 QPS /, '');
 }
 
+// Tabs the hub writes: phonics stops (qps-5), comprehension skills (qps-c-context),
+// and 'qps-levels' — one row per comprehension student holding their current level
+// for each skill ("context=3;main=2|t=…").
+const isQpsStop = g => /^qps-(\d+|9[abc])$/.test(g);
+const isQpsComp = g => /^qps-c-/.test(g);
+const QPS_COMP_SKILLS = { context: '🔎 Words in context' };
+
+function qpsLevels(name) {
+  const row = (dashData['qps-levels'] || []).find(s => s.name === name);
+  const form = row && row.sessions && row.sessions.length ? row.sessions[row.sessions.length - 1].form : '';
+  const out = {};
+  String(form || '').split('|')[0].split(';').forEach(p => { const [k, v] = p.split('='); if (k && Number(v)) out[k] = Number(v); });
+  return out;
+}
+
 async function renderQps() {
   const el = document.getElementById('qpsGrid');
   await loadQpsTracks();
   if (currentView !== 'qps') return;
-  const games = Object.keys(dashData).filter(isQps);
+  const stopGames = Object.keys(dashData).filter(isQpsStop);
+  const compGames = Object.keys(dashData).filter(isQpsComp);
   const names = [...STUDENT_ROSTER];
-  games.forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
+  [...stopGames, ...compGames].forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
 
-  const order = id => id == null ? 99 : ['1','2','3','4','5','6','7','8','9a','9b','9c','10'].indexOf(id);
-  const rows = names.map(name => {
-    const checks = [];
+  const finished = (games, name, keep) => {
+    const out = [];
     games.forEach(g => {
       const st = (dashData[g] || []).find(s => s.name === name);
-      (st && st.sessions || []).filter(s => s.status === 'complete').forEach(s => checks.push({ ...s, stop: g.slice(4) }));
+      (st && st.sessions || []).filter(s => s.status === 'complete' && keep(s)).forEach(s => out.push({ ...s, game: g, stop: g.slice(4) }));
     });
-    checks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return out.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  };
+  const order = id => id === 'comp' ? 98 : id == null ? 99 : ['1','2','3','4','5','6','7','8','9a','9b','9c','10'].indexOf(id);
+  const rows = names.map(name => {
     const known = qpsTracks && Object.prototype.hasOwnProperty.call(qpsTracks, name);
-    const track = known ? qpsTracks[name] : (checks[0] ? checks[0].stop : undefined);
-    const onTrack = checks.filter(c => c.stop === track);
-    const latest = onTrack[0] || null;
-    const best = onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1);
-    return { name, track, known, checks, onTrack, latest, best };
+    const compChecks = finished(compGames, name, s => /^Check/.test(s.form || ''));
+    const compPractice = finished(compGames, name, s => /^Practice/.test(s.form || ''));
+    const stopChecks = finished(stopGames, name, () => true);
+    const track = known ? qpsTracks[name]
+                : (compChecks.length || compPractice.length) ? 'comp'
+                : (stopChecks[0] ? stopChecks[0].stop : undefined);
+    if (track === 'comp') {
+      const lv = qpsLevels(name);
+      return { name, track, known, comp: true, levels: lv, checks: compChecks, practice: compPractice,
+               latest: compChecks[0] || null, best: compChecks.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
+    }
+    const onTrack = stopChecks.filter(c => c.stop === track);
+    return { name, track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
+             best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
   }).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
 
-  const head = '<tr><th>Student</th><th>Track</th><th>Checks</th><th>Latest</th><th>Best</th><th>Your check</th><th>Missed last time</th></tr>';
+  const muted = t => `<span style="color:var(--muted);">${t}</span>`;
+  const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  const head = '<tr><th>Student</th><th>Track</th><th>Checks</th><th>Latest</th><th>Best</th><th>Your check / Level</th><th>Missed last time</th></tr>';
   const body = rows.map(r => {
-    const trackTxt = r.track === null ? 'Passed every section'
-                   : r.track === undefined ? '—'
-                   : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' <span style="color:var(--muted);">(last practiced)</span>'}`;
-    const latest = r.latest ? `${r.latest.percent}% <span style="color:var(--muted);">${escHtml(new Date(r.latest.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))}</span>` : '—';
+    let trackTxt, count, ready;
+    if (r.comp) {
+      const skills = Object.keys(QPS_COMP_SKILLS);
+      trackTxt = 'Comprehension<br>' + skills.map(k => `${QPS_COMP_SKILLS[k]}`).join('<br>');
+      count = r.checks.length + (r.practice.length ? ' ' + muted(`+${r.practice.length} practice`) : '');
+      ready = skills.map(k => r.levels[k] ? `<span class="status-pill complete">Level ${r.levels[k]} of 4</span>`
+                                          : '<span class="status-pill notstarted">⬜ Not started</span>').join('<br>');
+    } else {
+      trackTxt = r.track === null ? 'Any stop'
+               : r.track === undefined ? '—'
+               : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' ' + muted('(last practiced)')}`;
+      const other = r.checks.length - r.onTrack.length;
+      count = r.onTrack.length + (other > 0 ? ' ' + muted(`+${other} other stop${other > 1 ? 's' : ''}`) : '');
+      ready = r.best >= QPS_READY ? '<span class="status-pill complete">✅ Ready</span>'
+            : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
+            : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
+    }
+    const latest = r.latest ? `${r.latest.percent}% ${muted(day(r.latest.timestamp))}${r.comp ? '<br>' + muted(escHtml(r.latest.form)) : ''}` : '—';
     const best = r.best >= 0 ? `${r.best}%` : '—';
-    const ready = r.best >= QPS_READY ? '<span class="status-pill complete">✅ Ready</span>'
-                : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
-                : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
     const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
-    const other = r.checks.length - r.onTrack.length;
-    const count = r.onTrack.length + (other > 0 ? ` <span style="color:var(--muted);">+${other} other stop${other > 1 ? 's' : ''}</span>` : '');
     return `<tr><td>${escHtml(r.name)}</td><td>${trackTxt}</td><td>${count}</td><td>${latest}</td><td>${best}</td><td>${ready}</td><td style="white-space:normal;">${missed}</td></tr>`;
   }).join('');
   el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
@@ -4022,7 +4063,7 @@ function openProfile(name) {
     currentProfileName = name;
     const allGames = Object.keys(dashData);
     const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
-      .filter(g => !isQps(g) || (dashData[g] || []).some(s => s.name === name));   // only QPS stops this student practiced
+      .filter(g => g !== 'qps-levels' && (!isQps(g) || (dashData[g] || []).some(s => s.name === name)));   // only QPS work this student did
 
     document.getElementById('profileName').textContent = '👤 ' + name;
     const tbody = document.getElementById('profileBody');
