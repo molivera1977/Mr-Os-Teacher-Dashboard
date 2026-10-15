@@ -347,6 +347,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <button class="btn btn-ghost btn-sm" onclick="openAssignmentsTab()" id="tabAssignment">📋 Assignment</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('facts')" id="tabFacts">🧮 Fact Fluency</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('gk')" id="tabGk">🌟 General Knowledge</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('qps')" id="tabQps">📖 QPS</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -489,6 +490,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <div id="view-gk" style="display:none;">
       <div class="section-title">🌟 General Knowledge Hub — Tests</div>
       <div class="assignment-cards" id="gkCards"></div>
+    </div>
+
+    <!-- QPS VIEW — each student's QPS Literacy Hub track and Practice Checks -->
+    <div id="view-qps" style="display:none;">
+      <div class="section-title">📖 QPS Literacy Hub — Practice Checks</div>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. 80% or better on the Practice Check = ready for your check.</p>
+      <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
     </div>
 
     <div id="view-facts" style="display:none;">
@@ -648,6 +656,20 @@ const WRITTEN_PROMPT_LABELS = {
 // ⚠️ ASSIGNMENT REGISTRY — Add every new web assignment here.
 // Key must match the game:'key' in the activity's POST body AND in Code.gs TABS.
 const GAME_LABELS = {
+  // QPS Literacy Hub Practice Checks — one sheet tab per stop. Not in GAME_ORDER on purpose:
+  // a stop shows up only after a student finishes its Check (no 12 empty cards).
+  'qps-1': '📖 QPS 1 — Letter sounds',
+  'qps-2': '📖 QPS 2 — Short vowels',
+  'qps-3': '📖 QPS 3 — sh ch th',
+  'qps-4': '📖 QPS 4 — Blends',
+  'qps-5': '📖 QPS 5 — Silent e',
+  'qps-6': '📖 QPS 6 — Bossy R',
+  'qps-7': '📖 QPS 7 — Tricky letters',
+  'qps-8': '📖 QPS 8 — Vowel teams',
+  'qps-9a': '📖 QPS 9a — Two-part words',
+  'qps-9b': '📖 QPS 9b — Three-part words',
+  'qps-9c': '📖 QPS 9c — Four-part words',
+  'qps-10': '📖 QPS 10 — Word parts',
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
   'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
   'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
@@ -710,6 +732,19 @@ const GAME_LABELS = {
   'mod16-test': '✖️ Mod 16 — Test',
 };
 const MAX_SCORES = {
+  // QPS Practice Check: always 10 items
+  'qps-1': 10,
+  'qps-2': 10,
+  'qps-3': 10,
+  'qps-4': 10,
+  'qps-5': 10,
+  'qps-6': 10,
+  'qps-7': 10,
+  'qps-8': 10,
+  'qps-9a': 10,
+  'qps-9b': 10,
+  'qps-9c': 10,
+  'qps-10': 10,
   // A World of Change Test: same items as the review; the 2 written answers are graded by hand
   'awoc-test-vocab': 34,
   'awoc-test-comp':  20,
@@ -1348,6 +1383,8 @@ function toggleView(view) {
   document.getElementById('tabFacts').className = 'btn btn-sm ' + (view==='facts' ? 'btn-primary' : 'btn-ghost');
   document.getElementById('view-gk').style.display = view === 'gk' ? 'block' : 'none';
   document.getElementById('tabGk').className = 'btn btn-sm ' + (view==='gk' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-qps').style.display = view === 'qps' ? 'block' : 'none';
+  document.getElementById('tabQps').className = 'btn btn-sm ' + (view==='qps' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
@@ -1356,7 +1393,83 @@ function renderCurrentView() {
   if (currentView === 'assignment') renderAssignment();
   if (currentView === 'facts')      renderFacts();
   if (currentView === 'gk')         renderGk();
+  if (currentView === 'qps')        renderQps();
 }
+// ═══════════════════════════════════════════════════
+//  QPS VIEW
+//  QPS Literacy Hub sends one row per finished Practice Check, on the stop's
+//  own tab (qps-5 = Silent e). Each student works only their own stop (their
+//  official track), so QPS is kept off the class-wide Overview / Assignment
+//  counts and gets this page: one row per student.
+//  Tracks are read from the hub's login.js (one source of truth); if it can't
+//  be read, the Track column falls back to the stop they last practiced.
+// ═══════════════════════════════════════════════════
+const isQps = g => /^qps-/.test(g);
+const QPS_READY = 80;   // same mark the hub uses for "ready for Mr. O's check"
+let qpsTracks = null;    // name → stop id ('5') or null (passed every section)
+let qpsTracksTried = false;
+
+async function loadQpsTracks() {
+  if (qpsTracksTried) return;
+  qpsTracksTried = true;
+  try {
+    const src = await fetch('../qps-literacy-hub/login.js', { cache: 'no-store' }).then(r => r.ok ? r.text() : '');
+    const block = (/const TRACKS = \{([\s\S]*?)\};/.exec(src) || [])[1];
+    if (!block) return;
+    qpsTracks = {};
+    block.split('\n').forEach(line => {
+      const m = /^\s*"([^"]+)":\s*(?:"([^"]+)"|null)/.exec(line);
+      if (m) qpsTracks[m[1]] = m[2] || null;
+    });
+  } catch (e) { qpsTracks = null; }
+}
+
+function qpsStopName(id) {
+  return (GAME_LABELS['qps-' + id] || ('QPS ' + id)).replace(/^📖 QPS /, '');
+}
+
+async function renderQps() {
+  const el = document.getElementById('qpsGrid');
+  await loadQpsTracks();
+  if (currentView !== 'qps') return;
+  const games = Object.keys(dashData).filter(isQps);
+  const names = [...STUDENT_ROSTER];
+  games.forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
+
+  const order = id => id == null ? 99 : ['1','2','3','4','5','6','7','8','9a','9b','9c','10'].indexOf(id);
+  const rows = names.map(name => {
+    const checks = [];
+    games.forEach(g => {
+      const st = (dashData[g] || []).find(s => s.name === name);
+      (st && st.sessions || []).filter(s => s.status === 'complete').forEach(s => checks.push({ ...s, stop: g.slice(4) }));
+    });
+    checks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const known = qpsTracks && Object.prototype.hasOwnProperty.call(qpsTracks, name);
+    const track = known ? qpsTracks[name] : (checks[0] ? checks[0].stop : undefined);
+    const onTrack = checks.filter(c => c.stop === track);
+    const latest = onTrack[0] || null;
+    const best = onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1);
+    return { name, track, known, checks, onTrack, latest, best };
+  }).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
+
+  const head = '<tr><th>Student</th><th>Track</th><th>Checks</th><th>Latest</th><th>Best</th><th>Your check</th><th>Missed last time</th></tr>';
+  const body = rows.map(r => {
+    const trackTxt = r.track === null ? 'Passed every section'
+                   : r.track === undefined ? '—'
+                   : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' <span style="color:var(--muted);">(last practiced)</span>'}`;
+    const latest = r.latest ? `${r.latest.percent}% <span style="color:var(--muted);">${escHtml(new Date(r.latest.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))}</span>` : '—';
+    const best = r.best >= 0 ? `${r.best}%` : '—';
+    const ready = r.best >= QPS_READY ? '<span class="status-pill complete">✅ Ready</span>'
+                : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
+                : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
+    const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
+    const other = r.checks.length - r.onTrack.length;
+    const count = r.onTrack.length + (other > 0 ? ` <span style="color:var(--muted);">+${other} other stop${other > 1 ? 's' : ''}</span>` : '');
+    return `<tr><td>${escHtml(r.name)}</td><td>${trackTxt}</td><td>${count}</td><td>${latest}</td><td>${best}</td><td>${ready}</td><td style="white-space:normal;">${missed}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
 
 // Header 📋 Assignment button — always lands on the regular assignments,
 // not on a General Knowledge test left open from the 🌟 page.
@@ -1760,7 +1873,7 @@ function renderOverview() {
   const games = [
     ...GAME_ORDER.filter(g => allGames.includes(g)),
     ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g));
+  ].filter(g => !GK_GAMES.includes(g) && !isQps(g));   // QPS has its own 📖 page
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
@@ -1889,7 +2002,7 @@ function buildAssignmentTabs() {
   const games = inGk ? GK_GAMES : [
     ...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)),
     ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g));
+  ].filter(g => !GK_GAMES.includes(g) && !isQps(g));   // QPS has its own 📖 page
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
@@ -3908,7 +4021,8 @@ function openProfile(name) {
   try {
     currentProfileName = name;
     const allGames = Object.keys(dashData);
-    const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))];
+    const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
+      .filter(g => !isQps(g) || (dashData[g] || []).some(s => s.name === name));   // only QPS stops this student practiced
 
     document.getElementById('profileName').textContent = '👤 ' + name;
     const tbody = document.getElementById('profileBody');
