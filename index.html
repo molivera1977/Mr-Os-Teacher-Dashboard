@@ -3657,6 +3657,8 @@ function loadReviewForm(site, form) {
         new Function('window', src)(box);
         const data = custom ? custom.adapt(box) : box['FORM_' + form];
         if (!data) throw new Error((custom ? custom.file : 'FORM_' + form) + ' not found');
+        // math-module-2 (10/16): a retry gets new numbers — FORM_X_V holds every version (version 1 = FORM_X)
+        if (!custom && Array.isArray(box['FORM_' + form + '_V'])) data.versions = box['FORM_' + form + '_V'];
         return data;
       })
       .catch(err => { delete reviewFormCache[url]; throw err; });
@@ -4495,8 +4497,10 @@ function renderNeedsMe(cfg, data) {
   loadReviewForm(cfg.site, cfg.form).then(loaded => {
     if (token !== needsMeToken || game !== currentGame) return;   // another tab was opened meanwhile
     const items = Array.isArray(loaded) ? loaded : (loaded && loaded.items) || [];
+    // one id can have several versions (new numbers on a retry): byId[id][v] = that question in version v+1
+    const banks = (loaded && loaded.versions) || [items];
     const byId = {};
-    items.forEach(q => { if (q && q.id && q.slips) byId[q.id] = q; });
+    banks.forEach((bank, v) => (bank || []).forEach(q => { if (q && q.id && q.slips) (byId[q.id] = byId[q.id] || [])[v] = q; }));
     if (!Object.keys(byId).length) return;                         // this site does not name its mistakes
 
     const people = [];
@@ -4512,7 +4516,8 @@ function renderNeedsMe(cfg, data) {
         if (heatmapAttempt === 2 || !all.length) return;
         sess = all[all.length - 1]; working = true;
       }
-      people.push({ name: student.name, working, picks: parsePicks(sess.wrongQuestions), events: eventsOf(sess) });
+      const evs = eventsOf(sess), started = evs.find(e => e && e.e === 'start' && e.v);
+      people.push({ name: student.name, working, picks: parsePicks(sess.wrongQuestions), events: evs, version: started ? Number(started.v) : 1 });
     });
     const readiness = gatesHTML(game);
     if (!people.length && !readiness) return;
@@ -4530,10 +4535,15 @@ function renderNeedsMe(cfg, data) {
     };
     people.forEach(p => {
       Object.entries(p.picks).forEach(([id, pick]) => {
-        const q = byId[id];
-        if (!q) return;
-        const key  = Object.keys(q.slips).find(k => k === pick || squash(k) === squash(pick));
-        const slip = key && q.slips[key];
+        const all = byId[id];
+        if (!all) return;
+        // the version this try used first (its start event says which), then any version that has this pick
+        const order = [all[p.version - 1], ...all].filter(Boolean);
+        let slip = null;
+        for (const q of order) {
+          const key = Object.keys(q.slips).find(k => k === pick || squash(k) === squash(pick));
+          if (key) { slip = q.slips[key]; break; }
+        }
         if (slip && slip.tag) add(groups, slip.tag, p.name, id);
       });
       const seen = new Set();
