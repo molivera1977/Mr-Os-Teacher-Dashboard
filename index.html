@@ -583,7 +583,7 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
   'energymotion-lesson',
-  'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice',
+  'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
   'rounding2-quiz', 'rounding2-review', 'rounding2-practice', 'rounding2-practice-a',
@@ -703,6 +703,7 @@ const GAME_LABELS = {
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'mod2w-warmup': '🔥 MM2 — Warm-Up',          // 10/15: before Practice A — watch, step by step, 12 scored questions
   'mod2-practice': '🌱 MM2 — Practice A',
   'mod2a-review': '🧭 MM2 — Practice B',
   'mod2b-review': '📘 MM2 — Review',
@@ -786,6 +787,7 @@ const MAX_SCORES = {
   'mod2a-review': 17,
   'mod2b-review': 17,
   'mod2-practice': 18,
+  'mod2w-warmup': 12,      // only its 12 questions are scored (the worked examples and the steps are not)
   'mod1a-test': 20,
   'mod1b-test': 20,
   'mod1c-test': 20,
@@ -1148,7 +1150,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -2000,7 +2002,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
-  'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2' };
+  'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2' };
 const FORM_FAMILY_LABELS = {
   'mod2':          '🧮 Math Module 2 Review and Test',
   'mod1-test':     '📝 MM1 Test',
@@ -2409,8 +2411,53 @@ Object.entries(MOD1_SKILLS).forEach(([skill, ids]) =>
 // Practice B, Review and Test ask the same 17 kinds of question in the same slots, so they compare skill by skill.
 // X01–X17 / Y01–Y17 are the "try one like it" questions a student gets after a miss in Practice B / the Review — never
 // scored; they are listed here only so the timeline can name them. Numbers and stories are our own, not HMH's.
-// Mirrors math-module-2/data/form_p.js, form_a.js, form_b.js, form_t.js, form_u.js, twin_x.js, twin_y.js, skills.js.
+// Warm-Up (mod2w-warmup, 10/15), ids W01–W42 in order: "Watch: …" = a worked example the student must hear to the end,
+// "Step: …" = one step of a problem worked one place at a time (not scored; logged as event "step"), the rest = its
+// 12 scored questions. Only the scored ones carry a skill.
+// Mirrors math-module-2/data/form_w.js, form_p.js, form_a.js, form_b.js, form_t.js, form_u.js, twin_x.js, twin_y.js, skills.js.
 const MOD2_QUESTIONS = {
+  W01: "Watch: Adding big numbers",
+  W02: "Step: The ones place. Add 8 + 4. What do you get?",
+  W03: "Step: 12 is 10 or more. What do you do?",
+  W04: "Step: The tens place. Add 1 + 6 + 5 (the 1 you carried). What do you get?",
+  W05: "Step: 12 is 10 or more. What do you do?",
+  W06: "Step: Now the hundreds place: 1 + 3 + 2. So what is 368 + 254?",
+  W07: "Add. 456 + 278",
+  W08: "Add. 539 + 186",
+  W09: "Watch: Subtracting with regrouping",
+  W10: "Step: The ones place: 3 − 7. Is the top digit, 3, big enough to take away 7?",
+  W11: "Step: Regroup. Take 1 from the tens place. The 2 there becomes what?",
+  W12: "Step: Now the ones place is 13. What is 13 − 7?",
+  W13: "Step: The tens place: 1 − 6. Is the top digit, 1, big enough to take away 6?",
+  W14: "Step: Regroup. Take 1 from the hundreds place. The 5 there becomes what?",
+  W15: "Step: Now the tens place is 11. What is 11 − 6?",
+  W16: "Step: Now the hundreds place: 4 − 1. So what is 523 − 167?",
+  W17: "Subtract. 461 − 135",
+  W18: "Subtract. 645 − 281",
+  W19: "Subtract. 724 − 358",
+  W20: "Watch: Checking a subtraction",
+  W21: "Step: Check 523 − 167 = 356. Which numbers do you add?",
+  W22: "Step: 356 + 167 = 523. Is 523 the top number of the subtraction?",
+  W23: "732 − 415 = 317. Which addition checks this answer?",
+  W24: "Watch: How many more?",
+  W25: "Step: Mia read 74 pages. Jon read 46 pages. How many more pages did Mia read than Jon? What do you do?",
+  W26: "Step: Which subtraction do you write?",
+  W27: "Step: What is 74 − 46?",
+  W28: "Town A has 562 people. Town B has 238 people. How many more people live in Town A than in Town B?",
+  W29: "Leo read 315 pages. Kim read 187 pages. How many fewer pages did Kim read than Leo?",
+  W30: "Watch: Rounding to the nearest thousand",
+  W31: "Step: Round 6,420 to the nearest thousand. 6,420 is between which two thousands?",
+  W32: "Step: Which digit tells you which way to round?",
+  W33: "Step: The hundreds digit is 4. So 6,420 rounds to what?",
+  W34: "Round 5,630 to the nearest thousand.",
+  W35: "Watch: Estimating",
+  W36: "Round each number to the nearest thousand. Then add. 1,600 + 2,700",
+  W37: "Watch: Perimeter",
+  W38: "Step: This rectangle is 5 meters long and 2 meters wide. How many sides does it have?",
+  W39: "Step: Which numbers do you add to find the perimeter?",
+  W40: "Step: What is 5 + 2 + 5 + 2?",
+  W41: "A rectangle is 7 feet long and 4 feet wide. What is the perimeter?",
+  W42: "Each side of a square is 6 inches. What is the perimeter?",
   P01: "Add. 2,314 + 1,253",
   P02: "Add. 2,438 + 1,325",
   P03: "Add. 24,318 + 3,457",
@@ -2533,12 +2580,12 @@ const MOD2_QUESTIONS = {
   Y17: "A club wants to sell 2,350 tickets. The club has sold 562 tickets so far. How many more tickets does the club need to sell?",
 };
 const MOD2_SKILLS = {
-  "Add whole numbers": ['P01','P02','P03','A01','A06','B01','B06','T01','T06','U01','U06'],
-  "Subtract whole numbers": ['P04','P05','P06','P07','A05','A17','B05','B17','T05','T17','U05','U17'],
-  "Comparison problems": ['P08','P09','P10','A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
-  "Estimate by rounding": ['P11','P12','P13','A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
-  "Perimeter of a rectangle": ['P15','P16','A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
-  "Perimeter of a square": ['P17','A10','B10','T10','U10'],
+  "Add whole numbers": ['W07','W08','P01','P02','P03','A01','A06','B01','B06','T01','T06','U01','U06'],
+  "Subtract whole numbers": ['W17','W18','W19','W23','P04','P05','P06','P07','A05','A17','B05','B17','T05','T17','U05','U17'],
+  "Comparison problems": ['W28','W29','P08','P09','P10','A02','A13','A16','B02','B13','B16','T02','T13','T16','U02','U13','U16'],
+  "Estimate by rounding": ['W34','W36','P11','P12','P13','A07','A08','A09','A11','B07','B08','B09','B11','T07','T08','T09','T11','U07','U08','U09','U11'],
+  "Perimeter of a rectangle": ['W41','P15','P16','A03','A12','A15','B03','B12','B15','T03','T12','T15','U03','U12','U15'],
+  "Perimeter of a square": ['W42','P17','A10','B10','T10','U10'],
   "Two-step perimeter": ['P18','A04','B04','T04','U04'],
   "Perimeter expression": ['P14','A14','B14','T14','U14'],
 };
@@ -3169,6 +3216,7 @@ const SKILL_REPORTS = {
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2b-review':   { bank: MOD2_SKILL_BANK,   form: 'B', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2-practice':  { bank: MOD2_SKILL_BANK,   form: 'P', standards: MOD2_STANDARDS,   site: 'math-module-2' },
+  'mod2w-warmup':   { bank: MOD2_SKILL_BANK,   form: 'W', standards: MOD2_STANDARDS,   site: 'math-module-2' },   // W = Warm-Up
   'mod1a-test':     { bank: MOD1T_SKILL_BANK,  form: 'A', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1b-test':     { bank: MOD1T_SKILL_BANK,  form: 'B', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
   'mod1c-test':     { bank: MOD1T_SKILL_BANK,  form: 'C', standards: MOD1_STANDARDS,   site: 'math-module-1-test' },
@@ -4315,6 +4363,7 @@ function getQuestionText(id) {
     'mod2a-review': MOD2_QUESTIONS,
     'mod2b-review': MOD2_QUESTIONS,
     'mod2-practice': MOD2_QUESTIONS,
+    'mod2w-warmup': MOD2_QUESTIONS,
     'mod1a-test': MOD1T_QUESTIONS,
     'mod1b-test': MOD1T_QUESTIONS,
     'mod1c-test': MOD1T_QUESTIONS,
@@ -4363,13 +4412,14 @@ function hintOpensOf(sessions) {
 // gate are listed FIRST, with their best score and how many tries it has taken; red = stuck after 2+ tries.
 // The site remembers scores on the device; this list reads the sheet, so it stays right after a device change
 // (a student shown here as ready who is still locked on a new Chromebook needs the PIN).
+// 10/15: a Warm-Up comes first — 70% on it opens Practice A (a student who already passed Practice A keeps it).
 const UNIT_GATES = [
-  { practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
+  { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
 function gatesHTML(game) {
-  const unit = UNIT_GATES.find(u => [u.practiceA, u.practiceB, u.review, ...u.tests].includes(game));
+  const unit = UNIT_GATES.find(u => [u.warmUp, u.practiceA, u.practiceB, u.review, ...u.tests].filter(Boolean).includes(game));
   if (!unit) return '';
-  const games = [unit.practiceA, unit.practiceB, unit.review, ...unit.tests];
+  const games = [unit.warmUp, unit.practiceA, unit.practiceB, unit.review, ...unit.tests].filter(Boolean);
   const real = st => st.name !== 'Mr. O (Teacher)';
   if (!games.some(g => (dashData[g] || []).some(st => real(st) && (st.sessions || []).length))) return '';   // nobody has started
   // name → { tries, best: { score, total, pct } } from finished attempts
@@ -4387,23 +4437,26 @@ function gatesHTML(game) {
     });
     return m;
   };
+  const W = unit.warmUp ? tally(unit.warmUp) : new Map();
   const A = tally(unit.practiceA), B = tally(unit.practiceB), R = tally(unit.review);
   const T = new Map();
   unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
   const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
 
-  const stage = { stuckReview: [], stuckB: [], stuckA: [], needA: [], readyTest: [], readyReview: [], readyB: [], none: [], tested: [] };
+  const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
   STUDENT_ROSTER.forEach(n => {
     if (T.has(n))                 stage.tested.push([n, T.get(n)]);
     else if (pass(R.get(n)))      stage.readyTest.push([n, R.get(n)]);
     else if (R.has(n))            stage.stuckReview.push([n, R.get(n)]);
     else if (pass(B.get(n)))      (A.has(n) ? stage.readyReview : stage.needA).push([n, B.get(n)]);
     else if (B.has(n))            stage.stuckB.push([n, B.get(n)]);
-    else if (A.has(n))            (pass(A.get(n)) ? stage.readyB : stage.stuckA).push([n, A.get(n)]);
+    else if (pass(A.get(n)))      stage.readyB.push([n, A.get(n)]);
+    else if (W.has(n))            (pass(W.get(n)) ? (A.has(n) ? stage.stuckA.push([n, A.get(n)]) : stage.readyA.push([n, W.get(n)])) : stage.stuckW.push([n, W.get(n)]));
+    else if (A.has(n))            (unit.warmUp ? stage.stuckW : stage.stuckA).push([n, A.get(n)]);   // Practice A under 70% and no Warm-Up yet
     else                          stage.none.push([n, null]);
   });
   const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
-  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst);
+  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst); stage.stuckW.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
   const tries = v => `${v.tries} ${v.tries === 1 ? 'try' : 'tries'}`;
   const chip = (n, v, kind) => {
@@ -4414,14 +4467,16 @@ function gatesHTML(game) {
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
     `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
-  return `<div class="nm-head">🚦 Where each student is — ${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
+  return `<div class="nm-head">🚦 Where each student is — ${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens Practice A · ` : ''}${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
     row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
     row('Stuck at the Review gate', `Practice B under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
     row('Stuck at the Practice B gate', `Practice A under ${unit.cutoff}%`, stage.stuckA, 'stuck') +
+    row('Stuck at the Practice A gate', `the Warm-Up not passed yet (under ${unit.cutoff}%, or a Practice A under ${unit.cutoff}% and no Warm-Up) — the score shown is the one that holds them`, stage.stuckW, 'stuck') +
     row('Passed Practice B — still needs Practice A', 'let in by PIN; the Review stays closed until Practice A is finished', stage.needA, '') +
     row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
     row('Ready for the Review', `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
     row('Ready for Practice B', `Practice A ${unit.cutoff}% or better`, stage.readyB, 'ok') +
+    row('Ready for Practice A', `Warm-Up ${unit.cutoff}% or better`, stage.readyA, 'ok') +
     row('Nothing finished yet', '', stage.none, '') +
     row('Took the Test', '', stage.tested, 'ok');
 }
@@ -4538,6 +4593,7 @@ const EVENT_LOOK = {
   twin:   { icon:'🔁', text:'Tried one like it', color:'#7d3c98' },
   word:   { icon:'📖', text:'Opened word help',  color:'#1f5f99' },
   heard:  { icon:'👂', text:'Heard the correction', color:'#922b21' },   // math-module-2: after a miss, Next waits for Listen
+  step:   { icon:'🪜', text:'Warm-Up step',  color:'#a04000' },          // math-module-2 Warm-Up: one step of a worked problem (not scored)
 
   start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
   resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
@@ -4596,6 +4652,8 @@ function renderChronology(student) {
     if (ev.e === 'twin') look.text += ev.ok ? ' — got it' : ' — missed again';
     if (ev.e === 'word' && ev.w) look.text += ': ' + escHtml(ev.w);
     if (ev.e === 'heard' && ev.how === 'read') look.text = 'Read the correction (no sound on the device)';
+    if (ev.e === 'heard' && /^W/.test(ev.id || '') && typeof MOD2_QUESTIONS !== 'undefined' && /^Watch:/.test(MOD2_QUESTIONS[ev.id] || '')) look.text = 'Heard the worked example';
+    if (ev.e === 'step') look.text += ev.ok ? ' — right' : ' — missed (picked ' + escHtml(ev.pick || '?') + ')';
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
     const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : ''));
     return '<tr>' +
