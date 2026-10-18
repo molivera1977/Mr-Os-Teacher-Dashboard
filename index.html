@@ -348,6 +348,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <button class="btn btn-ghost btn-sm" onclick="toggleView('facts')" id="tabFacts">🧮 Fact Fluency</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('gk')" id="tabGk">🌟 General Knowledge</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('qps')" id="tabQps">📖 QPS</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('lab')" id="tabLab">🧪 Lab</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -497,6 +498,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="section-title">📖 QPS Literacy Hub — Practice Checks</div>
       <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. 80% or better on the Practice Check = ready for your check. Students who passed every QPS level are on the comprehension track: the site moves their level (1–4) up and down on its own.</p>
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- LAB VIEW — where each Lab student is, what they passed, and the mistakes they repeat -->
+    <div id="view-lab" style="display:none;">
+      <div class="section-title">🧪 The Lab — Adding and Subtracting to 20</div>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons pass at 90%. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
+      <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
     </div>
 
     <div id="view-facts" style="display:none;">
@@ -672,6 +680,14 @@ const GAME_LABELS = {
   'qps-10': '📖 QPS 10 — Word parts',
   'qps-c-context': '📖 QPS Comprehension — Words in context',
   'qps-levels': '📖 QPS — comprehension levels',
+  'lab-as1': '🧪 Lab AS1 — Count On to Add',
+  'lab-as2': '🧪 Lab AS2 — Make 10',
+  'lab-as3': '🧪 Lab AS3 — Teen Numbers',
+  'lab-as4': '🧪 Lab AS4 — Count Back to Subtract',
+  'lab-as5': '🧪 Lab AS5 — Subtract by Thinking Addition',
+  'lab-as6': '🧪 Lab AS6 — Facts Check to 20',
+  'lab-progress': '🧪 Lab — progress backup',
+  'lab-seed': '🧪 Lab — fact-site misses (seed)',
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
   'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
   'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
@@ -1390,6 +1406,8 @@ function toggleView(view) {
   document.getElementById('tabGk').className = 'btn btn-sm ' + (view==='gk' ? 'btn-primary' : 'btn-ghost');
   document.getElementById('view-qps').style.display = view === 'qps' ? 'block' : 'none';
   document.getElementById('tabQps').className = 'btn btn-sm ' + (view==='qps' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-lab').style.display = view === 'lab' ? 'block' : 'none';
+  document.getElementById('tabLab').className = 'btn btn-sm ' + (view==='lab' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
@@ -1399,6 +1417,7 @@ function renderCurrentView() {
   if (currentView === 'facts')      renderFacts();
   if (currentView === 'gk')         renderGk();
   if (currentView === 'qps')        renderQps();
+  if (currentView === 'lab')        renderLab();
 }
 // ═══════════════════════════════════════════════════
 //  QPS VIEW
@@ -1513,6 +1532,65 @@ async function renderQps() {
   el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
 
+
+// ═══════════════════════════════════════════════════
+//  LAB VIEW (the-lab, 10/17/2026)
+//  The Lab sends one row per lesson try on the lesson's tab (lab-as1 … lab-as6): a row as the lesson starts
+//  and every 5 items (done:false, "In Progress (Q12/24)"), then the finished row. Its events carry 'pre'
+//  (Show what you know), 'mine' / 'repeat' (the student's own missed facts; same wrong answer again), and
+//  'start' { v, mine }. lab-progress = one backup row per student: form "passed=AS1,AS2|mastered=…",
+//  wrongQuestions = the facts still on their list. lab-seed = their fact-site misses (read by the Lab).
+//  Lab lessons are per-student work, so they stay off the class Overview / Assignment counts (like QPS).
+// ═══════════════════════════════════════════════════
+const isLab = g => /^lab-/.test(g);
+const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6'];
+const LAB_PASS = 90;
+// Who is on a Lab plan is NOT written here (this page's code is public): a student is on a plan when the
+// lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
+const labPlan = () => (dashData['lab-seed'] || []).map(s => s.name);
+
+function renderLab() {
+  const el = document.getElementById('labGrid');
+  const games = LAB_LESSONS.map(id => 'lab-' + id);
+  const LAB_PLAN = labPlan();
+  const names = [...LAB_PLAN];
+  games.forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
+  const muted = t => `<span style="color:var(--muted);">${t}</span>`;
+  const day = t => escHtml(new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+  const rows = names.map(name => {
+    const tries = [];
+    games.forEach(g => {
+      const st = (dashData[g] || []).find(s => s.name === name);
+      (st && st.sessions || []).forEach(s => tries.push({ ...s, lesson: g.slice(4).toUpperCase() }));
+    });
+    tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const done = tries.filter(t => t.status === 'complete');
+    const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= LAB_PASS));
+    // a running row is "now" unless a finished row of the same try came after it (a redo in the same visit
+    // reuses the running row's id, so compare times, not just ids)
+    const now = tries.find(t => t.status !== 'complete' &&
+      !done.some(d => d.sessionId && t.sessionId && d.sessionId.startsWith(t.sessionId) && new Date(d.timestamp) >= new Date(t.timestamp)));
+    const ev = [];
+    done.forEach(t => { try { JSON.parse(t.events || '[]').forEach(e => ev.push({ ...e, lesson: t.lesson })); } catch (e) {} });
+    const repeats = ev.filter(e => e.e === 'repeat');
+    const mineAsked = ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0);
+    const prog = (dashData['lab-progress'] || []).find(s => s.name === name);
+    const p = prog && prog.sessions && prog.sessions.length ? prog.sessions[prog.sessions.length - 1] : null;
+    return { name, onPlan: LAB_PLAN.includes(name), tries, done, passed, now, repeats, mineAsked, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null };
+  });
+  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>Missed last time</th></tr>';
+  const body = rows.map(r => {
+    const now = r.now ? `<span class="status-pill inprogress">🔄 ${escHtml(r.now.lesson)}</span><br>${muted(`${Number(r.now.score) || 0} right so far`)}<br>${muted(day(r.now.timestamp))}`
+              : r.tries.length ? muted('—') : '<span class="status-pill notstarted">⬜ Not started</span>';
+    const passed = r.passed.length ? r.passed.map(id => `<span class="status-pill complete">✅ ${id}</span>`).join(' ') : muted('none yet');
+    const latest = r.latest ? `${escHtml(r.latest.lesson)} · ${r.latest.score}/${r.latest.total} (${r.latest.percent}%)${/Tested out/.test(r.latest.form) ? ' · skipped' : ''}<br>${muted(day(r.latest.timestamp))}` : '—';
+    const reps = r.repeats.length ? r.repeats.map(e => `${escHtml(e.f)} → ${escHtml(e.pick)} ${muted(escHtml(e.lesson))}`).join('<br>') : muted('—');
+    const list = r.list == null ? muted('not synced yet') : r.list ? escHtml(r.list.split(' | ').map(x => x.replace(/ \(.*\)$/, '')).join(', ')) : muted('none');
+    const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
+    return `<tr><td>${escHtml(r.name)}${r.onPlan ? '' : ' ' + muted('(not on a plan)')}</td><td>${now}</td><td>${passed}</td><td>${latest}</td><td>${r.mineAsked}</td><td style="white-space:normal;">${reps}</td><td style="white-space:normal;">${list}</td><td style="white-space:normal;">${missed}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
 
 // Header 📋 Assignment button — always lands on the regular assignments,
 // not on a General Knowledge test left open from the 🌟 page.
@@ -1916,7 +1994,7 @@ function renderOverview() {
   const games = [
     ...GAME_ORDER.filter(g => allGames.includes(g)),
     ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g) && !isQps(g));   // QPS has its own 📖 page
+  ].filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g));   // QPS has its own 📖 page, the Lab its own 🧪 page
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
@@ -2045,7 +2123,7 @@ function buildAssignmentTabs() {
   const games = inGk ? GK_GAMES : [
     ...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)),
     ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g) && !isQps(g));   // QPS has its own 📖 page
+  ].filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g));   // QPS has its own 📖 page, the Lab its own 🧪 page
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
@@ -4166,7 +4244,7 @@ function openProfile(name) {
     currentProfileName = name;
     const allGames = Object.keys(dashData);
     const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
-      .filter(g => g !== 'qps-levels' && (!isQps(g) || (dashData[g] || []).some(s => s.name === name)));   // only QPS work this student did
+      .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name)));   // only QPS / Lab work this student did
 
     document.getElementById('profileName').textContent = '👤 ' + name;
     const tbody = document.getElementById('profileBody');
