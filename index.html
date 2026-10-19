@@ -696,10 +696,12 @@ const GAME_LABELS = {
   'lab-pv1': '🧪 Lab PV1 — Ones, Tens, Hundreds',
   'lab-pv2': '🧪 Lab PV2 — Expanded Form',
   'lab-pv3': '🧪 Lab PV3 — Thousands',
-  'lab-pv4': '🧪 Lab PV4 — Times 10',
-  'lab-pv5': '🧪 Lab PV5 — Times 100',
-  'lab-pv6': '🧪 Lab PV6 — Multiples of 10',
-  'lab-pv7': '🧪 Lab PV7 — Place Value Check',
+  'lab-pv4': '🧪 Lab PV4 — Compare Numbers',
+  'lab-pv5': '🧪 Lab PV5 — Rename Numbers',
+  'lab-pv6': '🧪 Lab PV6 — Times 10',
+  'lab-pv7': '🧪 Lab PV7 — Times 100',
+  'lab-pv8': '🧪 Lab PV8 — Multiples of 10',
+  'lab-pv9': '🧪 Lab PV9 — Place Value Check',
   'lab-ro1': '🧪 Lab RO1 — The Two Benchmarks',
   'lab-ro2': '🧪 Lab RO2 — Halfway',
   'lab-ro3': '🧪 Lab RO3 — Round to the Nearest Ten',
@@ -1563,7 +1565,7 @@ async function renderQps() {
 //  Lab lessons are per-student work, so they stay off the class Overview / Assignment counts (like QPS).
 // ═══════════════════════════════════════════════════
 const isLab = g => /^lab-/.test(g);
-const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7', 'pv1', 'pv2', 'pv3', 'pv4', 'pv5', 'pv6', 'pv7', 'ro1', 'ro2', 'ro3', 'ro4', 'ro5', 'ro6'];
+const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7', 'pv1', 'pv2', 'pv3', 'pv4', 'pv5', 'pv6', 'pv7', 'pv8', 'pv9', 'ro1', 'ro2', 'ro3', 'ro4', 'ro5', 'ro6'];
 const LAB_PASS = 90;
 // Who is on a Lab plan is NOT written here (this page's code is public): a student is on a plan when the
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
