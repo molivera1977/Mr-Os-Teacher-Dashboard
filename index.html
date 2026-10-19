@@ -502,7 +502,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 
     <!-- LAB VIEW — where each Lab student is, what they passed, and the mistakes they repeat -->
     <div id="view-lab" style="display:none;">
-      <div class="section-title">🧪 The Lab — Adding and Subtracting to 20</div>
+      <div class="section-title">🧪 The Lab — Adding and Subtracting to 20 · Multiplying</div>
       <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons pass at 90%. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
       <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
     </div>
@@ -686,6 +686,13 @@ const GAME_LABELS = {
   'lab-as4': '🧪 Lab AS4 — Count Back to Subtract',
   'lab-as5': '🧪 Lab AS5 — Subtract by Thinking Addition',
   'lab-as6': '🧪 Lab AS6 — Facts Check to 20',
+  'lab-mu1': '🧪 Lab MU1 — Equal Groups',
+  'lab-mu2': '🧪 Lab MU2 — Arrays',
+  'lab-mu3': '🧪 Lab MU3 — Skip Count by 2s, 5s and 10s',
+  'lab-mu4': '🧪 Lab MU4 — Facts: 2s, 5s and 10s',
+  'lab-mu5': '🧪 Lab MU5 — 3s and 4s',
+  'lab-mu6': '🧪 Lab MU6 — Times as Many',
+  'lab-mu7': '🧪 Lab MU7 — Multiplication Facts Check',
   'lab-progress': '🧪 Lab — progress backup',
   'lab-seed': '🧪 Lab — fact-site misses (seed)',
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
@@ -1543,7 +1550,7 @@ async function renderQps() {
 //  Lab lessons are per-student work, so they stay off the class Overview / Assignment counts (like QPS).
 // ═══════════════════════════════════════════════════
 const isLab = g => /^lab-/.test(g);
-const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6'];
+const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7'];
 const LAB_PASS = 90;
 // Who is on a Lab plan is NOT written here (this page's code is public): a student is on a plan when the
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
