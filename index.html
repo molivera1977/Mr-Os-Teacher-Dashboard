@@ -598,7 +598,7 @@ const GAME_ORDER = [
   'awoc-review-vocab', 'awoc-review-comp', 'awoc-review-cloze',
   'rounding-quiz', 'rounding-review', 'rounding-practice', 'rounding-practice-a',
   'mod1a-test', 'mod1b-test', 'mod1c-test',
-  'rliaba-review', 'rliabb-review', 'rliabc-review',
+  'rliabw-review', 'rliaba-review', 'rliabb-review', 'rliabc-review',
   'rad_quiz1',
   'gk-geography', 'gk-civics', 'gk-math', 'gk-ela',
   'mod1a-review', 'mod1b-review', 'mod1c-review',
@@ -617,7 +617,7 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
+const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliabw_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens', 'facts-addsub']);
 
@@ -634,6 +634,7 @@ const WRITTEN_GAME_MAP = {
   'mod1a-test':    'mod1a_test_written',
   'mod1b-test':    'mod1b_test_written',
   'mod1c-test':    'mod1c_test_written',
+  'rliabw-review': 'rliabw_written',
   'rliaba-review': 'rliaba_written',
   'rliabb-review': 'rliabb_written',
   'rliabc-review': 'rliabc_written',
@@ -649,9 +650,10 @@ const WRITTEN_PROMPT_LABELS = {
   'mod1a-test': ["Jayden rounded 364,872 to the nearest thousand. He wrote 364,000. Jayden says: \"I just changed all the digits after the thousands place to zeros.\" Is Jayden correct? Explain his mistake and tell the correct answer.", "Which number is greater: 48,307 or 48,370? Explain how you know. Use place value words like thousands, hundreds, tens, and ones."],
   'mod1b-test': ["Mia says: \"3,400 is the same as 34 tens.\" Is Mia correct? Explain her mistake and tell what 34 tens really equals.", "Look at the digit 5 in 50,000 and the digit 5 in 5,000. How does the value of the 5 in 50,000 compare to the value of the 5 in 5,000? Explain how you know."],
   'mod1c-test': ["Leo wrote the number six hundred five thousand, forty as 605,400. Is Leo correct? Explain his mistake and write the number correctly.", "Ana and Ben both rounded 2,451 to the nearest hundred. Ana got 2,500. Ben got 2,400. Who is correct? Explain the mistake the other student made."],
-  'rliaba-review': ["What can you infer about the relationship between Nia and her brother Andre? Use details from the passage to support your answer."],
-  'rliabb-review': ["What can you infer about the relationship between Lena and her sister Noor? Use details from the passage to support your answer."],
-  'rliabc-review': ["What can you infer about the relationship between Kenji and his sister Mika? Use details from the passage to support your answer."],
+  'rliabw-review': ["What can you infer about the relationship between Maya and her brother Theo? Use details from the passage to support your answer."],
+  'rliaba-review': ["What can you infer about the relationship between Lena and her sister Noor? Use details from the passage to support your answer."],
+  'rliabb-review': ["What can you infer about the relationship between Kenji and his sister Mika? Use details from the passage to support your answer."],
+  'rliabc-review': ["What can you infer about the relationship between Nia and her brother Andre? Use details from the passage to support your answer."],
   rad_quiz1:    ['Why is it important to listen to your teacher?', 'Why did Deshawn want to plant sunflowers?', 'What problem did the garden have in June, and how did the class solve it?'],
   wwrt_comp:    ['Extended Response','Evidence-Based Response','Argument / Opinion'],
   djt_comp:     ['Extended Response','Evidence-Based Response','Argument / Opinion'],
@@ -718,6 +720,7 @@ const GAME_LABELS = {
   'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
   'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
   'awoc-review-cloze': '🌋 A World of Change Review — Cloze',
+  'rliabw-review': '📚 SBAC Read Literary Warm Up',
   'rliaba-review': '📚 SBAC Read Literary A',
   'rliabb-review': '📚 SBAC Read Literary B',
   'rliabc-review': '📚 SBAC Read Literary C',
@@ -797,6 +800,7 @@ const MAX_SCORES = {
   'awoc-review-cloze': 34,
   // 15 items each: 2 EBSRs worth 2 + 12 one-point items (MC, choose-N, hot text);
   // the written answer (item 11) is scored by hand and is not in this total
+  'rliabw-review': 16,
   'rliaba-review': 16,
   'rliabb-review': 16,
   'rliabc-review': 16,
@@ -1188,7 +1192,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -2113,6 +2117,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
   'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
+  'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2' };
 const FORM_FAMILY_LABELS = {
   'mod2':          '🧮 Math Module 2 Review and Test',
@@ -2142,6 +2147,7 @@ function familyOf(game) {
 function formLetterOf(game) {
   if (/-practice-a$/.test(game)) return '0';  // Practice A, then Practice B, then Form A
   if (/-practice$/.test(game)) return '1';
+  if (game === 'rliabw-review') return '0';   // Read Literary: Warm Up, then Form A → C
   const m = /^.+?([abc])-(review|test)$/.exec(game) || /Form ([ABC])/.exec(GAME_LABELS[game] || '');
   return m ? m[1].toUpperCase() : 'Z';
 }
@@ -2360,56 +2366,73 @@ function setHeatmapAttempt(n) {
 //    element (EBSR parts A04.A / A04.B; choose-N and hot-text items are one
 //    element each). Labels are "(Skill) [Story] question", generated from
 //    sbac-read-literary-iab-review/data/form_x.js + data/skills.js. The written
-//    answer (item 11) is scored by hand, so it has no entry here.
+//    answer (item 11) is scored by hand, so it has no entry here. W = the Warm Up;
+//    10/19 the forms were relabeled easiest → hardest (A = old B, B = old C, C = old A).
 const RLIT_QUESTIONS = {
-  "A01":"(Character inference) [Mateo's Worm Bin] Read paragraph 3 from the passage. What does paragraph 3 show about Mateo?",
-  "A02":"(Word meaning) [Mateo's Worm Bin] Read this sentence from the passage. “One by one, the worms burrowed down into the damp newspaper until not a single one could be seen.” What does the word burrowed mean in this sentence?",
-  "A03":"(Picture purpose) [Mateo's Worm Bin] Look at the picture from the passage. Why does the author include this picture?",
-  "A04.A":"(Drawing conclusions) [Mateo's Worm Bin] Part A — What conclusion can be drawn about why Abuela agrees to build the worm bin?",
-  "A04.B":"(Supporting detail) [Mateo's Worm Bin] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "A05":"(Main idea) [Mateo's Worm Bin] Read paragraphs 9 and 10 from the passage again. What is the main idea of these paragraphs?",
-  "A06":"(Evidence selection) [Mateo's Worm Bin] The passage shows that Mateo and Abuela work TOGETHER. Click on the TWO sentences from the passage that BEST support this idea.",
-  "A07":"(Summarizing) [Anchor Leg] Read this summary of the passage. Which KEY event is MISSING from the summary?",
-  "A08":"(Evidence selection) [Anchor Leg] Which detail from the passage BEST shows that Andre cares a lot about how Nia's race turns out?",
-  "A09.A":"(Character inference) [Anchor Leg] Part A — Which word BEST describes Nia during the race?",
-  "A09.B":"(Supporting detail) [Anchor Leg] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "A10":"(Figurative language) [Anchor Leg] Read this sentence from the passage. “It was not announcing, but Mom said he had finally gotten his foot in the door.” What does the phrase “gotten his foot in the door” suggest about Andre? Choose TWO answers.",
-  "A12":"(Word meaning) [The Keeper of the Spring] Read this sentence from the passage. “Tomas and Lina were astonished.” Which TWO words mean about the same as astonished? Choose TWO answers.",
-  "A13":"(Summarizing) [The Keeper of the Spring] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
-  "A14":"(Figurative language) [The Keeper of the Spring] Read these sentences from the passage. “A village is like a stream. When one stone blocks it at the top, every house at the bottom goes thirsty.” What does this comparison show about what Ama believes? Choose THREE answers.",
-  "A15":"(Evidence selection) [The Keeper of the Spring] Read paragraph 2 from the passage. The passage shows that Ama is CAREFUL about choosing the next keeper. Click on the TWO sentences in the paragraph that BEST support this idea.",
-  "B01":"(Character inference) [A Window for the Birds] Read paragraph 3 from the passage. What does paragraph 3 show about Amira?",
-  "B02":"(Word meaning) [A Window for the Birds] Read these sentences from the passage. “Uncle Sami tugged hard on the branch two times. It did not bend or crack.” Then he calls the branch “nice and sturdy.” What does the word sturdy mean?",
-  "B03":"(Picture purpose) [A Window for the Birds] Look at the picture from the passage. Why does the author include this picture?",
-  "B04.A":"(Drawing conclusions) [A Window for the Birds] Part A — What conclusion can be drawn about Amira from the way she chooses a place to hang the feeder?",
-  "B04.B":"(Supporting detail) [A Window for the Birds] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "B05":"(Main idea) [A Window for the Birds] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
-  "B06":"(Evidence selection) [A Window for the Birds] The passage shows that Uncle Sami lets Amira be IN CHARGE of building the feeder. Click on the TWO sentences from the passage that BEST support this idea.",
-  "B07":"(Summarizing) [Pick a Spot] Read this summary of the passage. Which KEY event is MISSING from the summary?",
-  "B08":"(Evidence selection) [Pick a Spot] Which detail from the passage BEST shows that Noor was PATIENT while she was teaching Lena?",
-  "B09.A":"(Character inference) [Pick a Spot] Part A — Which word BEST describes Lena when she takes the last kick?",
-  "B09.B":"(Supporting detail) [Pick a Spot] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "B10":"(Figurative language) [Pick a Spot] Read this sentence from the passage. “The night before she left, Noor got cold feet.” What does the phrase “got cold feet” suggest about Noor? Choose TWO answers.",
-  "B12":"(Word meaning) [The Cracked Bowls] Read this sentence from the passage. “Pell was so anxious that his hands shook as he set his bowl down beside theirs.” Which TWO words mean about the same as anxious? Choose TWO answers.",
-  "B13":"(Summarizing) [The Cracked Bowls] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
-  "B14":"(Figurative language) [The Cracked Bowls] Read these sentences from the passage. “An honest word is like Pell's bowl. It may not look perfect, but it holds what you put in it. A pretty answer that hides the truth is like a painted crack. It looks fine right up until the moment you need it to hold.” What do these comparisons show about what the queen believes? Choose THREE answers.",
-  "B15":"(Evidence selection) [The Cracked Bowls] Read paragraph 2 from the passage. The passage shows that Queen Ilsa is HONEST herself. Click on the TWO sentences in the paragraph that BEST support this idea.",
-  "C01":"(Character inference) [Two Sticks and a Bag] Read paragraph 3 from the passage. What does paragraph 3 show about Malik?",
-  "C02":"(Word meaning) [Two Sticks and a Bag] Read this sentence from the passage. “He pulled until the string was taut and the sticks did not wobble at all when he tapped them.” What does the word taut mean in this sentence?",
-  "C03":"(Picture purpose) [Two Sticks and a Bag] Look at the picture from the passage. Why does the author include this picture?",
-  "C04.A":"(Drawing conclusions) [Two Sticks and a Bag] Part A — What conclusion can be drawn about Desmond?",
-  "C04.B":"(Supporting detail) [Two Sticks and a Bag] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "C05":"(Main idea) [Two Sticks and a Bag] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
-  "C06":"(Evidence selection) [Two Sticks and a Bag] The passage shows that Desmond wants Malik to do the building HIMSELF while Desmond teaches. Click on the TWO sentences from the passage that BEST support this idea.",
-  "C07":"(Summarizing) [One Hundred Before Dinner] Read this summary of the passage. Which KEY event is MISSING from the summary?",
-  "C08":"(Evidence selection) [One Hundred Before Dinner] Which detail from the passage BEST shows that Mika is sure Kenji will succeed?",
-  "C09.A":"(Character inference) [One Hundred Before Dinner] Part A — Which word BEST describes Kenji at the END of the passage?",
-  "C09.B":"(Supporting detail) [One Hundred Before Dinner] Part B — Which sentence from the passage BEST supports the answer in Part A?",
-  "C10":"(Figurative language) [One Hundred Before Dinner] Read this sentence from the passage. “Mika was still learning the ropes, and most of her pictures came out blurry.” What does the phrase “learning the ropes” suggest about Mika? Choose TWO answers.",
-  "C12":"(Word meaning) [The Slowest Climb] Read this sentence from the passage. “Bear and Fox were perplexed.” Which TWO words mean about the same as perplexed? Choose TWO answers.",
-  "C13":"(Summarizing) [The Slowest Climb] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
-  "C14":"(Figurative language) [The Slowest Climb] Read these sentences from the passage. “A guardian is like a lantern on a dark path. A lantern does not run ahead so that everyone will look at it. It stays close beside the traveler, so the traveler can see where to step.” What does this comparison show about what Grandmother Tortoise believes? Choose THREE answers.",
-  "C15":"(Evidence selection) [The Slowest Climb] Read paragraph 5 from the passage. The passage shows that Field Mouse is PATIENT. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "W01":"(Character inference) [Seeds in an Egg Carton] Read paragraph 3 from the passage. What does paragraph 3 show about Leo?",
+  "W02":"(Word meaning) [Seeds in an Egg Carton] Read these sentences from the passage. “Last, Leo sprinkled water over the cups. He did not pour it.” Then he lets “just a few drops” fall on each cup. What does the word sprinkled mean?",
+  "W03":"(Picture purpose) [Seeds in an Egg Carton] Look at the picture from the passage. Why does the author include this picture?",
+  "W04.A":"(Drawing conclusions) [Seeds in an Egg Carton] Part A — What conclusion can be drawn about Aunt Rosa from the way she answers Leo's questions?",
+  "W04.B":"(Supporting detail) [Seeds in an Egg Carton] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "W05":"(Main idea) [Seeds in an Egg Carton] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
+  "W06":"(Evidence selection) [Seeds in an Egg Carton] The passage shows that Leo is CAREFUL when he plants the seeds. Click on the TWO sentences from the passage that BEST support this idea.",
+  "W07":"(Summarizing) [One More Shot] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "W08":"(Evidence selection) [One More Shot] Which detail from the passage BEST shows that Theo was PATIENT while he was teaching Maya?",
+  "W09.A":"(Character inference) [One More Shot] Part A — Which word BEST describes Maya when she takes the last shot?",
+  "W09.B":"(Supporting detail) [One More Shot] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "W10":"(Figurative language) [One More Shot] Read this sentence from the passage. “Maya had butterflies in her stomach as she walked to the line.” What does the phrase “had butterflies in her stomach” suggest about Maya? Choose TWO answers.",
+  "W12":"(Word meaning) [The Village Soup] Read this sentence from the passage. “Grandmother Wren was so delighted that she laughed out loud.” Which TWO words mean about the same as delighted? Choose TWO answers.",
+  "W13":"(Summarizing) [The Village Soup] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "W14":"(Figurative language) [The Village Soup] Read these sentences from the passage. “Your soup is like our village. One person alone does not have much. But when everyone adds a little, there is enough for all.” What does this comparison show about what Grandmother Wren believes? Choose THREE answers.",
+  "W15":"(Evidence selection) [The Village Soup] Read paragraph 6 from the passage. The passage shows that Pip is KIND. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "A01":"(Character inference) [A Window for the Birds] Read paragraph 3 from the passage. What does paragraph 3 show about Amira?",
+  "A02":"(Word meaning) [A Window for the Birds] Read these sentences from the passage. “Uncle Sami tugged hard on the branch two times. It did not bend or crack.” Then he calls the branch “nice and sturdy.” What does the word sturdy mean?",
+  "A03":"(Picture purpose) [A Window for the Birds] Look at the picture from the passage. Why does the author include this picture?",
+  "A04.A":"(Drawing conclusions) [A Window for the Birds] Part A — What conclusion can be drawn about Amira from the way she chooses a place to hang the feeder?",
+  "A04.B":"(Supporting detail) [A Window for the Birds] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A05":"(Main idea) [A Window for the Birds] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
+  "A06":"(Evidence selection) [A Window for the Birds] The passage shows that Uncle Sami lets Amira be IN CHARGE of building the feeder. Click on the TWO sentences from the passage that BEST support this idea.",
+  "A07":"(Summarizing) [Pick a Spot] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "A08":"(Evidence selection) [Pick a Spot] Which detail from the passage BEST shows that Noor was PATIENT while she was teaching Lena?",
+  "A09.A":"(Character inference) [Pick a Spot] Part A — Which word BEST describes Lena when she takes the last kick?",
+  "A09.B":"(Supporting detail) [Pick a Spot] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "A10":"(Figurative language) [Pick a Spot] Read this sentence from the passage. “The night before she left, Noor got cold feet.” What does the phrase “got cold feet” suggest about Noor? Choose TWO answers.",
+  "A12":"(Word meaning) [The Cracked Bowls] Read this sentence from the passage. “Pell was so anxious that his hands shook as he set his bowl down beside theirs.” Which TWO words mean about the same as anxious? Choose TWO answers.",
+  "A13":"(Summarizing) [The Cracked Bowls] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "A14":"(Figurative language) [The Cracked Bowls] Read these sentences from the passage. “An honest word is like Pell's bowl. It may not look perfect, but it holds what you put in it. A pretty answer that hides the truth is like a painted crack. It looks fine right up until the moment you need it to hold.” What do these comparisons show about what the queen believes? Choose THREE answers.",
+  "A15":"(Evidence selection) [The Cracked Bowls] Read paragraph 2 from the passage. The passage shows that Queen Ilsa is HONEST herself. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "B01":"(Character inference) [Two Sticks and a Bag] Read paragraph 3 from the passage. What does paragraph 3 show about Malik?",
+  "B02":"(Word meaning) [Two Sticks and a Bag] Read this sentence from the passage. “He pulled until the string was taut and the sticks did not wobble at all when he tapped them.” What does the word taut mean in this sentence?",
+  "B03":"(Picture purpose) [Two Sticks and a Bag] Look at the picture from the passage. Why does the author include this picture?",
+  "B04.A":"(Drawing conclusions) [Two Sticks and a Bag] Part A — What conclusion can be drawn about Desmond?",
+  "B04.B":"(Supporting detail) [Two Sticks and a Bag] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B05":"(Main idea) [Two Sticks and a Bag] Read paragraphs 5 and 6 from the passage again. What is the main idea of these paragraphs?",
+  "B06":"(Evidence selection) [Two Sticks and a Bag] The passage shows that Desmond wants Malik to do the building HIMSELF while Desmond teaches. Click on the TWO sentences from the passage that BEST support this idea.",
+  "B07":"(Summarizing) [One Hundred Before Dinner] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "B08":"(Evidence selection) [One Hundred Before Dinner] Which detail from the passage BEST shows that Mika is sure Kenji will succeed?",
+  "B09.A":"(Character inference) [One Hundred Before Dinner] Part A — Which word BEST describes Kenji at the END of the passage?",
+  "B09.B":"(Supporting detail) [One Hundred Before Dinner] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "B10":"(Figurative language) [One Hundred Before Dinner] Read this sentence from the passage. “Mika was still learning the ropes, and most of her pictures came out blurry.” What does the phrase “learning the ropes” suggest about Mika? Choose TWO answers.",
+  "B12":"(Word meaning) [The Slowest Climb] Read this sentence from the passage. “Bear and Fox were perplexed.” Which TWO words mean about the same as perplexed? Choose TWO answers.",
+  "B13":"(Summarizing) [The Slowest Climb] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "B14":"(Figurative language) [The Slowest Climb] Read these sentences from the passage. “A guardian is like a lantern on a dark path. A lantern does not run ahead so that everyone will look at it. It stays close beside the traveler, so the traveler can see where to step.” What does this comparison show about what Grandmother Tortoise believes? Choose THREE answers.",
+  "B15":"(Evidence selection) [The Slowest Climb] Read paragraph 5 from the passage. The passage shows that Field Mouse is PATIENT. Click on the TWO sentences in the paragraph that BEST support this idea.",
+  "C01":"(Character inference) [Mateo's Worm Bin] Read paragraph 3 from the passage. What does paragraph 3 show about Mateo?",
+  "C02":"(Word meaning) [Mateo's Worm Bin] Read this sentence from the passage. “One by one, the worms burrowed down into the damp newspaper until not a single one could be seen.” What does the word burrowed mean in this sentence?",
+  "C03":"(Picture purpose) [Mateo's Worm Bin] Look at the picture from the passage. Why does the author include this picture?",
+  "C04.A":"(Drawing conclusions) [Mateo's Worm Bin] Part A — What conclusion can be drawn about why Abuela agrees to build the worm bin?",
+  "C04.B":"(Supporting detail) [Mateo's Worm Bin] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C05":"(Main idea) [Mateo's Worm Bin] Read paragraphs 9 and 10 from the passage again. What is the main idea of these paragraphs?",
+  "C06":"(Evidence selection) [Mateo's Worm Bin] The passage shows that Mateo and Abuela work TOGETHER. Click on the TWO sentences from the passage that BEST support this idea.",
+  "C07":"(Summarizing) [Anchor Leg] Read this summary of the passage. Which KEY event is MISSING from the summary?",
+  "C08":"(Evidence selection) [Anchor Leg] Which detail from the passage BEST shows that Andre cares a lot about how Nia's race turns out?",
+  "C09.A":"(Character inference) [Anchor Leg] Part A — Which word BEST describes Nia during the race?",
+  "C09.B":"(Supporting detail) [Anchor Leg] Part B — Which sentence from the passage BEST supports the answer in Part A?",
+  "C10":"(Figurative language) [Anchor Leg] Read this sentence from the passage. “It was not announcing, but Mom said he had finally gotten his foot in the door.” What does the phrase “gotten his foot in the door” suggest about Andre? Choose TWO answers.",
+  "C12":"(Word meaning) [The Keeper of the Spring] Read this sentence from the passage. “Tomas and Lina were astonished.” Which TWO words mean about the same as astonished? Choose TWO answers.",
+  "C13":"(Summarizing) [The Keeper of the Spring] Which statement BEST summarizes the LAST THREE paragraphs of the passage?",
+  "C14":"(Figurative language) [The Keeper of the Spring] Read these sentences from the passage. “A village is like a stream. When one stone blocks it at the top, every house at the bottom goes thirsty.” What does this comparison show about what Ama believes? Choose THREE answers.",
+  "C15":"(Evidence selection) [The Keeper of the Spring] Read paragraph 2 from the passage. The passage shows that Ama is CAREFUL about choosing the next keeper. Click on the TWO sentences in the paragraph that BEST support this idea.",
 };
 
 // ── Standards & Skills report ──
@@ -3304,6 +3327,7 @@ const SKILL_REPORTS = {
   'awoc-review-vocab': { bank: AWOC_SKILL_BANK, form: 'V', standards: AWOC_VOCAB_STANDARDS, site: 'a-world-of-change-review' },
   'awoc-review-comp':  { bank: AWOC_SKILL_BANK, form: 'P', standards: AWOC_COMP_STANDARDS,  site: 'a-world-of-change-review' },
   'awoc-review-cloze': { bank: AWOC_SKILL_BANK, form: 'C', standards: AWOC_CLOZE_STANDARDS, site: 'a-world-of-change-review' },
+  'rliabw-review':  { bank: RLIT_QUESTIONS,   form: 'W', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'rliaba-review':  { bank: RLIT_QUESTIONS,   form: 'A', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'rliabb-review':  { bank: RLIT_QUESTIONS,   form: 'B', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
   'rliabc-review':  { bank: RLIT_QUESTIONS,   form: 'C', standards: RLIT_STANDARDS,   site: 'sbac-read-literary-iab-review' },
@@ -4454,6 +4478,7 @@ function getQuestionText(id) {
     'awoc-review-vocab': AWOC_QUESTIONS,
     'awoc-review-comp':  AWOC_QUESTIONS,
     'awoc-review-cloze': AWOC_QUESTIONS,
+    'rliabw-review': RLIT_QUESTIONS,
     'rliaba-review': RLIT_QUESTIONS,
     'rliabb-review': RLIT_QUESTIONS,
     'rliabc-review': RLIT_QUESTIONS,
