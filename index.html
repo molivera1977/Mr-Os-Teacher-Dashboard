@@ -502,8 +502,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 
     <!-- LAB VIEW — where each Lab student is, what they passed, and the mistakes they repeat -->
     <div id="view-lab" style="display:none;">
-      <div class="section-title">🧪 The Lab — Adding and Subtracting to 20 · Multiplying</div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons pass at 90%. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
+      <div class="section-title">🧪 The Lab — Adding and Subtracting · Multiplying · Place Value · Rounding</div>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons (adding, subtracting, multiplying) pass at 90%; place value and rounding at 70%. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
       <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
     </div>
 
@@ -693,6 +693,19 @@ const GAME_LABELS = {
   'lab-mu5': '🧪 Lab MU5 — 3s and 4s',
   'lab-mu6': '🧪 Lab MU6 — Times as Many',
   'lab-mu7': '🧪 Lab MU7 — Multiplication Facts Check',
+  'lab-pv1': '🧪 Lab PV1 — Ones, Tens, Hundreds',
+  'lab-pv2': '🧪 Lab PV2 — Expanded Form',
+  'lab-pv3': '🧪 Lab PV3 — Thousands',
+  'lab-pv4': '🧪 Lab PV4 — Times 10',
+  'lab-pv5': '🧪 Lab PV5 — Times 100',
+  'lab-pv6': '🧪 Lab PV6 — Multiples of 10',
+  'lab-pv7': '🧪 Lab PV7 — Place Value Check',
+  'lab-ro1': '🧪 Lab RO1 — The Two Benchmarks',
+  'lab-ro2': '🧪 Lab RO2 — Halfway',
+  'lab-ro3': '🧪 Lab RO3 — Round to the Nearest Ten',
+  'lab-ro4': '🧪 Lab RO4 — Round to the Nearest Hundred',
+  'lab-ro5': '🧪 Lab RO5 — Round to the Place Named',
+  'lab-ro6': '🧪 Lab RO6 — Rounding Check',
   'lab-progress': '🧪 Lab — progress backup',
   'lab-seed': '🧪 Lab — fact-site misses (seed)',
   'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
@@ -1550,7 +1563,7 @@ async function renderQps() {
 //  Lab lessons are per-student work, so they stay off the class Overview / Assignment counts (like QPS).
 // ═══════════════════════════════════════════════════
 const isLab = g => /^lab-/.test(g);
-const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7'];
+const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7', 'pv1', 'pv2', 'pv3', 'pv4', 'pv5', 'pv6', 'pv7', 'ro1', 'ro2', 'ro3', 'ro4', 'ro5', 'ro6'];
 const LAB_PASS = 90;
 // Who is on a Lab plan is NOT written here (this page's code is public): a student is on a plan when the
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
@@ -1574,7 +1587,9 @@ async function renderLab() {
     });
     tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const done = tries.filter(t => t.status === 'complete');
-    const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= LAB_PASS));
+    // facts lessons pass at 90%, place value and rounding at 70% (the Lab's own rule)
+    const passMark = id => (/^(PV|RO)/.test(id) ? 70 : LAB_PASS);
+    const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= passMark(id)));
     // a running row is "now" unless a finished row of the same try came after it (a redo in the same visit
     // reuses the running row's id, so compare times, not just ids)
     const now = tries.find(t => t.status !== 'complete' &&
