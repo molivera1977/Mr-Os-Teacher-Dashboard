@@ -1549,8 +1549,10 @@ const LAB_PASS = 90;
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
 const labPlan = () => (dashData['lab-seed'] || []).map(s => s.name);
 
-function renderLab() {
+async function renderLab() {
   const el = document.getElementById('labGrid');
+  await loadQpsTracks();                       // 📖 each student's QPS stop (the hub's TRACKS)
+  if (currentView !== 'lab') return;
   const games = LAB_LESSONS.map(id => 'lab-' + id);
   const LAB_PLAN = labPlan();
   const names = [...LAB_PLAN];
@@ -1576,9 +1578,14 @@ function renderLab() {
     const mineAsked = ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0);
     const prog = (dashData['lab-progress'] || []).find(s => s.name === name);
     const p = prog && prog.sessions && prog.sessions.length ? prog.sessions[prog.sessions.length - 1] : null;
-    return { name, onPlan: LAB_PLAN.includes(name), tries, done, passed, now, repeats, mineAsked, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null };
+    // 📖 reading: their QPS stop and the latest Practice Check on it
+    const stop = qpsTracks ? qpsTracks[name] : undefined;
+    const qst = stop ? (dashData['qps-' + stop] || []).find(s => s.name === name) : null;
+    const qchecks = (qst && qst.sessions || []).filter(s => s.status === 'complete').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return { name, onPlan: LAB_PLAN.includes(name), tries, done, passed, now, repeats, mineAsked, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
+             stop, qcheck: qchecks[0] || null, qchecks: qchecks.length };
   });
-  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>Missed last time</th></tr>';
+  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>📖 Reading (QPS stop)</th><th>Missed last time</th></tr>';
   const body = rows.map(r => {
     const now = r.now ? `<span class="status-pill inprogress">🔄 ${escHtml(r.now.lesson)}</span><br>${muted(`${Number(r.now.score) || 0} right so far`)}<br>${muted(day(r.now.timestamp))}`
               : r.tries.length ? muted('—') : '<span class="status-pill notstarted">⬜ Not started</span>';
@@ -1587,7 +1594,9 @@ function renderLab() {
     const reps = r.repeats.length ? r.repeats.map(e => `${escHtml(e.f)} → ${escHtml(e.pick)} ${muted(escHtml(e.lesson))}`).join('<br>') : muted('—');
     const list = r.list == null ? muted('not synced yet') : r.list ? escHtml(r.list.split(' | ').map(x => x.replace(/ \(.*\)$/, '')).join(', ')) : muted('none');
     const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
-    return `<tr><td>${escHtml(r.name)}${r.onPlan ? '' : ' ' + muted('(not on a plan)')}</td><td>${now}</td><td>${passed}</td><td>${latest}</td><td>${r.mineAsked}</td><td style="white-space:normal;">${reps}</td><td style="white-space:normal;">${list}</td><td style="white-space:normal;">${missed}</td></tr>`;
+    const reading = !r.stop ? muted('—')
+      : `${escHtml(qpsStopName(r.stop))}<br>${r.qcheck ? `${r.qcheck.percent}%${Number(r.qcheck.percent) >= QPS_READY ? ' ✅' : ''} ${muted(day(r.qcheck.timestamp))}${r.qchecks > 1 ? ' ' + muted(`· ${r.qchecks} checks`) : ''}` : muted('no check yet')}`;
+    return `<tr><td>${escHtml(r.name)}${r.onPlan ? '' : ' ' + muted('(not on a plan)')}</td><td>${now}</td><td>${passed}</td><td>${latest}</td><td>${r.mineAsked}</td><td style="white-space:normal;">${reps}</td><td style="white-space:normal;">${list}</td><td>${reading}</td><td style="white-space:normal;">${missed}</td></tr>`;
   }).join('');
   el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
 }
