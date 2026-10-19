@@ -317,6 +317,26 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .fact-missed{font-size:.78rem;font-weight:600;color:var(--muted);min-width:180px;}
 .fact-nowrap{white-space:nowrap;}
 .fact-miss-title{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+/* ── 📌 Assign Fact Practice (Fact Fluency view) ── */
+.fact-assign{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:24px;}
+.fact-assign-sub{font-size:.72rem;color:var(--muted);font-weight:700;font-family:'Nunito',sans-serif;}
+.fact-assign-form{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+.fact-assign-form label{display:flex;flex-direction:column;gap:4px;font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.fact-assign-form select,.fact-assign-form input{font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;color:var(--text);background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:7px 10px;min-width:130px;text-transform:none;letter-spacing:0;}
+.fact-assign-form input{width:90px;min-width:0;}
+.fact-assign-who,.fact-assign-now,.fact-assign-send{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 8px;}
+.fact-assign-label{font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.fact-assign-note{font-size:.78rem;font-weight:700;color:var(--muted);}
+.fact-assign-students{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:2px 12px;}
+.fact-assign-students label{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:700;padding:4px 6px;border-radius:8px;cursor:pointer;}
+.fact-assign-students label:hover{background:var(--surface2);}
+.fact-assign-students input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;}
+.fact-assign-status{font-size:.85rem;font-weight:800;}
+.fact-assign table .btn{white-space:nowrap;}
+.fact-assign-pill{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:800;white-space:nowrap;border:1px solid;}
+.fact-assign-pill.done{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.fact-assign-pill.working{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.fact-assign-pill.waiting{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
 .fact-chip{display:inline-block;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);border-radius:14px;padding:3px 10px;margin:0 6px 6px 0;font-size:.82rem;font-weight:800;}
 </style>
 </head>
@@ -508,6 +528,41 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     </div>
 
     <div id="view-facts" style="display:none;">
+      <!-- 📌 ASSIGN FACT PRACTICE (Marcos 10/19/2026). The fact sites' assign.js reads the facts-assign tab at
+           sign-in: a student with an open assignment sees only it until they get the goal right. -->
+      <div class="fact-assign" id="factAssign">
+        <div class="section-title">📌 Assign Fact Practice
+          <span class="fact-assign-sub">When they sign in to a fact site, they see only this until they finish it. A new assignment replaces the old one.</span>
+        </div>
+        <div class="fact-assign-form">
+          <label>Site<select id="factAssignSite" onchange="renderFactAssignForm()"></select></label>
+          <label>Operation<select id="factAssignOp"></select></label>
+          <label>Set<select id="factAssignSet"></select></label>
+          <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric"></label>
+          <label>Answer<select id="factAssignHow">
+            <option value="Type It">⌨️ Type It</option>
+            <option value="Choice">🔘 Multiple Choice</option>
+            <option value="Either">Student's choice</option>
+          </select></label>
+        </div>
+        <div class="fact-assign-who">
+          <span class="fact-assign-label">Students</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickFactAssignAll(true)">All</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickFactAssignAll(false)">None</button>
+          <span class="fact-assign-note">📌 = has an assignment open now</span>
+        </div>
+        <div class="fact-assign-students" id="factAssignStudents"></div>
+        <div class="fact-assign-send">
+          <button type="button" class="btn btn-primary" id="factAssignSend" onclick="sendFactAssignment()">📌 Assign</button>
+          <span id="factAssignStatus" class="fact-assign-status" role="status"></span>
+        </div>
+        <div class="fact-assign-now">
+          <span class="fact-assign-label">Assigned now</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadFactAssignments()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap" id="factAssignTable"></div>
+      </div>
+
       <div class="fact-toolbar">
         <div class="heat-toggle" id="factSiteToggle">
           <button type="button" data-site="facts-review" onclick="setFactSite('facts-review')">✖️ Basic Facts</button>
@@ -619,7 +674,9 @@ const LAST_YEAR_GAMES = [
 // Game keys that have been retired — hide them even if sheet data still exists
 const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliabw_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
-  'facts-review', 'facts-tens', 'facts-addsub']);
+  'facts-review', 'facts-tens', 'facts-addsub',
+  // 📌 assignments for the fact sites — shown in the Assign box on that tab
+  'facts-assign']);
 
 // General Knowledge Hub tests — shown on the 🌟 General Knowledge page,
 // kept off the main Overview cards and Assignment tabs.
@@ -1309,6 +1366,7 @@ async function refreshData() {
     document.getElementById('lastUpdated').textContent = `Last updated: ${now}`;
     buildAssignmentTabs();
     renderCurrentView();
+    if (factAssignRows !== null) loadFactAssignments();   // 📌 keep the assignment progress fresh too
   } catch(e) {
     document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
   }
@@ -1823,7 +1881,212 @@ function setFactSite(site) {
 function setFactOp(op)     { factOp = op; renderFacts(); }
 function setFactStyle(st)  { factStyle = st; renderFacts(); }
 
+// ═══════════════════════════════════════════════════
+//  📌 ASSIGN FACT PRACTICE (Marcos 10/19/2026: "I want to be able to assign specific assignments for the
+//  math fact reviews. When the student logs in, a large banner should show and should force the student
+//  to do the assignment.") He picked: assign from here · finish = "Get N right" · he picks the answer style.
+//  One row per student per assignment in the sheet's facts-assign tab; the fact sites' assign.js reads it.
+//    sessionId 'FA-<ms>-<n>' · form 'facts-review · Mult · 6s · Get 20 right · Type It' (or 'None' = taken away)
+//    score = the ms it was assigned: the sheet's leaderboard read keeps each student's highest score, so
+//            their newest row is their assignment. maxScore lifts the sheet's 99999 cap.
+//    correct / total / wrongQuestions / elapsed / done = the student's progress, written by the fact site.
+//  The sheet stores the score in Correct when Correct is 0 — a Correct equal to the score means 0.
+// ═══════════════════════════════════════════════════
+const FACT_ASSIGN_GAME    = 'facts-assign';
+const FACT_ASSIGN_MAX_KEY = 1e15;
+const FACT_ASSIGN_HOW = { 'Type It': '⌨️ Type It', 'Choice': '🔘 Multiple Choice', 'Either': "Student's choice" };
+let factAssignRows    = null;   // the tab as last read (one row per student); null = not read yet
+let factAssignLoading = false;
+let factAssignError   = '';
+const factAssignPicked = new Set();
+
+// a set as the fact sites name it: '6' → '6s'; 'Mixed 2-4' and 'All 2-12' stay
+const factAssignSetLabel = set => /^\d+$/.test(set) ? set + 's' : set;
+
+function parseFactAssign(r) {
+  const [site, op, set, goalText, how] = String(r.form || '').split('·').map(p => p.trim());
+  const goal = Number((/^Get (\d+) right$/.exec(goalText || '') || [])[1]) || 0;
+  if (!FACT_SITES[site] || !FACT_OPS[op] || !set || !goal || !FACT_ASSIGN_HOW[how]) return null;
+  const key   = Number(r.score) || 0;
+  const right = Number(r.correct) === key ? 0 : Number(r.correct) || 0;
+  return {
+    name: r.name, id: String(r.sessionId || ''), site, op, set, goal, how, right,
+    answered: Math.max(right, Number(r.total) || 0),
+    done:     r.done === true || r.done === 'true' || right >= goal,
+    missed:   String(r.wrongQuestions || '').split(' | ').filter(Boolean),
+    elapsed:  Number(r.elapsedSeconds) || 0,
+    assigned: key ? new Date(key) : null
+  };
+}
+
+// Students whose newest row is an assignment — finished ones too, until it is replaced or cleared
+function factAssignList() {
+  return (factAssignRows || [])
+    .filter(r => STUDENT_ROSTER.includes(r.name))
+    .map(parseFactAssign).filter(Boolean)
+    .sort((a, b) => a.done - b.done || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+}
+const factAssignOpen = name => factAssignList().some(a => a.name === name && !a.done);
+const factAssignText = a => `${FACT_SITES[a.site]} · ${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}`;
+
+async function loadFactAssignments() {
+  factAssignLoading = true;
+  renderFactAssignTable();
+  try {
+    const res  = await fetch(`${SHEET_URL}?action=leaderboard&game=${FACT_ASSIGN_GAME}`, { cache: 'no-store' });
+    const rows = await res.json();
+    if (!Array.isArray(rows)) throw new Error('not a list');
+    factAssignRows  = rows;
+    factAssignError = '';
+  } catch (e) {
+    factAssignError = '⚠️ Could not read the assignments. Check the connection, then press ↻ Refresh.';
+  }
+  factAssignLoading = false;
+  renderFactAssignStudents();
+  renderFactAssignTable();
+  return factAssignError ? null : factAssignRows;
+}
+
+// One 'submit' per row, 5 at a time. no-cors: the answer can't be read, so the caller reads the tab back.
+async function postFactAssignRows(rows) {
+  for (let i = 0; i < rows.length; i += 5) {
+    await Promise.all(rows.slice(i, i + 5).map(r => fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'submit', game: FACT_ASSIGN_GAME, sessionId: r.sessionId, name: r.name, form: r.form,
+        score: r.score, maxScore: FACT_ASSIGN_MAX_KEY, correct: 0, total: 0, percent: 0,
+        done: r.done, tabSwitches: 0, wrongQuestions: ''
+      })
+    }).catch(() => {})));
+  }
+}
+
+function renderFactAssign() {
+  renderFactAssignForm();
+  renderFactAssignStudents();
+  renderFactAssignTable();
+  if (factAssignRows === null && !factAssignLoading && !factAssignError) loadFactAssignments();
+}
+
+function renderFactAssignForm() {
+  const siteSel = document.getElementById('factAssignSite');
+  if (!siteSel.options.length) {
+    siteSel.innerHTML = Object.entries(FACT_SITES).map(([k, label]) => `<option value="${k}">${escHtml(label)}</option>`).join('');
+  }
+  const site = siteSel.value;
+  const fill = (id, values, label) => {
+    const sel = document.getElementById(id), keep = sel.value;
+    sel.innerHTML = values.map(v => `<option value="${escHtml(v)}">${escHtml(label(v))}</option>`).join('');
+    if (values.includes(keep)) sel.value = keep;
+  };
+  fill('factAssignOp', FACT_SITE_OPS[site], op => FACT_OPS[op].label);
+  fill('factAssignSet', factSetsFor(site).map(factAssignSetLabel), set => set);
+}
+
+function renderFactAssignStudents() {
+  document.getElementById('factAssignStudents').innerHTML = STUDENT_ROSTER.map(name =>
+    `<label><input type="checkbox" data-name="${escHtml(name)}"${factAssignPicked.has(name) ? ' checked' : ''} onchange="pickFactAssign(this.dataset.name, this.checked)">${escHtml(name)}${factAssignOpen(name) ? ' 📌' : ''}</label>`).join('');
+}
+
+function pickFactAssign(name, on) {
+  if (on) factAssignPicked.add(name);
+  else factAssignPicked.delete(name);
+}
+
+function pickFactAssignAll(on) {
+  STUDENT_ROSTER.forEach(name => pickFactAssign(name, on));
+  renderFactAssignStudents();
+}
+
+function renderFactAssignTable() {
+  const el = document.getElementById('factAssignTable');
+  if (factAssignRows === null) {
+    el.innerHTML = `<p class="fact-assign-note">${factAssignLoading ? '⏳ Reading the assignments…' : escHtml(factAssignError)}</p>`;
+    return;
+  }
+  const note = factAssignError ? `<p class="fact-assign-note">${escHtml(factAssignError)}</p>` : '';
+  const list = factAssignList();
+  if (!list.length) {
+    el.innerHTML = note + '<p class="fact-assign-note">No one has an assignment right now.</p>';
+    return;
+  }
+  const rows = list.map(a => {
+    const pct    = a.answered ? Math.round(a.right / a.answered * 100) : 0;
+    const status = a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
+                 : a.answered ? '<span class="fact-assign-pill working">✏️ Working</span>'
+                 : '<span class="fact-assign-pill waiting">⏳ Not started</span>';
+    const missed = a.missed.length
+      ? a.missed.slice(0, 6).map(escHtml).join(' · ') + (a.missed.length > 6 ? ` · +${a.missed.length - 6} more` : '')
+      : '—';
+    return `<tr>
+      <td class="fact-nowrap">${escHtml(a.name)}</td>
+      <td>${escHtml(factAssignText(a))}</td>
+      <td class="fact-last">${fmtWhen(a.assigned)}</td>
+      <td class="fact-nowrap"><strong>${a.right} / ${a.goal}</strong> right${a.answered ? `<div class="fact-sub">${a.answered} answered · ${pct}% · ${formatTime(a.elapsed)}</div>` : ''}</td>
+      <td>${status}</td>
+      <td class="fact-missed">${missed}</td>
+      <td><button type="button" class="btn btn-ghost btn-sm" data-name="${escHtml(a.name)}" onclick="removeFactAssignment(this.dataset.name)">${a.done ? '✕ Clear' : '✕ Remove'}</button></td>
+    </tr>`;
+  }).join('');
+  const open = list.filter(a => !a.done).length;
+  el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>Assignment</th><th>Assigned</th><th>Progress</th><th>Status</th><th>Missed (typed)</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="fact-assign-note" style="margin-top:8px;">${open} still working · ${list.length - open} done</p>`;
+}
+
+async function sendFactAssignment() {
+  const status = document.getElementById('factAssignStatus');
+  const site = document.getElementById('factAssignSite').value;
+  const op   = document.getElementById('factAssignOp').value;
+  const set  = document.getElementById('factAssignSet').value;
+  const how  = document.getElementById('factAssignHow').value;
+  const goal = Number(document.getElementById('factAssignGoal').value);
+  const names = STUDENT_ROSTER.filter(n => factAssignPicked.has(n));
+  if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
+  if (!Number.isInteger(goal) || goal < 1 || goal > 100) { status.textContent = '⚠️ "Get … right" must be a whole number from 1 to 100.'; return; }
+  const text = factAssignText({ site, op, set, goal, how });
+  const replacing = names.filter(factAssignOpen);
+  const ask = `Assign this to ${names.length} student${names.length > 1 ? 's' : ''}?\n\n${text}` +
+    (replacing.length ? `\n\nThis replaces the open assignment of: ${replacing.join('; ')}` : '');
+  if (!confirm(ask)) return;
+
+  const btn = document.getElementById('factAssignSend');
+  btn.disabled = true;
+  status.textContent = '⏳ Sending…';
+  const at   = Date.now();
+  const form = `${site} · ${op} · ${set} · Get ${goal} right · ${how}`;
+  const sent = names.map((name, i) => ({ name, sessionId: `FA-${at}-${i + 1}`, form, score: at, done: false }));
+  await postFactAssignRows(sent);
+  status.textContent = '⏳ Checking that it saved…';
+  const rows  = await loadFactAssignments();
+  const saved = sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
+  const missing = sent.filter(s => !saved.includes(s)).map(s => s.name);
+  saved.forEach(s => factAssignPicked.delete(s.name));   // anyone not saved stays picked, ready to send again
+  status.textContent = !missing.length ? `✓ Assigned to ${saved.length} student${saved.length > 1 ? 's' : ''}.`
+    : rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
+    : `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`;
+  renderFactAssignStudents();
+  btn.disabled = false;
+}
+
+async function removeFactAssignment(name) {
+  const a = factAssignList().find(x => x.name === name);
+  if (!a) return;
+  const ask = a.done ? `Take ${name}'s finished assignment off this list?`
+    : `Take away ${name}'s assignment?\n\n${factAssignText(a)}\n\nThey can practice anything again.`;
+  if (!confirm(ask)) return;
+  const status = document.getElementById('factAssignStatus');
+  status.textContent = '⏳ Sending…';
+  const at  = Date.now();
+  const row = { name, sessionId: `FA-${at}-0`, form: 'None', score: at, done: true };
+  await postFactAssignRows([row]);
+  const rows = await loadFactAssignments();
+  const ok = (rows || []).some(r => r.name === name && r.sessionId === row.sessionId);
+  status.textContent = ok ? `✓ ${a.done ? 'Cleared' : 'Taken away'}: ${name}.` : '⚠️ That did not save. Press ↻ Refresh, then try again.';
+}
+
 function renderFacts() {
+  renderFactAssign();
   document.querySelectorAll('#factSiteToggle button').forEach(b => b.classList.toggle('active', b.dataset.site === factSite));
   document.getElementById('factOpToggle').innerHTML = FACT_SITE_OPS[factSite].map(op =>
     `<button type="button" data-op="${op}" onclick="setFactOp('${op}')"${op === factOp ? ' class="active"' : ''}>${FACT_OPS[op].label}</button>`).join('');
