@@ -339,6 +339,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .fact-assign-students input{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0;}
 .fact-assign-status{font-size:.85rem;font-weight:800;}
 .fact-assign table .btn{white-space:nowrap;}
+.fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
+.fact-assign-who-cell .btn{margin-top:6px;}
 .fact-assign-pill{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:800;white-space:nowrap;border:1px solid;}
 .fact-assign-pill.done{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .fact-assign-pill.working{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
@@ -527,7 +529,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
            sign-in: a student with an open assignment sees only it until they get the goal right. -->
       <div class="fact-assign" id="factAssign">
         <div class="section-title">📌 Assign Fact Practice
-          <span class="fact-assign-sub">When they sign in to a fact site, they see only this until they finish it. A new assignment replaces the old one.</span>
+          <span class="fact-assign-sub">When they sign in to a fact site, they see only their list, one assignment at a time, until they finish it.</span>
         </div>
         <div class="fact-assign-form">
           <label>Site<select id="factAssignSite" onchange="renderFactAssignForm()"></select></label>
@@ -535,6 +537,11 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           <label>Set<select id="factAssignSet"></select></label>
           <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric" oninput="followFactAssignGoal()"></label>
           <label>Stop after … tries<input id="factAssignLimit" type="number" min="1" max="500" step="1" value="40" inputmode="numeric" oninput="factAssignLimitTouched = true"></label>
+          <label>Add to<select id="factAssignWhere">
+            <option value="end">End of their list</option>
+            <option value="front">Front of their list</option>
+            <option value="replace">Replace their list</option>
+          </select></label>
           <label>Answer<select id="factAssignHow">
             <option value="Type It">⌨️ Type It</option>
             <option value="Choice">🔘 Multiple Choice</option>
@@ -545,7 +552,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           <span class="fact-assign-label">Students</span>
           <button type="button" class="btn btn-ghost btn-sm" onclick="pickFactAssignAll(true)">All</button>
           <button type="button" class="btn btn-ghost btn-sm" onclick="pickFactAssignAll(false)">None</button>
-          <span class="fact-assign-note">📌 = has an assignment open now</span>
+          <span class="fact-assign-note">📌 = has an assignment open now · 📌3 = three open</span>
         </div>
         <div class="fact-assign-students" id="factAssignStudents"></div>
         <div class="fact-assign-send">
@@ -1912,20 +1919,23 @@ function setFactStyle(st)  { factStyle = st; renderFacts(); }
 // ═══════════════════════════════════════════════════
 //  📌 ASSIGN FACT PRACTICE (Marcos 10/19/2026: "I want to be able to assign specific assignments for the
 //  math fact reviews. When the student logs in, a large banner should show and should force the student
-//  to do the assignment.") He picked: assign from here · finish = "Get N right" · he picks the answer style.
-//  One row per student per assignment in the sheet's facts-assign tab; the fact sites' assign.js reads it.
+//  to do the assignment.") He picked: assign from here · finish = "Get N right" · he picks the answer style ·
+//  a try limit on every one (10/19 evening).
+//  LISTS (10/20: "have the new go to the end of the list or give me a choice when assigning"): a student can
+//  have several; the fact sites' assign.js gives them one at a time, in order. Each one = a row in the
+//  sheet's facts-assign tab:
+//    name      'Student #<order>' — order = the ms it was assigned (end of the list) or minus that (front);
+//              the list sorts by it. A row named just 'Student' is from before lists (10/19): sorted by score.
 //    sessionId 'FA-<ms>-<n>' · form 'facts-review · Mult · 6s · Get 20 right · Type It · Stop after 40 tries'
-//    (or 'None' = taken away). The try limit (Marcos 10/19 evening, every answer style) ends it after that many
-//    answers even if the goal is not met; it starts at 2x the goal. A row without one has no limit.
-//    score = the ms it was assigned: the sheet's leaderboard read keeps each student's highest score, so
-//            their newest row is their assignment. maxScore lifts the sheet's 99999 cap.
+//    score     the ms it was written. The sheet's leaderboard read gives back one row per NAME (its highest
+//              score), so every assignment comes back — and taking one away = a newer 'None' row with its name.
 //    correct / total / wrongQuestions / elapsed / done = the student's progress, written by the fact site.
 //  The sheet stores the score in Correct when Correct is 0 — a Correct equal to the score means 0.
 // ═══════════════════════════════════════════════════
 const FACT_ASSIGN_GAME    = 'facts-assign';
 const FACT_ASSIGN_MAX_KEY = 1e15;
 const FACT_ASSIGN_HOW = { 'Type It': '⌨️ Type It', 'Choice': '🔘 Multiple Choice', 'Either': "Student's choice" };
-let factAssignRows    = null;   // the tab as last read (one row per student); null = not read yet
+let factAssignRows    = null;   // the tab as last read (one row per assignment); null = not read yet
 let factAssignLoading = false;
 let factAssignError   = '';
 let factAssignLimitTouched = false;   // the try limit follows 2x the goal until Mr. O types his own
@@ -1935,6 +1945,10 @@ const factAssignPicked = new Set();
 const factAssignSetLabel = set => /^\d+$/.test(set) ? set + 's' : set;
 
 function parseFactAssign(r) {
+  const rowName = String(r.name || '');
+  const place   = /^(.*) #(-?\d+)$/.exec(rowName);
+  const name    = place ? place[1] : rowName;
+  if (!STUDENT_ROSTER.includes(name)) return null;
   const [site, op, set, goalText, how, stopText] = String(r.form || '').split('·').map(p => p.trim());
   const goal  = Number((/^Get (\d+) right$/.exec(goalText || '') || [])[1]) || 0;
   const limit = Number((/^Stop after (\d+) tries$/.exec(stopText || '') || [])[1]) || 0;   // 0 = no limit
@@ -1944,7 +1958,8 @@ function parseFactAssign(r) {
   const answered = Math.max(right, Number(r.total) || 0);
   const stopped  = right < goal && limit > 0 && answered >= limit;   // reached the try limit, not the goal
   return {
-    name: r.name, id: String(r.sessionId || ''), site, op, set, goal, limit, how, right, answered, stopped,
+    name, rowName, key, order: place ? Number(place[2]) : key,
+    id: String(r.sessionId || ''), site, op, set, goal, limit, how, right, answered, stopped,
     done:     r.done === true || r.done === 'true' || right >= goal || stopped,
     missed:   String(r.wrongQuestions || '').split(' | ').filter(Boolean),
     elapsed:  Number(r.elapsedSeconds) || 0,
@@ -1952,15 +1967,17 @@ function parseFactAssign(r) {
   };
 }
 
-// Students whose newest row is an assignment — finished ones too, until it is replaced or cleared
-function factAssignList() {
-  return (factAssignRows || [])
-    .filter(r => STUDENT_ROSTER.includes(r.name))
-    .map(parseFactAssign).filter(Boolean)
-    .sort((a, b) => factAssignRank(a) - factAssignRank(b) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+// Every student's list in order — students with something unfinished first, finished ones stay until cleared
+function factAssignLists() {
+  const items = (factAssignRows || []).map(parseFactAssign).filter(Boolean);
+  const open  = s => (s.items.some(a => !a.done) ? 0 : 1);
+  return STUDENT_ROSTER
+    .map(name => ({ name, items: items.filter(a => a.name === name).sort((a, b) => a.order - b.order || a.key - b.key) }))
+    .filter(s => s.items.length)
+    .sort((a, b) => open(a) - open(b) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
 }
-const factAssignRank = a => !a.done ? 0 : a.stopped ? 1 : 2;   // working, then stopped at the limit, then done
-const factAssignOpen = name => factAssignList().some(a => a.name === name && !a.done);
+const factAssignItemsOf   = name => (factAssignLists().find(s => s.name === name) || { items: [] }).items;
+const factAssignOpenCount = name => factAssignItemsOf(name).filter(a => !a.done).length;
 const factAssignText = a => `${FACT_SITES[a.site]} · ${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}` +
   (a.limit ? ` · Stop after ${a.limit} tries` : '');
 
@@ -2004,6 +2021,11 @@ async function postFactAssignRows(rows) {
   }
 }
 
+// a 'None' row with the same name and a newer score takes one assignment off a list
+const factAssignNoneRow = (a, at, n) => ({ name: a.rowName, sessionId: `FX-${at}-${n}`, form: 'None', score: at, done: true });
+// …and is saved once the tab's row for that name is it
+const factAssignLanded = (rows, sent) => sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
+
 function renderFactAssign() {
   renderFactAssignForm();
   renderFactAssignStudents();
@@ -2027,8 +2049,10 @@ function renderFactAssignForm() {
 }
 
 function renderFactAssignStudents() {
-  document.getElementById('factAssignStudents').innerHTML = STUDENT_ROSTER.map(name =>
-    `<label><input type="checkbox" data-name="${escHtml(name)}"${factAssignPicked.has(name) ? ' checked' : ''} onchange="pickFactAssign(this.dataset.name, this.checked)">${escHtml(name)}${factAssignOpen(name) ? ' 📌' : ''}</label>`).join('');
+  document.getElementById('factAssignStudents').innerHTML = STUDENT_ROSTER.map(name => {
+    const open = factAssignOpenCount(name);
+    return `<label><input type="checkbox" data-name="${escHtml(name)}"${factAssignPicked.has(name) ? ' checked' : ''} onchange="pickFactAssign(this.dataset.name, this.checked)">${escHtml(name)}${open ? ` 📌${open > 1 ? open : ''}` : ''}</label>`;
+  }).join('');
 }
 
 function pickFactAssign(name, on) {
@@ -2047,88 +2071,119 @@ function renderFactAssignTable() {
     el.innerHTML = `<p class="fact-assign-note">${factAssignLoading ? '⏳ Reading the assignments…' : escHtml(factAssignError)}</p>`;
     return;
   }
-  const note = factAssignError ? `<p class="fact-assign-note">${escHtml(factAssignError)}</p>` : '';
-  const list = factAssignList();
-  if (!list.length) {
+  const note  = factAssignError ? `<p class="fact-assign-note">${escHtml(factAssignError)}</p>` : '';
+  const lists = factAssignLists();
+  if (!lists.length) {
     el.innerHTML = note + '<p class="fact-assign-note">No one has an assignment right now.</p>';
     return;
   }
-  const rows = list.map(a => {
-    const pct    = a.answered ? Math.round(a.right / a.answered * 100) : 0;
-    const status = a.stopped ? '<span class="fact-assign-pill stopped">⏹ Stopped at limit</span>'
-                 : a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
-                 : a.answered ? '<span class="fact-assign-pill working">✏️ Working</span>'
-                 : '<span class="fact-assign-pill waiting">⏳ Not started</span>';
-    const missed = a.missed.length
-      ? a.missed.slice(0, 6).map(escHtml).join(' · ') + (a.missed.length > 6 ? ` · +${a.missed.length - 6} more` : '')
-      : '—';
-    return `<tr>
-      <td class="fact-nowrap">${escHtml(a.name)}</td>
-      <td>${escHtml(factAssignText(a))}</td>
-      <td class="fact-last">${fmtWhen(a.assigned)}</td>
-      <td class="fact-nowrap"><strong>${a.right} / ${a.goal}</strong> right${a.answered ? `<div class="fact-sub">${a.answered} answered · ${pct}% · ${formatTime(a.elapsed)}</div>` : ''}</td>
-      <td>${status}</td>
-      <td class="fact-missed">${missed}</td>
-      <td><button type="button" class="btn btn-ghost btn-sm" data-name="${escHtml(a.name)}" onclick="removeFactAssignment(this.dataset.name)">${a.done ? '✕ Clear' : '✕ Remove'}</button></td>
-    </tr>`;
+  const rows = lists.map(({ name, items }) => {
+    const current = items.find(a => !a.done);
+    return items.map((a, i) => {
+      const pct    = a.answered ? Math.round(a.right / a.answered * 100) : 0;
+      const status = a.stopped ? '<span class="fact-assign-pill stopped">⏹ Stopped at limit</span>'
+                   : a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
+                   : a.answered ? '<span class="fact-assign-pill working">✏️ Working</span>'
+                   : '<span class="fact-assign-pill waiting">⏳ Not started</span>';
+      const missed = a.missed.length
+        ? a.missed.slice(0, 6).map(escHtml).join(' · ') + (a.missed.length > 6 ? ` · +${a.missed.length - 6} more` : '')
+        : '—';
+      const who = i ? '' : `<td class="fact-nowrap fact-assign-who-cell" rowspan="${items.length}">${escHtml(name)}${items.length > 1
+        ? `<div><button type="button" class="btn btn-ghost btn-sm" data-name="${escHtml(name)}" onclick="clearFactAssignList(this.dataset.name)">✕ Clear all</button></div>` : ''}</td>`;
+      return `<tr data-student="${escHtml(name)}">
+        ${who}
+        <td class="fact-nowrap" title="${a === current ? 'On this one now' : ''}">${a === current ? '▶ ' : ''}${i + 1}</td>
+        <td>${escHtml(factAssignText(a))}</td>
+        <td class="fact-last">${fmtWhen(a.assigned)}</td>
+        <td class="fact-nowrap"><strong>${a.right} / ${a.goal}</strong> right${a.answered ? `<div class="fact-sub">${a.answered} answered · ${pct}% · ${formatTime(a.elapsed)}</div>` : ''}</td>
+        <td>${status}</td>
+        <td class="fact-missed">${missed}</td>
+        <td><button type="button" class="btn btn-ghost btn-sm" data-row="${escHtml(a.rowName)}" onclick="removeFactAssignment(this.dataset.row)">${a.done ? '✕ Clear' : '✕ Remove'}</button></td>
+      </tr>`;
+    }).join('');
   }).join('');
-  const open = list.filter(a => !a.done).length;
-  const stopped = list.filter(a => a.stopped).length;
-  el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>Assignment</th><th>Assigned</th><th>Progress</th><th>Status</th><th>Missed (typed)</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="fact-assign-note" style="margin-top:8px;">${open} still working · ${stopped} stopped at the try limit · ${list.length - open - stopped} done</p>`;
+  const all     = lists.flatMap(s => s.items);
+  const stopped = all.filter(a => a.stopped).length;
+  const done    = all.filter(a => a.done).length - stopped;
+  const working = all.filter(a => !a.done && a.answered).length;
+  const waiting = all.filter(a => !a.done && !a.answered).length;
+  el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>#</th><th>Assignment</th><th>Assigned</th><th>Progress</th><th>Status</th><th>Missed (typed)</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="fact-assign-note" style="margin-top:8px;">▶ = the one they are on now · ${working} working · ${waiting} not started · ${stopped} stopped at the try limit · ${done} done</p>`;
 }
 
 async function sendFactAssignment() {
   const status = document.getElementById('factAssignStatus');
-  const site = document.getElementById('factAssignSite').value;
-  const op   = document.getElementById('factAssignOp').value;
-  const set  = document.getElementById('factAssignSet').value;
-  const how  = document.getElementById('factAssignHow').value;
-  const goal = Number(document.getElementById('factAssignGoal').value);
+  const site  = document.getElementById('factAssignSite').value;
+  const op    = document.getElementById('factAssignOp').value;
+  const set   = document.getElementById('factAssignSet').value;
+  const how   = document.getElementById('factAssignHow').value;
+  const where = document.getElementById('factAssignWhere').value;   // end | front | replace
+  const goal  = Number(document.getElementById('factAssignGoal').value);
   const limit = Number(document.getElementById('factAssignLimit').value);
   const names = STUDENT_ROSTER.filter(n => factAssignPicked.has(n));
   if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
   if (!Number.isInteger(goal) || goal < 1 || goal > 100) { status.textContent = '⚠️ "Get … right" must be a whole number from 1 to 100.'; return; }
   if (!Number.isInteger(limit) || limit < goal || limit > 500) { status.textContent = `⚠️ "Stop after … tries" must be a whole number from ${goal} (the goal) to 500.`; return; }
   const text = factAssignText({ site, op, set, goal, how, limit });
-  const replacing = names.filter(factAssignOpen);
-  const ask = `Assign this to ${names.length} student${names.length > 1 ? 's' : ''}?\n\n${text}` +
-    (replacing.length ? `\n\nThis replaces the open assignment of: ${replacing.join('; ')}` : '');
+  const who  = `${names.length} student${names.length > 1 ? 's' : ''}`;
+  const replacing = where === 'replace' ? names.filter(n => factAssignOpenCount(n) > 0) : [];
+  const ask = (where === 'front' ? `Add this to the FRONT of the list for ${who}? It comes before anything they have now.`
+             : where === 'replace' ? `REPLACE the list for ${who} with this?`
+             : `Add this to the end of the list for ${who}?`) + `\n\n${text}` +
+    (replacing.length ? `\n\nTheir unfinished assignments are taken away: ${replacing.map(n => `${n} (${factAssignOpenCount(n)})`).join('; ')}` : '');
   if (!confirm(ask)) return;
 
   const btn = document.getElementById('factAssignSend');
   btn.disabled = true;
   status.textContent = '⏳ Sending…';
-  const at   = Date.now();
-  const form = `${site} · ${op} · ${set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
-  const sent = names.map((name, i) => ({ name, sessionId: `FA-${at}-${i + 1}`, form, score: at, done: false }));
-  await postFactAssignRows(sent);
+  const at    = Date.now();
+  const form  = `${site} · ${op} · ${set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
+  const sent  = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `FA-${at}-${i + 1}`, form, score: at, done: false }));
+  const clear = replacing.flatMap((name, i) => factAssignItemsOf(name).filter(a => !a.done).map((a, k) => factAssignNoneRow(a, at, `${i + 1}-${k + 1}`)));
+  await postFactAssignRows([...clear, ...sent]);
   status.textContent = '⏳ Checking that it saved…';
-  const rows  = await loadFactAssignments();
-  const saved = sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
-  const missing = sent.filter(s => !saved.includes(s)).map(s => s.name);
-  saved.forEach(s => factAssignPicked.delete(s.name));   // anyone not saved stays picked, ready to send again
-  status.textContent = !missing.length ? `✓ Assigned to ${saved.length} student${saved.length > 1 ? 's' : ''}.`
-    : rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
-    : `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`;
+  const rows    = await loadFactAssignments();
+  const saved   = factAssignLanded(rows, sent);
+  const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
+  const unclear = clear.length - factAssignLanded(rows, clear).length;
+  saved.forEach(s => factAssignPicked.delete(s.student));   // anyone not saved stays picked, ready to send again
+  status.textContent = rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
+    : missing.length ? `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`
+    : unclear ? `⚠️ Assigned, but ${unclear} old assignment${unclear > 1 ? 's were' : ' was'} not taken away. Use ✕ Remove on ${unclear > 1 ? 'them' : 'it'}.`
+    : `✓ Assigned to ${who}${where === 'front' ? ' (front of the list)' : where === 'replace' ? ' (list replaced)' : ''}.`;
   renderFactAssignStudents();
   btn.disabled = false;
 }
 
-async function removeFactAssignment(name) {
-  const a = factAssignList().find(x => x.name === name);
+async function removeFactAssignment(rowName) {
+  const a = factAssignLists().flatMap(s => s.items).find(x => x.rowName === rowName);
   if (!a) return;
-  const ask = a.done ? `Take ${name}'s finished assignment off this list?`
-    : `Take away ${name}'s assignment?\n\n${factAssignText(a)}\n\nThey can practice anything again.`;
+  const ask = a.done ? `Take this finished assignment off ${a.name}'s list?\n\n${factAssignText(a)}`
+    : `Take this assignment away from ${a.name}?\n\n${factAssignText(a)}`;
   if (!confirm(ask)) return;
   const status = document.getElementById('factAssignStatus');
   status.textContent = '⏳ Sending…';
-  const at  = Date.now();
-  const row = { name, sessionId: `FA-${at}-0`, form: 'None', score: at, done: true };
+  const row = factAssignNoneRow(a, Date.now(), 0);
   await postFactAssignRows([row]);
   const rows = await loadFactAssignments();
-  const ok = (rows || []).some(r => r.name === name && r.sessionId === row.sessionId);
-  status.textContent = ok ? `✓ ${a.done ? 'Cleared' : 'Taken away'}: ${name}.` : '⚠️ That did not save. Press ↻ Refresh, then try again.';
+  status.textContent = factAssignLanded(rows, [row]).length
+    ? (a.done ? `✓ Cleared from ${a.name}'s list.` : `✓ Taken away from ${a.name}.`)
+    : '⚠️ That did not save. Press ↻ Refresh, then try again.';
+}
+
+async function clearFactAssignList(name) {
+  const items = factAssignItemsOf(name);
+  if (!items.length) return;
+  const open = items.filter(a => !a.done).length;
+  if (!confirm(`Clear ${name}'s whole list (${items.length} assignments)?` + (open ? `\n\n${open} unfinished — they are taken away.` : ''))) return;
+  const status = document.getElementById('factAssignStatus');
+  status.textContent = '⏳ Sending…';
+  const at   = Date.now();
+  const sent = items.map((a, k) => factAssignNoneRow(a, at, k + 1));
+  await postFactAssignRows(sent);
+  const rows = await loadFactAssignments();
+  status.textContent = factAssignLanded(rows, sent).length === sent.length
+    ? `✓ Cleared ${name}'s list.` : '⚠️ Not all of it saved. Press ↻ Refresh, then try again.';
 }
 
 function renderFacts() {
