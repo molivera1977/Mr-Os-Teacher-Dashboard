@@ -235,6 +235,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .panel-backdrop.open{display:block;}
 .profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;scroll-margin-top:80px;}
 .profile-name{font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--accent);}
+.profile-sum{font-size:.9rem;font-weight:800;color:var(--muted);margin:-6px 0 12px;}
+.profile-sum:empty{display:none;}
 .profile-table{width:100%;border-collapse:collapse;}
 .profile-table th{background:var(--surface2);font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:10px 14px;text-align:left;border-bottom:2px solid var(--border);}
 .profile-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:.88rem;font-weight:700;vertical-align:middle;}
@@ -406,22 +408,6 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="dot-grid-wrap">
         <div id="dotGrid"></div>
       </div>
-
-      <!-- Student profile panel -->
-      <div class="student-profile" id="studentProfile">
-        <div class="profile-header">
-          <button class="btn btn-ghost btn-sm" onclick="stepProfile(-1)">◀ Prev</button>
-          <div class="profile-name" id="profileName"></div>
-          <button class="btn btn-ghost btn-sm" onclick="stepProfile(1)">Next ▶</button>
-          <button class="btn btn-ghost btn-sm" onclick="closeProfile()">✕ Close</button>
-        </div>
-        <div class="grid-wrap">
-          <table class="profile-table">
-            <thead><tr><th>Assignment</th><th>Status</th><th>Score</th><th>%</th><th>Grade</th><th>Time</th><th>Sessions</th></tr></thead>
-            <tbody id="profileBody"></tbody>
-          </table>
-        </div>
-      </div>
     </div>
 
     <!-- ASSIGNMENT VIEW -->
@@ -518,7 +504,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="section-title">🌟 General Knowledge Hub — Tests</div>
       <div class="assignment-cards" id="gkCards"></div>
       <div class="section-title" style="margin-top:24px;">👥 Student Progress
-        <span style="font-size:.72rem;color:var(--muted);font-weight:700;">click a dot to open that test's results</span></div>
+        <span style="font-size:.72rem;color:var(--muted);font-weight:700;">click a dot to open that test's results · click a name for all of that student's GK scores</span></div>
       <div class="dot-grid-wrap" id="gkGrid"></div>
     </div>
 
@@ -620,6 +606,24 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- Student profile — opens over any page: from the Overview every assignment, from a set's
+     page (or 🌟 General Knowledge) only that set's -->
+<div class="student-profile" id="studentProfile">
+  <div class="profile-header">
+    <button class="btn btn-ghost btn-sm" onclick="stepProfile(-1)">◀ Prev</button>
+    <div class="profile-name" id="profileName"></div>
+    <button class="btn btn-ghost btn-sm" onclick="stepProfile(1)">Next ▶</button>
+    <button class="btn btn-ghost btn-sm" onclick="closeProfile()">✕ Close</button>
+  </div>
+  <div class="profile-sum" id="profileSum"></div>
+  <div class="grid-wrap">
+    <table class="profile-table">
+      <thead><tr><th>Assignment</th><th>Status</th><th>Score</th><th>%</th><th>Grade</th><th>Time</th><th>Sessions</th></tr></thead>
+      <tbody id="profileBody"></tbody>
+    </table>
   </div>
 </div>
 
@@ -1719,10 +1723,11 @@ function renderGk() {
   // The tests' checklist under their scores, like every set's pick-a-form page
   const gridEl = document.getElementById('gkGrid');
   gridEl.innerHTML = '';
+  const gkLabel = g => (GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').replace(/^GK — /,'');
   const grid = buildDotGrid(GK_GAMES, {
-    label: g => (GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').replace(/^GK — /,''),
+    label: gkLabel,
     open:  g => { currentGame = g; toggleView('assignment'); },
-    profiles: false,
+    profiles: { games: GK_GAMES, title: '🌟 General Knowledge', label: gkLabel },
   });
   grid.classList.add('wrap-heads');
   gridEl.appendChild(grid);
@@ -2398,7 +2403,8 @@ function renderOverview() {
 }
 
 // The ✓ / … checklist: a row per student, a column per assignment. A dot opens that
-// assignment's results; with `profiles`, a name opens the student's profile.
+// assignment's results; with `profiles`, a name opens the student's profile — `true` = every
+// assignment (Overview), a { games, title, label } scope = only that set's.
 function buildDotGrid(games, { label, open, profiles }) {
   const table = document.createElement('table');
   table.className = 'dot-grid-table';
@@ -2435,7 +2441,7 @@ function buildDotGrid(games, { label, open, profiles }) {
     const dot = e.target.closest('.status-dot[data-game]');
     if (dot) return open(dot.dataset.game);
     const td = e.target.closest('td[data-profile]');
-    if (td) openProfile(td.dataset.profile);
+    if (td) openProfile(td.dataset.profile, profiles === true ? undefined : profiles);
   });
   table.appendChild(tbody);
   return table;
@@ -2563,7 +2569,7 @@ function renderFamilyChooser(fam, members) {
       <span style="font-size:.72rem;color:var(--muted);font-weight:700;">${members.length} ${familyNoun(fam, true)} · click one to open its results</span></div>
     <div class="assignment-cards" id="familyCards"></div>
     <div class="section-title" style="margin-top:24px;">👥 Student Progress
-      <span style="font-size:.72rem;color:var(--muted);font-weight:700;">click a dot to open that ${familyNoun(fam)}'s results</span></div>
+      <span style="font-size:.72rem;color:var(--muted);font-weight:700;">click a dot to open that ${familyNoun(fam)}'s results · click a name for all of that student's scores here</span></div>
     <div class="dot-grid-wrap" id="familyGrid"></div>`;
   const openForm = g => { familyChooserOpen = null; currentGame = g; renderAssignment(); };
   const cards = el.querySelector('#familyCards');
@@ -2573,7 +2579,9 @@ function renderFamilyChooser(fam, members) {
     cards.appendChild(card);
   });
   const famLabel = familyLabel(fam, members);
-  const grid = buildDotGrid(members, { label: g => formShortLabel(famLabel, g), open: openForm, profiles: false });
+  const shortLabel = g => formShortLabel(famLabel, g);
+  const grid = buildDotGrid(members, { label: shortLabel, open: openForm,
+    profiles: { games: members, title: famLabel, label: shortLabel } });
   grid.classList.add('wrap-heads');
   el.querySelector('#familyGrid').appendChild(grid);
 }
@@ -4689,22 +4697,27 @@ function openDetail(name) {
 }
 
 let currentProfileName = null;
+let currentProfileScope = null;   // a set's { games, title, label } when opened from that set's page
 
-function openProfile(name) {
+// scope (a set's page, Marcos 10/20: "hit a student's name and see all of their scores for the
+// assignment set") = { games, title, label } — only that set; Prev / Next keep it.
+function openProfile(name, scope) {
   try {
     currentProfileName = name;
+    currentProfileScope = scope || null;
     const allGames = Object.keys(dashData);
-    const games = [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
+    const games = scope ? scope.games : [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
       .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name)));   // only QPS / Lab work this student did
 
-    document.getElementById('profileName').textContent = '👤 ' + name;
+    document.getElementById('profileName').textContent = '👤 ' + name + (scope ? ' — ' + scope.title : '');
+    document.getElementById('profileSum').textContent = scope ? profileSetSummary(name, games) : '';
     const tbody = document.getElementById('profileBody');
     tbody.innerHTML = '';
 
     games.forEach(game => {
       const student = (dashData[game] || []).find(s => s.name === name);
       const max = MAX_SCORES[game] || 100;
-      const label = GAME_LABELS[game] || game;
+      const label = scope ? escHtml(scope.label(game)) : GAME_LABELS[game] || game;
       const tr = document.createElement('tr');
 
       if (!student) {
@@ -4757,7 +4770,18 @@ function stepProfile(dir) {
   let next = idx + dir;
   if (next < 0) next = ROSTER.length - 1;
   if (next >= ROSTER.length) next = 0;
-  openProfile(ROSTER[next]);
+  openProfile(ROSTER[next], currentProfileScope);
+}
+
+// "✅ 5 of 8 done · 🔄 1 in progress · average 84% on the finished ones"
+function profileSetSummary(name, games) {
+  const rows = games.map(g => ({ g, s: (dashData[g] || []).find(x => x.name === name) }));
+  const done = rows.filter(r => r.s && r.s.status === 'complete');
+  const inprog = rows.filter(r => r.s && r.s.status === 'inprogress').length;
+  const pcts = done.map(r => Math.round(r.s.bestScore / (MAX_SCORES[r.g] || 100) * 100));
+  const avg = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+  return `✅ ${done.length} of ${games.length} done` + (inprog ? ` · 🔄 ${inprog} in progress` : '') +
+    (avg != null ? ` · average ${avg}% on the finished ones` : '');
 }
 
 function closeDetail() {
