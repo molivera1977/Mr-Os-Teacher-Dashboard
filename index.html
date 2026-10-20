@@ -1515,7 +1515,8 @@ function renderCurrentView() {
 //  be read, the Track column falls back to the stop they last practiced.
 // ═══════════════════════════════════════════════════
 const isQps = g => /^qps-/.test(g);
-const QPS_READY = 80;   // same mark the hub uses for "ready for Mr. O's check"
+const QPS_READY = 80;   // the hub's pass mark for a Practice Check
+const QPS_PASSES = 2;   // passed Checks on the student's stop before "ready for Mr. O's check" (Marcos 10/20: the stop twice, 80% each time)
 let qpsTracks = null;    // name → stop id ('5') or null (passed every section)
 let qpsTracksTried = false;
 
@@ -1586,7 +1587,8 @@ async function renderQps() {
     }
     const onTrack = stopChecks.filter(c => c.stop === track);
     return { name, track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
-             best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
+             best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1),
+             passes: onTrack.filter(c => Number(c.percent) >= QPS_READY).length };
   }).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
 
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
@@ -1606,7 +1608,8 @@ async function renderQps() {
                : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' ' + muted('(last practiced)')}`;
       const other = r.checks.length - r.onTrack.length;
       count = r.onTrack.length + (other > 0 ? ' ' + muted(`+${other} other stop${other > 1 ? 's' : ''}`) : '');
-      ready = r.best >= QPS_READY ? '<span class="status-pill complete">✅ Ready</span>'
+      ready = r.passes >= QPS_PASSES ? '<span class="status-pill complete">✅ Ready</span>'
+            : r.passes ? `<span class="status-pill inprogress">⭐ Pass ${r.passes} of ${QPS_PASSES}</span>`
             : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
             : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
     }
