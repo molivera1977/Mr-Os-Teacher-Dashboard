@@ -337,6 +337,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .fact-assign-pill.done{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .fact-assign-pill.working{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .fact-assign-pill.waiting{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+.fact-assign-pill.stopped{background:var(--flagged);color:var(--flagged-text);border-color:var(--flagged-border);}
 .fact-chip{display:inline-block;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);border-radius:14px;padding:3px 10px;margin:0 6px 6px 0;font-size:.82rem;font-weight:800;}
 </style>
 </head>
@@ -538,7 +539,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
           <label>Site<select id="factAssignSite" onchange="renderFactAssignForm()"></select></label>
           <label>Operation<select id="factAssignOp"></select></label>
           <label>Set<select id="factAssignSet"></select></label>
-          <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric"></label>
+          <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric" oninput="followFactAssignGoal()"></label>
+          <label>Stop after … tries<input id="factAssignLimit" type="number" min="1" max="500" step="1" value="40" inputmode="numeric" oninput="factAssignLimitTouched = true"></label>
           <label>Answer<select id="factAssignHow">
             <option value="Type It">⌨️ Type It</option>
             <option value="Choice">🔘 Multiple Choice</option>
@@ -1886,7 +1888,9 @@ function setFactStyle(st)  { factStyle = st; renderFacts(); }
 //  math fact reviews. When the student logs in, a large banner should show and should force the student
 //  to do the assignment.") He picked: assign from here · finish = "Get N right" · he picks the answer style.
 //  One row per student per assignment in the sheet's facts-assign tab; the fact sites' assign.js reads it.
-//    sessionId 'FA-<ms>-<n>' · form 'facts-review · Mult · 6s · Get 20 right · Type It' (or 'None' = taken away)
+//    sessionId 'FA-<ms>-<n>' · form 'facts-review · Mult · 6s · Get 20 right · Type It · Stop after 40 tries'
+//    (or 'None' = taken away). The try limit (Marcos 10/19 evening, every answer style) ends it after that many
+//    answers even if the goal is not met; it starts at 2x the goal. A row without one has no limit.
 //    score = the ms it was assigned: the sheet's leaderboard read keeps each student's highest score, so
 //            their newest row is their assignment. maxScore lifts the sheet's 99999 cap.
 //    correct / total / wrongQuestions / elapsed / done = the student's progress, written by the fact site.
@@ -1898,21 +1902,24 @@ const FACT_ASSIGN_HOW = { 'Type It': '⌨️ Type It', 'Choice': '🔘 Multiple 
 let factAssignRows    = null;   // the tab as last read (one row per student); null = not read yet
 let factAssignLoading = false;
 let factAssignError   = '';
+let factAssignLimitTouched = false;   // the try limit follows 2x the goal until Mr. O types his own
 const factAssignPicked = new Set();
 
 // a set as the fact sites name it: '6' → '6s'; 'Mixed 2-4' and 'All 2-12' stay
 const factAssignSetLabel = set => /^\d+$/.test(set) ? set + 's' : set;
 
 function parseFactAssign(r) {
-  const [site, op, set, goalText, how] = String(r.form || '').split('·').map(p => p.trim());
-  const goal = Number((/^Get (\d+) right$/.exec(goalText || '') || [])[1]) || 0;
-  if (!FACT_SITES[site] || !FACT_OPS[op] || !set || !goal || !FACT_ASSIGN_HOW[how]) return null;
+  const [site, op, set, goalText, how, stopText] = String(r.form || '').split('·').map(p => p.trim());
+  const goal  = Number((/^Get (\d+) right$/.exec(goalText || '') || [])[1]) || 0;
+  const limit = Number((/^Stop after (\d+) tries$/.exec(stopText || '') || [])[1]) || 0;   // 0 = no limit
+  if (!FACT_SITES[site] || !FACT_OPS[op] || !set || !goal || !FACT_ASSIGN_HOW[how] || (stopText && !limit)) return null;
   const key   = Number(r.score) || 0;
   const right = Number(r.correct) === key ? 0 : Number(r.correct) || 0;
+  const answered = Math.max(right, Number(r.total) || 0);
+  const stopped  = right < goal && limit > 0 && answered >= limit;   // reached the try limit, not the goal
   return {
-    name: r.name, id: String(r.sessionId || ''), site, op, set, goal, how, right,
-    answered: Math.max(right, Number(r.total) || 0),
-    done:     r.done === true || r.done === 'true' || right >= goal,
+    name: r.name, id: String(r.sessionId || ''), site, op, set, goal, limit, how, right, answered, stopped,
+    done:     r.done === true || r.done === 'true' || right >= goal || stopped,
     missed:   String(r.wrongQuestions || '').split(' | ').filter(Boolean),
     elapsed:  Number(r.elapsedSeconds) || 0,
     assigned: key ? new Date(key) : null
@@ -1924,10 +1931,19 @@ function factAssignList() {
   return (factAssignRows || [])
     .filter(r => STUDENT_ROSTER.includes(r.name))
     .map(parseFactAssign).filter(Boolean)
-    .sort((a, b) => a.done - b.done || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+    .sort((a, b) => factAssignRank(a) - factAssignRank(b) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
 }
+const factAssignRank = a => !a.done ? 0 : a.stopped ? 1 : 2;   // working, then stopped at the limit, then done
 const factAssignOpen = name => factAssignList().some(a => a.name === name && !a.done);
-const factAssignText = a => `${FACT_SITES[a.site]} · ${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}`;
+const factAssignText = a => `${FACT_SITES[a.site]} · ${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}` +
+  (a.limit ? ` · Stop after ${a.limit} tries` : '');
+
+// "Stop after … tries" starts at 2x the goal and follows it, until Mr. O types his own number
+function followFactAssignGoal() {
+  if (factAssignLimitTouched) return;
+  const goal = Number(document.getElementById('factAssignGoal').value);
+  if (Number.isInteger(goal) && goal > 0) document.getElementById('factAssignLimit').value = String(goal * 2);
+}
 
 async function loadFactAssignments() {
   factAssignLoading = true;
@@ -2013,7 +2029,8 @@ function renderFactAssignTable() {
   }
   const rows = list.map(a => {
     const pct    = a.answered ? Math.round(a.right / a.answered * 100) : 0;
-    const status = a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
+    const status = a.stopped ? '<span class="fact-assign-pill stopped">⏹ Stopped at limit</span>'
+                 : a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
                  : a.answered ? '<span class="fact-assign-pill working">✏️ Working</span>'
                  : '<span class="fact-assign-pill waiting">⏳ Not started</span>';
     const missed = a.missed.length
@@ -2030,8 +2047,9 @@ function renderFactAssignTable() {
     </tr>`;
   }).join('');
   const open = list.filter(a => !a.done).length;
+  const stopped = list.filter(a => a.stopped).length;
   el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>Assignment</th><th>Assigned</th><th>Progress</th><th>Status</th><th>Missed (typed)</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="fact-assign-note" style="margin-top:8px;">${open} still working · ${list.length - open} done</p>`;
+    <p class="fact-assign-note" style="margin-top:8px;">${open} still working · ${stopped} stopped at the try limit · ${list.length - open - stopped} done</p>`;
 }
 
 async function sendFactAssignment() {
@@ -2041,10 +2059,12 @@ async function sendFactAssignment() {
   const set  = document.getElementById('factAssignSet').value;
   const how  = document.getElementById('factAssignHow').value;
   const goal = Number(document.getElementById('factAssignGoal').value);
+  const limit = Number(document.getElementById('factAssignLimit').value);
   const names = STUDENT_ROSTER.filter(n => factAssignPicked.has(n));
   if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
   if (!Number.isInteger(goal) || goal < 1 || goal > 100) { status.textContent = '⚠️ "Get … right" must be a whole number from 1 to 100.'; return; }
-  const text = factAssignText({ site, op, set, goal, how });
+  if (!Number.isInteger(limit) || limit < goal || limit > 500) { status.textContent = `⚠️ "Stop after … tries" must be a whole number from ${goal} (the goal) to 500.`; return; }
+  const text = factAssignText({ site, op, set, goal, how, limit });
   const replacing = names.filter(factAssignOpen);
   const ask = `Assign this to ${names.length} student${names.length > 1 ? 's' : ''}?\n\n${text}` +
     (replacing.length ? `\n\nThis replaces the open assignment of: ${replacing.join('; ')}` : '');
@@ -2054,7 +2074,7 @@ async function sendFactAssignment() {
   btn.disabled = true;
   status.textContent = '⏳ Sending…';
   const at   = Date.now();
-  const form = `${site} · ${op} · ${set} · Get ${goal} right · ${how}`;
+  const form = `${site} · ${op} · ${set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
   const sent = names.map((name, i) => ({ name, sessionId: `FA-${at}-${i + 1}`, form, score: at, done: false }));
   await postFactAssignRows(sent);
   status.textContent = '⏳ Checking that it saved…';
