@@ -521,7 +521,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <!-- LAB VIEW — where each Lab student is, what they passed, and the mistakes they repeat -->
     <div id="view-lab" style="display:none;">
       <div class="section-title">🧪 The Lab — Adding and Subtracting · Multiplying · Place Value · Rounding · 🔎 Reading for Meaning</div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons (adding, subtracting, multiplying) pass at 90%; place value, rounding and 🔎 Reading for Meaning at 70% (reading: 6 of 8 points; a Part A + Part B question is worth 2). In reading, 🔁 = the same KIND of mistake again, on a new story (for example "true but not proof"); "Most common" = the kind a student has made most. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons (adding, subtracting, multiplying) pass at 90%; place value, rounding and 🔎 Reading for Meaning at 75% (8 of 10 on a lesson, 15 of 20 on the Place Value and Rounding Checks; reading: 6 of 8 points, a Part A + Part B question is worth 2). 📖 QPS = the student's QPS stop now, the same pill as the QPS page (two Checks at 80% move them on), and 🔔 a stop waiting for your test. In reading, 🔁 = the same KIND of mistake again, on a new story (for example "true but not proof"); "Most common" = the kind a student has made most. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
       <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
     </div>
 
@@ -1627,16 +1627,11 @@ function qpsLevels(name) {
   return out;
 }
 
-async function renderQps() {
-  const el = document.getElementById('qpsGrid');
-  await loadQpsTracks();
-  if (currentView !== 'qps') return;
-  const stopGames = Object.keys(dashData).filter(isQpsStop);
-  const compGames = Object.keys(dashData).filter(isQpsComp);
-  const names = [...STUDENT_ROSTER];
-  [...stopGames, ...compGames].forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
-
-  const finished = (games, name, keep) => {
+// ONE student's QPS standing from the sheet (dashData): the 📖 QPS page and the 🧪 Lab page both use it, so the two
+// pages always say the same thing about a student. track = the stop they are on now (moved on by the hub, or sent
+// back by Mr. O: the progress row's stop); startedAt = their stop in login.js; passes = passed Checks on it.
+function qpsRowFor(name) {
+  const finished = (games, keep) => {
     const out = [];
     games.forEach(g => {
       const st = (dashData[g] || []).find(s => s.name === name);
@@ -1644,40 +1639,61 @@ async function renderQps() {
     });
     return out.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   };
+  const stopGames = Object.keys(dashData).filter(isQpsStop);
+  const compGames = Object.keys(dashData).filter(isQpsComp);
+  const known = qpsTracks && Object.prototype.hasOwnProperty.call(qpsTracks, name);
+  const compChecks = finished(compGames, s => /^Check/.test(s.form || ''));
+  const compPractice = finished(compGames, s => /^Practice/.test(s.form || ''));
+  const stopChecks = finished(stopGames, () => true);
+  const track = known ? qpsTracks[name]
+              : (compChecks.length || compPractice.length) ? 'comp'
+              : (stopChecks[0] ? stopChecks[0].stop : undefined);
+  if (track === 'comp') {
+    const lv = qpsLevels(name);
+    return { name, track, known, comp: true, levels: lv, checks: compChecks, practice: compPractice, test: [],
+             latest: compChecks[0] || null, best: compChecks.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
+  }
+  // moved on by the hub (or sent back by Mr. O): the progress row's stop and passes
+  const prog = QPS_STOP_IDS.includes(track) ? qpsProgress(name) : null;
+  const now = prog ? prog.stop : track;
+  const onTrack = stopChecks.filter(c => c.stop === now);
+  return { name, track: now, startedAt: track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
+           best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1),
+           passes: prog ? prog.passes : onTrack.filter(c => Number(c.percent) >= QPS_READY).length, test: prog ? prog.test : [] };
+}
+// The "Your check / Level" pill(s) for one qpsRowFor row
+function qpsReadyPill(r) {
+  let ready;
+  if (r.comp) {
+    ready = Object.keys(QPS_COMP_SKILLS).map(k => r.levels[k] ? `<span class="status-pill complete">Level ${r.levels[k]} of 4</span>`
+                                                              : '<span class="status-pill notstarted">⬜ Not started</span>').join('<br>');
+  } else {
+    ready = r.passes >= QPS_PASSES ? '<span class="status-pill complete">✅ Ready</span>'
+          : r.passes ? `<span class="status-pill inprogress">⭐ Pass ${r.passes} of ${QPS_PASSES}</span>`
+          : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
+          : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
+  }
+  return ready;
+}
+
+async function renderQps() {
+  const el = document.getElementById('qpsGrid');
+  await loadQpsTracks();
+  if (currentView !== 'qps') return;
+  const names = [...STUDENT_ROSTER];
+  Object.keys(dashData).filter(g => isQpsStop(g) || isQpsComp(g)).forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
   const order = id => id === 'comp' ? 98 : id == null ? 99 : ['1','2','3','4','5','6','7','8','9a','9b','9c','10'].indexOf(id);
-  const rows = names.map(name => {
-    const known = qpsTracks && Object.prototype.hasOwnProperty.call(qpsTracks, name);
-    const compChecks = finished(compGames, name, s => /^Check/.test(s.form || ''));
-    const compPractice = finished(compGames, name, s => /^Practice/.test(s.form || ''));
-    const stopChecks = finished(stopGames, name, () => true);
-    const track = known ? qpsTracks[name]
-                : (compChecks.length || compPractice.length) ? 'comp'
-                : (stopChecks[0] ? stopChecks[0].stop : undefined);
-    if (track === 'comp') {
-      const lv = qpsLevels(name);
-      return { name, track, known, comp: true, levels: lv, checks: compChecks, practice: compPractice,
-               latest: compChecks[0] || null, best: compChecks.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
-    }
-    // moved on by the hub (or sent back by Mr. O): the progress row's stop and passes
-    const prog = QPS_STOP_IDS.includes(track) ? qpsProgress(name) : null;
-    const now = prog ? prog.stop : track;
-    const onTrack = stopChecks.filter(c => c.stop === now);
-    return { name, track: now, startedAt: track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
-             best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1),
-             passes: prog ? prog.passes : onTrack.filter(c => Number(c.percent) >= QPS_READY).length, test: prog ? prog.test : [] };
-  }).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
+  const rows = names.map(qpsRowFor).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
 
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
   const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
   const head = '<tr><th>Student</th><th>Track</th><th>Checks</th><th>Latest</th><th>Best</th><th>Your check / Level</th><th>Missed last time</th></tr>';
   const body = rows.map(r => {
-    let trackTxt, count, ready;
+    let trackTxt, count;
+    const ready = qpsReadyPill(r);
     if (r.comp) {
-      const skills = Object.keys(QPS_COMP_SKILLS);
-      trackTxt = 'Comprehension<br>' + skills.map(k => `${QPS_COMP_SKILLS[k]}`).join('<br>');
+      trackTxt = 'Comprehension<br>' + Object.values(QPS_COMP_SKILLS).join('<br>');
       count = r.checks.length + (r.practice.length ? ' ' + muted(`+${r.practice.length} practice`) : '');
-      ready = skills.map(k => r.levels[k] ? `<span class="status-pill complete">Level ${r.levels[k]} of 4</span>`
-                                          : '<span class="status-pill notstarted">⬜ Not started</span>').join('<br>');
     } else {
       trackTxt = r.track === null ? 'Any stop'
                : r.track === undefined ? '—'
@@ -1685,10 +1701,6 @@ async function renderQps() {
                  + (r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(r.startedAt))}`) : '');
       const other = r.checks.length - r.onTrack.length;
       count = r.onTrack.length + (other > 0 ? ' ' + muted(`+${other} other stop${other > 1 ? 's' : ''}`) : '');
-      ready = r.passes >= QPS_PASSES ? '<span class="status-pill complete">✅ Ready</span>'
-            : r.passes ? `<span class="status-pill inprogress">⭐ Pass ${r.passes} of ${QPS_PASSES}</span>`
-            : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
-            : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
     }
     const latest = r.latest ? `${r.latest.percent}% ${muted(day(r.latest.timestamp))}${r.comp ? '<br>' + muted(escHtml(r.latest.form)) : ''}` : '—';
     const best = r.best >= 0 ? `${r.best}%` : '—';
@@ -1728,7 +1740,8 @@ const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu
 // 🔎 Reading for Meaning (10/20): a wrong choice carries a KIND; the Lab sends the counts in lab-progress ("|kinds=notproof:3,…")
 const LAB_KIND_LABEL = { notproof: 'true but not proof', noclue: 'no clue in the passage', toofar: 'went too far', opposite: 'the opposite',
   onedetail: 'one detail, not the main idea', wrongwho: 'the wrong person', wrongtime: 'the wrong part of the passage', literal: 'word for word' };
-const LAB_PASS = 90;
+const LAB_PASS = 90;          // facts lessons (the Lab's FACTS_PASS_PCT)
+const LAB_PASS_OTHER = 75;    // place value, rounding, reading (the Lab's PASS_PCT — Marcos 10/20: "75 for LAB lessons and 90 for math facts")
 // Who is on a Lab plan is NOT written here (this page's code is public): a student is on a plan when the
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
 const labPlan = () => (dashData['lab-seed'] || []).map(s => s.name);
@@ -1751,8 +1764,8 @@ async function renderLab() {
     });
     tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const done = tries.filter(t => t.status === 'complete');
-    // facts lessons pass at 90%; place value, rounding and reading at 70% (the Lab's own rule)
-    const passMark = id => (/^(PV|RO|RC)/.test(id) ? 70 : LAB_PASS);
+    // facts lessons pass at 90%; place value, rounding and reading at 75% (the Lab's own rule, Marcos 10/20)
+    const passMark = id => (/^(PV|RO|RC)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
     const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= passMark(id)));
     // a running row is "now" unless a finished row of the same try came after it (a redo in the same visit
     // reuses the running row's id, so compare times, not just ids)
@@ -1764,17 +1777,15 @@ async function renderLab() {
     const mineAsked = ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0);
     const prog = (dashData['lab-progress'] || []).find(s => s.name === name);
     const p = prog && prog.sessions && prog.sessions.length ? prog.sessions[prog.sessions.length - 1] : null;
-    // 📖 reading: their QPS stop and the latest Practice Check on it
-    const stop = qpsTracks ? qpsTracks[name] : undefined;
-    const qst = stop ? (dashData['qps-' + stop] || []).find(s => s.name === name) : null;
-    const qchecks = (qst && qst.sessions || []).filter(s => s.status === 'complete').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    // 📖 QPS: the same standing the QPS page shows (qpsRowFor): the stop they are on now, its passes, 🔔 stops to test
+    const qps = qpsRowFor(name);
     // reading: the kinds of mistakes, most made first
     const kinds = (((p && p.form) || '').match(/kinds=([^|]*)/) || [])[1] || '';
     const topKinds = kinds.split(',').map(x => x.split(':')).filter(x => LAB_KIND_LABEL[x[0]] && Number(x[1]) > 0).sort((a, b) => b[1] - a[1]);
     return { name, onPlan: LAB_PLAN.includes(name), tries, done, passed, now, repeats, mineAsked, topKinds, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
-             stop, qcheck: qchecks[0] || null, qchecks: qchecks.length };
+             qps };
   });
-  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>📖 Reading (QPS stop)</th><th>Missed last time</th></tr>';
+  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>📖 QPS</th><th>Missed last time</th></tr>';
   const body = rows.map(r => {
     const now = r.now ? `<span class="status-pill inprogress">🔄 ${escHtml(r.now.lesson)}</span><br>${muted(`${Number(r.now.score) || 0} right so far`)}<br>${muted(day(r.now.timestamp))}`
               : r.tries.length ? muted('—') : '<span class="status-pill notstarted">⬜ Not started</span>';
@@ -1786,8 +1797,16 @@ async function renderLab() {
       (r.topKinds.length ? `<br>${muted('Most common: ' + r.topKinds.slice(0, 2).map(([k, n]) => `${LAB_KIND_LABEL[k]} ×${n}`).join(' · '))}` : '');
     const list = r.list == null ? muted('not synced yet') : r.list ? escHtml(r.list.split(' | ').map(x => x.replace(/ \(.*\)$/, '')).join(', ')) : muted('none');
     const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
-    const reading = !r.stop ? muted('—')
-      : `${escHtml(qpsStopName(r.stop))}<br>${r.qcheck ? `${r.qcheck.percent}%${Number(r.qcheck.percent) >= QPS_READY ? ' ✅' : ''} ${muted(day(r.qcheck.timestamp))}${r.qchecks > 1 ? ' ' + muted(`· ${r.qchecks} checks`) : ''}` : muted('no check yet')}`;
+    const q = r.qps;
+    const qLatest = q.latest ? `<br>${q.latest.percent}% ${muted(day(q.latest.timestamp))}${!q.comp && q.onTrack.length > 1 ? ' ' + muted(`· ${q.onTrack.length} checks`) : ''}` : '';
+    const reading = q.track === undefined ? muted('—')
+      : q.comp ? `${Object.values(QPS_COMP_SKILLS).join('<br>')}<br>${qpsReadyPill(q)}${qLatest}`
+      : q.track === null ? muted('Any stop')
+      : `${escHtml(qpsStopName(q.track))}${q.known ? '' : ' ' + muted('(last practiced)')}` +
+        (q.startedAt && q.track !== q.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(q.startedAt))}`) : '') +
+        `<br>${qpsReadyPill(q)}${qLatest}` +
+        (q.test.length ? `<br>🔔 ${muted('to test: ' + q.test.map(id => escHtml(qpsStopName(id))).join(', '))}` : '') +
+        (q.latest && q.latest.wrongQuestions ? `<br>${muted('missed: ' + escHtml(short(q.latest.wrongQuestions)))}` : '');
     return `<tr><td>${escHtml(r.name)}${r.onPlan ? '' : ' ' + muted('(not on a plan)')}</td><td>${now}</td><td>${passed}</td><td>${latest}</td><td>${r.mineAsked}</td><td style="white-space:normal;">${reps}</td><td style="white-space:normal;">${list}</td><td>${reading}</td><td style="white-space:normal;">${missed}</td></tr>`;
   }).join('');
   el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
