@@ -346,6 +346,15 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-tested,.qps-rtested{background:#1f9d55;color:#fff;}            /* ✓ I tested this: green */
 .qps-back{background:#fff;color:#c92a2a;border:2px solid #c92a2a;}  /* ↩ Send back: red outline — a different kind of button */
 .qps-undo-btn{background:#2f6fde;color:#fff;}
+/* the reading path (10/21): every step to finishing, their spot marked */
+.qps-path-level{font-weight:800;margin-bottom:4px;}
+.qps-path{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.qps-step{padding:3px 9px;border-radius:999px;border:2px solid var(--border,#dfe5dc);font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.qps-step.done{border-color:#a6dcb9;background:#e6f6ec;color:#157a40;}
+.qps-step.now{border-color:#e0a100;background:#fff4d6;color:#7a5200;box-shadow:0 0 0 2px #ffe08a;}
+.qps-step small{font-weight:600;opacity:.8;}
+.qps-arrow{color:var(--muted);font-weight:800;}
+.qps-tries{margin-top:4px;font-size:.75rem;font-weight:700;color:#c92a2a;}
 .qps-missed summary{cursor:pointer;color:var(--muted);font-size:.8rem;font-weight:700;}
 .fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
 .fact-assign-who-cell .btn{margin-top:6px;}
@@ -1657,9 +1666,9 @@ function qpsCourse(name) {
   const form = row && row.sessions && row.sessions.length ? String(row.sessions[row.sessions.length - 1].form || '') : '';
   const segs = form.split('|'), get = k => (segs.find(x => x.startsWith(k + '=')) || '').slice(k.length + 1);
   const passes = {}; get('p').split(',').forEach(x => { const [k, n] = x.split(':'); if (k) passes[k] = Math.min(QPS_PASSES, Number(n) || 0); });
-  const done = new Set(get('f').split(',').filter(Boolean));
+  const done = new Set(get('f').split(',').filter(Boolean)), learned = new Set(get('l').split(',').filter(Boolean));
   const out = {};
-  Object.entries(qpsLevels(name)).forEach(([k, lv]) => { out[k] = { level: lv, passes: passes[k] || 0, finished: done.has(k) }; });
+  Object.entries(qpsLevels(name)).forEach(([k, lv]) => { out[k] = { level: lv, passes: passes[k] || 0, finished: done.has(k), learned: learned.has(k) }; });
   return out;
 }
 function qpsTestedSkills(name) {
@@ -1677,6 +1686,35 @@ function qpsReadingTested(name, skillId) {
   const st = list.find(x => x.name === name);
   if (st) st.sessions = [...(st.sessions || []), { ...row, status: 'in-progress' }]; else list.push({ name, sessions: [{ ...row, status: 'in-progress' }] });
   renderQps();
+}
+
+// The path to finishing one reading skill at the student's level (Marcos 10/21: "the words in context crew, i want to
+// be able to see where they are on the path to finishing"): Learn → Practice → Check 1 → Practice → Check 2 → Finished
+// (or → the next level). "Practiced" = a Practice row newer than their last Check (the hub opens the Check after it).
+const QPS_COURSE_SINCE = Date.parse('2026-10-21T21:14:00Z');
+function qpsReadingPath(r, k) {
+  const c = (r.course || {})[k];
+  if (!c) return '';
+  // only work done in the course (live 10/21 5:14 PM): older rows came from the old menu, where the level moved by itself
+  const mine = list => (list || []).filter(x => x.game === 'qps-c-' + k && new Date(x.timestamp).getTime() >= QPS_COURSE_SINCE);
+  const checks = mine(r.checks), practice = mine(r.practice);
+  const lastC = checks[0] ? new Date(checks[0].timestamp).getTime() : 0, lastP = practice[0] ? new Date(practice[0].timestamp).getTime() : 0;
+  const practicedNow = lastP > lastC;
+  const at = x => String(x.form || '').startsWith(`Check · Level ${c.level}`);
+  const pass1 = checks.find(x => at(x) && /pass 1 of 2/.test(x.form));
+  const sinceLastPass = checks.filter(x => at(x) && Number(x.percent) < QPS_READY && (!pass1 || new Date(x.timestamp) > new Date(pass1.timestamp)));
+  const steps = [
+    { t: 'Learn', done: c.learned || c.passes > 0 || practice.length > 0 },
+    { t: 'Practice', done: c.passes >= 1 || practicedNow },
+    { t: 'Check 1', done: c.passes >= 1, note: pass1 ? `${pass1.percent}%` : '' },
+    { t: 'Practice', done: c.passes >= 2 || (c.passes === 1 && practicedNow) },
+    { t: 'Check 2', done: c.passes >= 2 },
+    { t: c.level < 4 ? `Level ${c.level + 1}` : '🏁 Finished', done: c.finished, end: true }
+  ];
+  const now = steps.findIndex(x => !x.done);
+  const chips = steps.map((x, i) => `<span class="qps-step${x.done ? ' done' : ''}${i === now ? ' now' : ''}${x.end ? ' end' : ''}">${x.done ? '✅' : i === now ? '👉' : '⬜'} ${escHtml(x.t)}${x.note ? ` <small>${escHtml(x.note)}</small>` : ''}</span>`).join('<span class="qps-arrow">→</span>');
+  const tries = sinceLastPass.length ? `<div class="qps-tries">${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} under 80% at this step (last ${sinceLastPass[0].percent}%)</div>` : '';
+  return `<div class="qps-path-level">Level ${c.level} of 4</div><div class="qps-path">${chips}</div>${tries}`;
 }
 
 // ONE student's QPS standing from the sheet (dashData): the 📖 QPS page and the 🧪 Lab page both use it, so the two
@@ -1768,8 +1806,9 @@ async function renderQps() {
         ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested" title="You tested them on this course">✓ I tested this</button></div>`
         : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>';
       return `<span class="status-pill ${c.passes ? 'inprogress' : 'notstarted'}">${'✅'.repeat(c.passes)}${'⬜'.repeat(QPS_PASSES - c.passes)} ${c.passes} of ${QPS_PASSES} passes</span>`; }).join('<br>');
-    const level = skills.map(k => (r.course || {})[k] ? `Level ${r.course[k].level} of 4` : muted('—')).join('<br>');
-    return `<tr><td>${escHtml(r.name)}</td><td>${Object.values(QPS_COMP_SKILLS).join('<br>')}</td><td>${level}</td><td>${status}</td><td>${lastCheck(r)}</td></tr>`;
+    const path = skills.map(k => { const c = (r.course || {})[k];
+      return !c ? '<span class="status-pill notstarted">⬜ Not started</span>' : c.finished ? status : qpsReadingPath(r, k); }).join('<br>');
+    return `<tr><td>${escHtml(r.name)}</td><td>${Object.values(QPS_COMP_SKILLS).join('<br>')}</td><td>${path}</td><td>${lastCheck(r)}</td></tr>`;
   }).join('');
   const nTest = phon.reduce((n, r) => n + (r.test || []).length, 0), nKids = phon.filter(r => (r.test || []).length).length;
   const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
@@ -1783,7 +1822,7 @@ async function renderQps() {
     `<h3 class="qps-h">🔤 Phonics stops</h3>
      <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Now on</th><th>This stop</th><th>Finished — test them</th><th>Last Check</th></tr></thead><tbody>${phonBody}</tbody></table>` +
     (read.length ? `<h3 class="qps-h">📖 Reading course</h3>
-     <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Course</th><th>Level</th><th>Passes</th><th>Last Check</th></tr></thead><tbody>${readBody}</tbody></table>` : '') +
+     <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Course</th><th>Path to finishing</th><th>Last Check</th></tr></thead><tbody>${readBody}</tbody></table>` : '') +
     (idle.length ? `<p style="color:var(--muted);font-weight:600;margin-top:10px;">Not on the hub yet: ${idle.map(r => escHtml(r.name)).join(' · ')}</p>` : '');
   el.querySelectorAll('.qps-flag').forEach(row => {
     const name = row.dataset.name, id = row.dataset.stop;
