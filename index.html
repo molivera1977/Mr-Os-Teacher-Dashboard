@@ -343,6 +343,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-h{margin:18px 0 8px;font-size:1.05rem;font-weight:800;}
 .qps-flag,.qps-rflag{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:3px 0;padding:4px 8px;border:2px solid var(--amber,#e0a100);border-radius:10px;background:rgba(224,161,0,.08);}
 .qps-flag .btn,.qps-rflag .btn{padding:4px 10px;font-size:.75rem;}
+.qps-tested,.qps-rtested{background:#1f9d55;color:#fff;}            /* ✓ I tested this: green */
+.qps-back{background:#fff;color:#c92a2a;border:2px solid #c92a2a;}  /* ↩ Send back: red outline — a different kind of button */
+.qps-undo-btn{background:#2f6fde;color:#fff;}
 .qps-missed summary{cursor:pointer;color:var(--muted);font-size:.8rem;font-weight:700;}
 .fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
 .fact-assign-who-cell .btn{margin-top:6px;}
@@ -1584,14 +1587,27 @@ function qpsSaveProgress(name, p) {
   if (st) st.sessions = [...(st.sessions || []), { ...row, status: 'in-progress' }]; else list.push({ name, sessions: [{ ...row, status: 'in-progress' }] });
   renderQps();
 }
+// Both ask first, and both can be undone (Marcos 10/21: "i accidently sent Destiny back to 5. I didn't know what the
+// button did"): the row as it was is kept, and "↶ Undo" at the top of the page writes it back.
+let qpsUndo = null;                      // { name, prev, what }
+const qpsFirst = name => name.split(',').reverse().join(' ').trim();
 function qpsTested(name, stopId) {
   const p = qpsProgress(name); if (!p) return;
+  if (!confirm(`You tested ${qpsFirst(name)} on stop ${stopId} yourself?\n\nOK = take stop ${stopId} off the "test them" list. ${qpsFirst(name)} stays where they are now.`)) return;
+  qpsUndo = { name, prev: p, what: `marked stop ${stopId} tested for ${qpsFirst(name)}` };
   qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== stopId), t: Date.now() });
 }
 function qpsBack(name, stopId) {
   const p = qpsProgress(name); if (!p) return;
-  if (!confirm(`Move ${name.split(',').reverse().join(' ').trim()} back to stop ${stopId}? They start that stop's two passes again.`)) return;
+  if (!confirm(`Send ${qpsFirst(name)} BACK to stop ${stopId}?\n\nThey leave the stop they are on now and must pass stop ${stopId}'s Check twice again. Use this only if they did not pass your test.`)) return;
+  qpsUndo = { name, prev: p, what: `sent ${qpsFirst(name)} back to stop ${stopId}` };
   qpsSaveProgress(name, { stop: stopId, passes: 0, test: p.test.filter(x => x !== stopId), t: Date.now() });
+}
+function qpsUndoLast() {
+  if (!qpsUndo) return;
+  const { name, prev } = qpsUndo;
+  qpsUndo = null;
+  qpsSaveProgress(name, { ...prev, t: Date.now() });
 }
 
 async function loadQpsTracks() {
@@ -1736,8 +1752,8 @@ async function renderQps() {
   const idle = rows.filter(r => !r.comp && !r.track && !r.checks.length);
   const flag = (r, id) => `<div class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(id)}">
       <b>${escHtml(qpsStopName(id))}</b>
-      <button type="button" class="btn qps-tested">✓ Tested</button>
-      <button type="button" class="btn qps-back">↩ Back to ${escHtml(id)}</button></div>`;
+      <button type="button" class="btn qps-tested" title="You tested them on this stop: take it off this list">✓ I tested this</button>
+      <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this stop">↩ Send back to ${escHtml(id)}</button></div>`;
   const phonBody = phon.map(r => `<tr>
       <td>${escHtml(r.name)}</td>
       <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}</td>
@@ -1749,7 +1765,7 @@ async function renderQps() {
     const status = skills.map(k => { const c = (r.course || {})[k];
       if (!c) return '<span class="status-pill notstarted">⬜ Not started</span>';
       if (c.finished) return r.readingTest.includes(k)
-        ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested">✓ Tested</button></div>`
+        ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested" title="You tested them on this course">✓ I tested this</button></div>`
         : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>';
       return `<span class="status-pill ${c.passes ? 'inprogress' : 'notstarted'}">${'✅'.repeat(c.passes)}${'⬜'.repeat(QPS_PASSES - c.passes)} ${c.passes} of ${QPS_PASSES} passes</span>`; }).join('<br>');
     const level = skills.map(k => (r.course || {})[k] ? `Level ${r.course[k].level} of 4` : muted('—')).join('<br>');
@@ -1758,9 +1774,11 @@ async function renderQps() {
   const nTest = phon.reduce((n, r) => n + (r.test || []).length, 0), nKids = phon.filter(r => (r.test || []).length).length;
   const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
   const box = document.getElementById('qpsFlags');
-  if (box) box.innerHTML = (nTest || nRead) ? `<div class="qps-flags" style="border:2px solid var(--amber,#e0a100);border-radius:12px;padding:10px 14px;margin:0 0 14px;background:rgba(224,161,0,.08);font-weight:800;">
+  const undo = qpsUndo ? `<div class="qps-undo" style="margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#eef3ff;font-weight:700;">You ${escHtml(qpsUndo.what)}. <button type="button" class="btn qps-undo-btn">↶ Undo</button></div>` : '';
+  if (box) box.innerHTML = undo + ((nTest || nRead) ? `<div class="qps-flags" style="border:2px solid var(--amber,#e0a100);border-radius:12px;padding:10px 14px;margin:0 0 14px;background:rgba(224,161,0,.08);font-weight:800;">
       🔔 To test: ${nTest ? `${nTest} phonics stop${nTest > 1 ? 's' : ''} (${nKids} student${nKids > 1 ? 's' : ''})` : ''}${nTest && nRead ? ' · ' : ''}${nRead ? `${nRead} finished reading course${nRead > 1 ? 's' : ''}` : ''}
-      <span style="font-weight:600;color:var(--muted);"> — the buttons are in each student's row</span></div>` : '';
+      <span style="font-weight:600;color:var(--muted);"> — in each student's row: ✓ I tested this (they passed your test) · ↩ Send back (they did not)</span></div>` : '');
+  if (box && box.querySelector('.qps-undo-btn')) box.querySelector('.qps-undo-btn').onclick = qpsUndoLast;
   el.innerHTML =
     `<h3 class="qps-h">🔤 Phonics stops</h3>
      <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Now on</th><th>This stop</th><th>Finished — test them</th><th>Last Check</th></tr></thead><tbody>${phonBody}</tbody></table>` +
