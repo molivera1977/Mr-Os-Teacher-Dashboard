@@ -513,7 +513,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
     <!-- QPS VIEW — each student's QPS Literacy Hub track and Practice Checks -->
     <div id="view-qps" style="display:none;">
       <div class="section-title">📖 QPS Literacy Hub — Practice Checks</div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. 80% or better on the Practice Check = ready for your check. Students who passed every QPS level are on the comprehension track: the site moves their level (1–4) up and down on its own.</p>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Each student practices their own stop. Two Practice Checks at 80% or better move them on to the next stop by themselves; 🔔 lists the stops you still need to test them on. Students who passed every QPS level are on the comprehension track: the site moves their level (1–4) up and down on its own.</p>
+      <div id="qpsFlags"></div>
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
     </div>
 
@@ -1540,7 +1541,52 @@ const isQps = g => /^qps-/.test(g);
 const QPS_READY = 80;   // the hub's pass mark for a Practice Check
 const QPS_PASSES = 2;   // passed Checks on the student's stop before "ready for Mr. O's check" (Marcos 10/20: the stop twice, 80% each time)
 let qpsTracks = null;    // name → stop id ('5') or null (passed every section)
+let qpsSince = {};       // name → ms: Mr. O moved them by hand then; an older progress row is ignored (login.js TRACK_SINCE)
 let qpsTracksTried = false;
+// Moving on (Marcos 10/21): the hub keeps ONE row per student on 'qps-progress' — "stop=6;passes=1;test=5|t=<ms>":
+// the stop now, passed Checks on it, and the stops Mr. O still has to test. Same rules as the hub's login.js.
+const QPS_PROGRESS = 'qps-progress';
+const QPS_STOP_IDS = ['1','2','3','4','5','6','7','8','9a','9b','9c','10'];
+function qpsParseProgress(form) {
+  const [pairs, t] = String(form || '').split('|t=');
+  const p = { stop: '', passes: 0, test: [], t: Number(t) || 0 };
+  pairs.split(';').forEach(kv => {
+    const [k, v] = kv.split('=');
+    if (k === 'stop') p.stop = v || '';
+    if (k === 'passes') p.passes = Math.max(0, Math.min(QPS_PASSES, Number(v) || 0));
+    if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
+  });
+  return p;
+}
+const qpsFormOf = p => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}|t=${p.t}`;
+// The student's progress row, if it counts (a real stop, newer than a hand move in login.js)
+function qpsProgress(name) {
+  const st = (dashData[QPS_PROGRESS] || []).find(s => s.name === name);
+  const last = st && st.sessions && st.sessions.length ? st.sessions[st.sessions.length - 1] : null;
+  if (!last) return null;
+  const p = qpsParseProgress(last.form);
+  return p.stop && QPS_STOP_IDS.includes(p.stop) && p.t > (qpsSince[name] || 0) ? p : null;
+}
+// ✓ Tested / ↩ Back: rewrite the student's row (the same sessionId the hub uses), then show it at once
+function qpsSaveProgress(name, p) {
+  const row = { name, form: qpsFormOf(p), sessionId: 'prog-' + name.replace(/[^A-Za-z0-9]+/g, '-'), timestamp: new Date().toISOString() };
+  fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'submit', game: QPS_PROGRESS, sessionId: row.sessionId, name, form: row.form,
+      score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' }) }).catch(() => {});
+  const list = dashData[QPS_PROGRESS] = dashData[QPS_PROGRESS] || [];
+  const st = list.find(s => s.name === name);
+  if (st) st.sessions = [...(st.sessions || []), { ...row, status: 'in-progress' }]; else list.push({ name, sessions: [{ ...row, status: 'in-progress' }] });
+  renderQps();
+}
+function qpsTested(name, stopId) {
+  const p = qpsProgress(name); if (!p) return;
+  qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== stopId), t: Date.now() });
+}
+function qpsBack(name, stopId) {
+  const p = qpsProgress(name); if (!p) return;
+  if (!confirm(`Move ${name.split(',').reverse().join(' ').trim()} back to stop ${stopId}? They start that stop's two passes again.`)) return;
+  qpsSaveProgress(name, { stop: stopId, passes: 0, test: p.test.filter(x => x !== stopId), t: Date.now() });
+}
 
 async function loadQpsTracks() {
   if (qpsTracksTried) return;
@@ -1553,6 +1599,11 @@ async function loadQpsTracks() {
     block.split('\n').forEach(line => {
       const m = /^\s*"([^"]+)":\s*(?:"([^"]+)"|null)/.exec(line);
       if (m) qpsTracks[m[1]] = m[2] || null;
+    });
+    qpsSince = {};
+    ((/const TRACK_SINCE = \{([\s\S]*?)\};/.exec(src) || [])[1] || '').split('\n').forEach(line => {
+      const m = /^\s*"([^"]+)":\s*(\d+)/.exec(line);
+      if (m) qpsSince[m[1]] = Number(m[2]);
     });
   } catch (e) { qpsTracks = null; }
 }
@@ -1607,10 +1658,13 @@ async function renderQps() {
       return { name, track, known, comp: true, levels: lv, checks: compChecks, practice: compPractice,
                latest: compChecks[0] || null, best: compChecks.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
     }
-    const onTrack = stopChecks.filter(c => c.stop === track);
-    return { name, track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
+    // moved on by the hub (or sent back by Mr. O): the progress row's stop and passes
+    const prog = QPS_STOP_IDS.includes(track) ? qpsProgress(name) : null;
+    const now = prog ? prog.stop : track;
+    const onTrack = stopChecks.filter(c => c.stop === now);
+    return { name, track: now, startedAt: track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
              best: onTrack.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1),
-             passes: onTrack.filter(c => Number(c.percent) >= QPS_READY).length };
+             passes: prog ? prog.passes : onTrack.filter(c => Number(c.percent) >= QPS_READY).length, test: prog ? prog.test : [] };
   }).sort((a, b) => order(a.track) - order(b.track) || a.name.localeCompare(b.name));
 
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
@@ -1627,7 +1681,8 @@ async function renderQps() {
     } else {
       trackTxt = r.track === null ? 'Any stop'
                : r.track === undefined ? '—'
-               : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' ' + muted('(last practiced)')}`;
+               : `${escHtml(qpsStopName(r.track))}${r.known ? '' : ' ' + muted('(last practiced)')}`
+                 + (r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(r.startedAt))}`) : '');
       const other = r.checks.length - r.onTrack.length;
       count = r.onTrack.length + (other > 0 ? ' ' + muted(`+${other} other stop${other > 1 ? 's' : ''}`) : '');
       ready = r.passes >= QPS_PASSES ? '<span class="status-pill complete">✅ Ready</span>'
@@ -1641,6 +1696,20 @@ async function renderQps() {
     return `<tr><td>${escHtml(r.name)}</td><td>${trackTxt}</td><td>${count}</td><td>${latest}</td><td>${best}</td><td>${ready}</td><td style="white-space:normal;">${missed}</td></tr>`;
   }).join('');
   el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
+  // 🔔 the stops a student passed (two Checks at 80%+) and moved on from — Mr. O still tests them
+  const flags = rows.flatMap(r => (r.test || []).map(id => ({ name: r.name, id, now: r.track })));
+  const box = document.getElementById('qpsFlags');
+  if (box) box.innerHTML = !flags.length ? '' : `<div class="qps-flags" style="border:2px solid var(--amber,#e0a100);border-radius:12px;padding:12px 14px;margin:0 0 14px;background:rgba(224,161,0,.08);">
+    <div style="font-weight:800;margin-bottom:8px;">🔔 Needs your test (${flags.length})</div>
+    ${flags.map(f => `<div class="qps-flag" data-name="${escHtml(f.name)}" data-stop="${escHtml(f.id)}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:4px 0;">
+      <span><b>${escHtml(f.name)}</b> passed ${escHtml(qpsStopName(f.id))} twice${f.now !== f.id ? ` and moved on to ${escHtml(qpsStopName(f.now))}` : ''}.</span>
+      <button type="button" class="btn qps-tested">✓ Tested</button>
+      <button type="button" class="btn qps-back">↩ Back to ${escHtml(qpsStopName(f.id))}</button></div>`).join('')}</div>`;
+  if (box) box.querySelectorAll('.qps-flag').forEach(row => {
+    const name = row.dataset.name, id = row.dataset.stop;
+    row.querySelector('.qps-tested').onclick = () => qpsTested(name, id);
+    row.querySelector('.qps-back').onclick = () => qpsBack(name, id);
+  });
 }
 
 
