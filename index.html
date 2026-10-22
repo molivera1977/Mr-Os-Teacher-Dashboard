@@ -348,6 +348,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-undo-btn{background:#2f6fde;color:#fff;}
 /* the reading path (10/21): every step to finishing, their spot marked */
 .qps-path-level{font-weight:800;margin-bottom:4px;}
+.qps-course{padding:6px 0;}
+.qps-course + .qps-course{border-top:1px dashed var(--line,#ddd);margin-top:4px;}
 .qps-path{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
 .qps-step{padding:3px 9px;border-radius:999px;border:2px solid var(--border,#dfe5dc);font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap;}
 .qps-step.done{border-color:#a6dcb9;background:#e6f6ec;color:#157a40;}
@@ -1720,7 +1722,7 @@ function qpsReadingPath(r, k) {
   const now = steps.findIndex(x => !x.done);
   const chips = steps.map((x, i) => `<span class="qps-step${x.done ? ' done' : ''}${i === now ? ' now' : ''}${x.end ? ' end' : ''}">${x.done ? '✅' : i === now ? '👉' : '⬜'} ${escHtml(x.t)}${x.note ? ` <small>${escHtml(x.note)}</small>` : ''}</span>`).join('<span class="qps-arrow">→</span>');
   const tries = sinceLastPass.length ? `<div class="qps-tries">${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} not passed at this step (last ${escHtml(qpsCheckScore(sinceLastPass[0]))}${k === 'maze' ? '' : ', need 80%'})</div>` : '';
-  return `<div class="qps-path-level">Level ${c.level} of 4</div><div class="qps-path">${chips}</div>${tries}`;
+  return `<div class="qps-path">${chips}</div>${tries}`;
 }
 
 // ONE student's QPS standing from the sheet (dashData): the 📖 QPS page and the 🧪 Lab page both use it, so the two
@@ -1804,17 +1806,15 @@ async function renderQps() {
       <td>${r.track === QPS_STOP_IDS[QPS_STOP_IDS.length - 1] && r.passes >= QPS_PASSES ? '<span class="status-pill complete">🎉 All stops passed</span>' : qpsReadyPill(r)}</td>
       <td>${(r.test || []).length ? r.test.map(id => flag(r, id)).join('') : muted('—')}</td>
       <td>${lastCheck(r)}</td></tr>`).join('');
+  // Each course is its own block with its name on it (Maze first), so a path is never read against the wrong course
   const readBody = read.map(r => {
-    const skills = Object.keys(QPS_COMP_SKILLS);
-    const status = skills.map(k => { const c = (r.course || {})[k];
-      if (!c) return '<span class="status-pill notstarted">⬜ Not started</span>';
-      if (c.finished) return r.readingTest.includes(k)
+    const block = k => { const c = (r.course || {})[k], name = `<div class="qps-path-level">${escHtml(QPS_COMP_SKILLS[k])}${c ? ` · Level ${c.level} of 4` : ''}</div>`;
+      if (!c) return `<div class="qps-course">${name}<span class="status-pill notstarted">⬜ Not started</span></div>`;
+      if (c.finished) return `<div class="qps-course">${name}` + (r.readingTest.includes(k)
         ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested" title="You tested them on this course">✓ I tested this</button></div>`
-        : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>';
-      return `<span class="status-pill ${c.passes ? 'inprogress' : 'notstarted'}">${'✅'.repeat(c.passes)}${'⬜'.repeat(QPS_PASSES - c.passes)} ${c.passes} of ${QPS_PASSES} passes</span>`; }).join('<br>');
-    const path = skills.map(k => { const c = (r.course || {})[k];
-      return !c ? '<span class="status-pill notstarted">⬜ Not started</span>' : c.finished ? status : qpsReadingPath(r, k); }).join('<br>');
-    return `<tr><td>${escHtml(r.name)}</td><td>${Object.values(QPS_COMP_SKILLS).join('<br>')}</td><td>${path}</td><td>${lastCheck(r)}</td></tr>`;
+        : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>') + '</div>';
+      return `<div class="qps-course">${name}${qpsReadingPath(r, k)}</div>`; };
+    return `<tr><td>${escHtml(r.name)}</td><td>${Object.keys(QPS_COMP_SKILLS).map(block).join('')}</td><td>${lastCheck(r)}</td></tr>`;
   }).join('');
   const nTest = phon.reduce((n, r) => n + (r.test || []).length, 0), nKids = phon.filter(r => (r.test || []).length).length;
   const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
@@ -1828,7 +1828,7 @@ async function renderQps() {
     `<h3 class="qps-h">🔤 Phonics stops</h3>
      <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Now on</th><th>This stop</th><th>Finished — test them</th><th>Last Check</th></tr></thead><tbody>${phonBody}</tbody></table>` +
     (read.length ? `<h3 class="qps-h">📖 Reading course</h3>
-     <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Course</th><th>Path to finishing</th><th>Last Check</th></tr></thead><tbody>${readBody}</tbody></table>` : '') +
+     <table class="grid-table qps-table"><thead><tr><th>Student</th><th>Each course · path to finishing</th><th>Last Check</th></tr></thead><tbody>${readBody}</tbody></table>` : '') +
     (idle.length ? `<p style="color:var(--muted);font-weight:600;margin-top:10px;">Not on the hub yet: ${idle.map(r => escHtml(r.name)).join(' · ')}</p>` : '');
   el.querySelectorAll('.qps-flag').forEach(row => {
     const name = row.dataset.name, id = row.dataset.stop;
