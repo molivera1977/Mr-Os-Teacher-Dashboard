@@ -777,6 +777,7 @@ const GAME_LABELS = {
   'qps-9b': '📖 QPS 9b — Three-part words',
   'qps-9c': '📖 QPS 9c — Four-part words',
   'qps-10': '📖 QPS 10 — Word parts',
+  'qps-c-maze': '📖 QPS Comprehension — Maze',
   'qps-c-context': '📖 QPS Comprehension — Words in context',
   'qps-levels': '📖 QPS — comprehension levels',
   'lab-as1': '🧪 Lab AS1 — Count On to Add',
@@ -1648,7 +1649,12 @@ function qpsStopName(id) {
 // for each skill ("context=3;main=2|t=…").
 const isQpsStop = g => /^qps-(\d+|9[abc])$/.test(g);
 const isQpsComp = g => /^qps-c-/.test(g);
-const QPS_COMP_SKILLS = { context: '🔎 Words in context' };
+// Maze first, Words in context after (hub 10/21) — the order the student does them
+const QPS_COMP_SKILLS = { maze: '🧩 Maze', context: '🔎 Words in context' };
+// A reading-course Check row passed when its form says so ("· pass 1 of 2", "→ 3", "· finished"); a Maze Check is
+// points against a goal ("· 9½ points (goal 8)"), so the percent alone can't say it.
+const qpsCheckPassed = x => /pass \d of|→|finished/.test(String(x.form || ''));
+const qpsCheckScore = x => /^qps-c-maze/.test(x.game || '') ? ((/· ([\d½]+ points)/.exec(x.form || '') || [])[1] || `${x.score} points`) : `${x.percent}%`;
 
 function qpsLevels(name) {
   const row = (dashData['qps-levels'] || []).find(s => s.name === name);
@@ -1702,18 +1708,18 @@ function qpsReadingPath(r, k) {
   const practicedNow = lastP > lastC;
   const at = x => String(x.form || '').startsWith(`Check · Level ${c.level}`);
   const pass1 = checks.find(x => at(x) && /pass 1 of 2/.test(x.form));
-  const sinceLastPass = checks.filter(x => at(x) && Number(x.percent) < QPS_READY && (!pass1 || new Date(x.timestamp) > new Date(pass1.timestamp)));
+  const sinceLastPass = checks.filter(x => at(x) && !qpsCheckPassed(x) && (!pass1 || new Date(x.timestamp) > new Date(pass1.timestamp)));
   const steps = [
     { t: 'Learn', done: c.learned || c.passes > 0 || practice.length > 0 },
     { t: 'Practice', done: c.passes >= 1 || practicedNow },
-    { t: 'Check 1', done: c.passes >= 1, note: pass1 ? `${pass1.percent}%` : '' },
+    { t: 'Check 1', done: c.passes >= 1, note: pass1 ? qpsCheckScore(pass1) : '' },
     { t: 'Practice', done: c.passes >= 2 || (c.passes === 1 && practicedNow) },
     { t: 'Check 2', done: c.passes >= 2 },
     { t: c.level < 4 ? `Level ${c.level + 1}` : '🏁 Finished', done: c.finished, end: true }
   ];
   const now = steps.findIndex(x => !x.done);
   const chips = steps.map((x, i) => `<span class="qps-step${x.done ? ' done' : ''}${i === now ? ' now' : ''}${x.end ? ' end' : ''}">${x.done ? '✅' : i === now ? '👉' : '⬜'} ${escHtml(x.t)}${x.note ? ` <small>${escHtml(x.note)}</small>` : ''}</span>`).join('<span class="qps-arrow">→</span>');
-  const tries = sinceLastPass.length ? `<div class="qps-tries">${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} under 80% at this step (last ${sinceLastPass[0].percent}%)</div>` : '';
+  const tries = sinceLastPass.length ? `<div class="qps-tries">${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} not passed at this step (last ${escHtml(qpsCheckScore(sinceLastPass[0]))}${k === 'maze' ? '' : ', need 80%'})</div>` : '';
   return `<div class="qps-path-level">Level ${c.level} of 4</div><div class="qps-path">${chips}</div>${tries}`;
 }
 
@@ -1783,7 +1789,7 @@ async function renderQps() {
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
   const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
   const lastCheck = r => !r.latest ? muted('—')
-    : `${r.latest.percent}% ${muted(day(r.latest.timestamp))}` + (r.latest.wrongQuestions
+    : (r.comp ? `${escHtml((QPS_COMP_SKILLS[r.latest.game.slice(6)] || '').split(' ')[0] || '')} ${escHtml(qpsCheckScore(r.latest))}` : `${r.latest.percent}%`) + ` ${muted(day(r.latest.timestamp))}` + (r.latest.wrongQuestions
       ? `<details class="qps-missed"><summary>missed words</summary><div style="white-space:normal;">${escHtml(r.latest.wrongQuestions)}</div></details>` : '');
   const phon = rows.filter(r => !r.comp && (r.track || r.checks.length) && !/\(Teacher\)$/.test(r.name));   // not Mr. O's own tries
   const read = rows.filter(r => r.comp);
