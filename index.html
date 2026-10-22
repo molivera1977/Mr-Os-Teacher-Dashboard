@@ -2823,6 +2823,7 @@ function familyOf(game) {
   return m ? `${m[1]}-${m[3]}` : null;
 }
 function formLetterOf(game) {
+  if (/-warmup$/.test(game)) return '0';   // Warm-Up comes first in its section (Marcos 10/21)
   if (/^(talent|awoc)-review-/.test(game)) return 'R';   // one story's section: Review parts first,
   if (/^(talent|awoc)-test-/.test(game)) return 'T';     // then the Test's
   if (/-practice-a$/.test(game)) return '0';  // Practice A, then Practice B, then Form A
