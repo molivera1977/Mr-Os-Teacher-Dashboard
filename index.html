@@ -357,6 +357,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-step small{font-weight:600;opacity:.8;}
 .qps-arrow{color:var(--muted);font-weight:800;}
 .qps-fast{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;background:#fde4e4;color:#c92a2a;font-size:.75rem;font-weight:800;white-space:nowrap;}
+.qps-mytest{margin-top:6px;font-size:.8rem;font-weight:700;}
+.qps-mytest.ok{color:var(--success-dark,#157a40);}
+.qps-mytest.bad{color:#c92a2a;}
 .qps-tries{margin-top:4px;font-size:.75rem;font-weight:700;color:#c92a2a;}
 .qps-missed summary{cursor:pointer;color:var(--muted);font-size:.8rem;font-weight:700;}
 .fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
@@ -783,6 +786,7 @@ const GAME_LABELS = {
   'qps-c-maze': '📖 QPS Comprehension — Maze',
   'qps-c-context': '📖 QPS Comprehension — Words in context',
   'qps-levels': '📖 QPS — comprehension levels',
+  'qps-tests': '📖 QPS — Mr. O\'s tests',
   'lab-as1': '🧪 Lab AS1 — Count On to Add',
   'lab-as2': '🧪 Lab AS2 — Make 10',
   'lab-as3': '🧪 Lab AS3 — Teen Numbers',
@@ -1616,6 +1620,16 @@ function qpsBack(name, stopId) {
   qpsUndo = { name, prev: p, what: `sent ${qpsFirst(name)} back to stop ${stopId}` };
   qpsSaveProgress(name, { stop: stopId, passes: 0, test: p.test.filter(x => x !== stopId), t: Date.now() });
 }
+// Mr. O's own tests, saved from the hub's Assessment with his PIN (10/21): one row each on 'qps-tests',
+// form "Task 5(a): Silent e Nonsense · stop 5 · mastery 80% · ✅ mastery" (or "⚠️ needs practice"). Newest first.
+const QPS_TESTS = 'qps-tests';
+function qpsMyTests(name) {
+  const st = (dashData[QPS_TESTS] || []).find(s => s.name === name);
+  return (st && st.sessions || []).filter(s => s.status === 'complete').map(s => {
+    const f = String(s.form || '');
+    return { task: f.split(' · ')[0], stop: (/· stop (\w+) ·/.exec(f) || [])[1] || '', passed: /✅/.test(f), percent: s.percent, timestamp: s.timestamp };
+  }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
 function qpsUndoLast() {
   if (!qpsUndo) return;
   const { name, prev } = qpsUndo;
@@ -1811,11 +1825,14 @@ async function renderQps() {
       <b>${escHtml(qpsStopName(id))}</b>
       <button type="button" class="btn qps-tested" title="You tested them on this stop: take it off this list">✓ I tested this</button>
       <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this stop">↩ Send back to ${escHtml(id)}</button></div>`;
+  // your last 3 tests on this student; one under mastery can send them back to that stop from here
+  const myTests = r => qpsMyTests(r.name).slice(0, 3).map(t => `<div class="qps-mytest ${t.passed ? 'ok' : 'bad'}">📝 Your test: ${escHtml(t.task)} · ${escHtml(String(t.percent))}% ${t.passed ? '✅ Mastery' : '⚠️ Needs practice'} ${muted(day(t.timestamp))}` +
+    (!t.passed && t.stop && r.track !== t.stop && QPS_STOP_IDS.includes(t.stop) ? ` <span class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(t.stop)}"><button type="button" class="btn qps-back" title="They did not pass your test: they go back to this stop">↩ Send back to ${escHtml(t.stop)}</button></span>` : '') + '</div>').join('');
   const phonBody = phon.map(r => `<tr>
       <td>${escHtml(r.name)}</td>
       <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}</td>
       <td>${r.track === QPS_STOP_IDS[QPS_STOP_IDS.length - 1] && r.passes >= QPS_PASSES ? '<span class="status-pill complete">🎉 All stops passed</span>' : qpsReadyPill(r)}</td>
-      <td>${(r.test || []).length ? r.test.map(id => flag(r, id)).join('') : muted('—')}</td>
+      <td>${(r.test || []).length ? r.test.map(id => flag(r, id)).join('') : (qpsMyTests(r.name).length ? '' : muted('—'))}${myTests(r)}</td>
       <td>${lastCheck(r)}</td></tr>`).join('');
   // Each course is its own block with its name on it (Maze first), so a path is never read against the wrong course
   const readBody = read.map(r => {
@@ -1847,7 +1864,8 @@ async function renderQps() {
     (idle.length ? `<p style="color:var(--muted);font-weight:600;margin-top:10px;">Not on the hub yet: ${idle.map(r => escHtml(r.name)).join(' · ')}</p>` : '');
   el.querySelectorAll('.qps-flag').forEach(row => {
     const name = row.dataset.name, id = row.dataset.stop;
-    row.querySelector('.qps-tested').onclick = () => qpsTested(name, id);
+    const tested = row.querySelector('.qps-tested');          // (a "Your test" line has only ↩ Send back)
+    if (tested) tested.onclick = () => qpsTested(name, id);
     row.querySelector('.qps-back').onclick = () => qpsBack(name, id);
   });
   el.querySelectorAll('.qps-rflag').forEach(row => { row.querySelector('.qps-rtested').onclick = () => qpsReadingTested(row.dataset.name, row.dataset.skill); });
