@@ -824,20 +824,20 @@ const GAME_LABELS = {
   'lab-rc3': '🧪 Lab RC3 — Click the Sentences',
   'lab-progress': '🧪 Lab — progress backup',
   'lab-seed': '🧪 Lab — fact-site misses (seed)',
-  'talent-test-vocab': '🎭 The Talent Show Test — Vocabulary',
-  'talent-test-comp':  '🎭 The Talent Show Test — Comprehension',
-  'talent-test-cloze': '🎭 The Talent Show Test — Cloze',
-  'talent-review-vocab': '🎭 The Talent Show Review — Vocabulary',
-  'talent-review-comp':  '🎭 The Talent Show Review — Comprehension',
-  'talent-review-cloze': '🎭 The Talent Show Review — Cloze',
-  'awoc-test-vocab': '🌋 A World of Change Test — Vocabulary',
-  'awoc-test-comp':  '🌋 A World of Change Test — Comprehension',
-  'awoc-test-cloze': '🌋 A World of Change Test — Cloze',
+  'talent-test-vocab': '🎭 The Talent Show — Test — Vocabulary',
+  'talent-test-comp':  '🎭 The Talent Show — Test — Comprehension',
+  'talent-test-cloze': '🎭 The Talent Show — Test — Cloze',
+  'talent-review-vocab': '🎭 The Talent Show — Review — Vocabulary',
+  'talent-review-comp':  '🎭 The Talent Show — Review — Comprehension',
+  'talent-review-cloze': '🎭 The Talent Show — Review — Cloze',
+  'awoc-test-vocab': '🌋 A World of Change — Test — Vocabulary',
+  'awoc-test-comp':  '🌋 A World of Change — Test — Comprehension',
+  'awoc-test-cloze': '🌋 A World of Change — Test — Cloze',
   'energymotion-lesson': '🔬 Science 1.2 — Energy and Motion',
   'startstop-lesson': '🔬 Science 1.1 — Starting and Stopping',
-  'awoc-review-vocab': '🌋 A World of Change Review — Vocabulary',
-  'awoc-review-comp':  '🌋 A World of Change Review — Comprehension',
-  'awoc-review-cloze': '🌋 A World of Change Review — Cloze',
+  'awoc-review-vocab': '🌋 A World of Change — Review — Vocabulary',
+  'awoc-review-comp':  '🌋 A World of Change — Review — Comprehension',
+  'awoc-review-cloze': '🌋 A World of Change — Review — Cloze',
   'rliabw-review': '📚 SBAC Read Literary Warm Up',
   'rliaba-review': '📚 SBAC Read Literary A',
   'rliabb-review': '📚 SBAC Read Literary B',
@@ -2790,10 +2790,11 @@ function buildDotGrid(games, { label, open, profiles }) {
 // sets named another way. Clicking a group opens a pick-a-form page.
 const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practice': 'rounding', 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
-  'talent-review-vocab': 'talent-review', 'talent-review-comp': 'talent-review', 'talent-review-cloze': 'talent-review',
-  'talent-test-vocab': 'talent-test', 'talent-test-comp': 'talent-test', 'talent-test-cloze': 'talent-test',
-  'awoc-review-vocab': 'awoc-review', 'awoc-review-comp': 'awoc-review', 'awoc-review-cloze': 'awoc-review',
-  'awoc-test-vocab': 'awoc-test', 'awoc-test-comp': 'awoc-test', 'awoc-test-cloze': 'awoc-test',
+  // Review and Test of one story = ONE section, its six parts (Marcos 10/21: "the Review and Test should be under one section")
+  'talent-review-vocab': 'talent', 'talent-review-comp': 'talent', 'talent-review-cloze': 'talent',
+  'talent-test-vocab': 'talent', 'talent-test-comp': 'talent', 'talent-test-cloze': 'talent',
+  'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
+  'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2' };
 const FORM_FAMILY_LABELS = {
@@ -2805,13 +2806,11 @@ const FORM_FAMILY_LABELS = {
   'pvfiab-review': '🔢 SBAC Place Value',
   'rounding':      '🎯 Rounding Review and Quiz - Mechanics Edition',
   'rounding2':     '🎯 Rounding Review and Quiz - Numberline Edition',
-  'talent-review': '🎭 The Talent Show Review',
-  'talent-test':   '🎭 The Talent Show Test',
-  'awoc-review':   '🌋 A World of Change Review',
-  'awoc-test':     '🌋 A World of Change Test',
+  'talent':        '🎭 The Talent Show Review and Test',
+  'awoc':          '🌋 A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'talent-review': ['part', 'parts'], 'talent-test': ['part', 'parts'], 'awoc-review': ['part', 'parts'], 'awoc-test': ['part', 'parts'], 'mod2': ['part', 'parts'] };
+const FAMILY_NOUN = { 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod2': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -2824,6 +2823,8 @@ function familyOf(game) {
   return m ? `${m[1]}-${m[3]}` : null;
 }
 function formLetterOf(game) {
+  if (/^(talent|awoc)-review-/.test(game)) return 'R';   // one story's section: Review parts first,
+  if (/^(talent|awoc)-test-/.test(game)) return 'T';     // then the Test's
   if (/-practice-a$/.test(game)) return '0';  // Practice A, then Practice B, then Form A
   if (/-practice$/.test(game)) return '1';
   if (game === 'rliabw-review') return '0';   // Read Literary: Warm Up, then Form A → C
