@@ -356,6 +356,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-step.now{border-color:#e0a100;background:#fff4d6;color:#7a5200;box-shadow:0 0 0 2px #ffe08a;}
 .qps-step small{font-weight:600;opacity:.8;}
 .qps-arrow{color:var(--muted);font-weight:800;}
+.qps-fast{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;background:#fde4e4;color:#c92a2a;font-size:.75rem;font-weight:800;white-space:nowrap;}
 .qps-tries{margin-top:4px;font-size:.75rem;font-weight:700;color:#c92a2a;}
 .qps-missed summary{cursor:pointer;color:var(--muted);font-size:.8rem;font-weight:700;}
 .fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
@@ -1655,6 +1656,16 @@ const isQpsComp = g => /^qps-c-/.test(g);
 const QPS_COMP_SKILLS = { maze: '🧩 Maze', context: '🔎 Words in context' };
 // A reading-course Check row passed when its form says so ("· pass 1 of 2", "→ 3", "· finished"); a Maze Check is
 // points against a goal ("· 9½ points (goal 8)"), so the percent alone can't say it.
+// ⚡ A Check finished faster than it can be read (Marcos 10/21: flag them). Floors from the sheet on 10/21: phonics
+// Checks (10 words) took a median 73 s and the only 2 under 40 s scored 60% and 20%; Words in context Checks a median
+// 130 s. A Maze Check that ran out of time took 180 s, so only a Maze finished early can be flagged.
+const QPS_FAST_SECONDS = { phonics: 40, reading: 60 };
+function qpsTooFast(x) {
+  const sec = Number(x && x.elapsed) || 0;
+  if (!sec) return false;                                   // no time on the row: say nothing
+  return sec < (/^qps-c-/.test(x.game || '') ? QPS_FAST_SECONDS.reading : QPS_FAST_SECONDS.phonics);
+}
+const qpsFastTag = x => qpsTooFast(x) ? ` <span class="qps-fast" title="Finished in ${Number(x.elapsed)} seconds: faster than the words can be read. Watch them take the next one.">⚡ ${Number(x.elapsed)} s — very fast</span>` : '';
 const qpsCheckPassed = x => /pass \d of|→|finished/.test(String(x.form || ''));
 const qpsCheckScore = x => /^qps-c-maze/.test(x.game || '') ? ((/· ([\d½]+ points)/.exec(x.form || '') || [])[1] || `${x.score} points`) : `${x.percent}%`;
 
@@ -1791,7 +1802,7 @@ async function renderQps() {
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
   const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
   const lastCheck = r => !r.latest ? muted('—')
-    : (r.comp ? `${escHtml((QPS_COMP_SKILLS[r.latest.game.slice(6)] || '').split(' ')[0] || '')} ${escHtml(qpsCheckScore(r.latest))}` : `${r.latest.percent}%`) + ` ${muted(day(r.latest.timestamp))}` + (r.latest.wrongQuestions
+    : (r.comp ? `${escHtml((QPS_COMP_SKILLS[r.latest.game.slice(6)] || '').split(' ')[0] || '')} ${escHtml(qpsCheckScore(r.latest))}` : `${r.latest.percent}%`) + ` ${muted(day(r.latest.timestamp))}` + qpsFastTag(r.latest) + (r.latest.wrongQuestions
       ? `<details class="qps-missed"><summary>missed words</summary><div style="white-space:normal;">${escHtml(r.latest.wrongQuestions)}</div></details>` : '');
   const phon = rows.filter(r => !r.comp && (r.track || r.checks.length) && !/\(Teacher\)$/.test(r.name));   // not Mr. O's own tries
   const read = rows.filter(r => r.comp);
@@ -1818,11 +1829,15 @@ async function renderQps() {
   }).join('');
   const nTest = phon.reduce((n, r) => n + (r.test || []).length, 0), nKids = phon.filter(r => (r.test || []).length).length;
   const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
+  const fast = [...phon, ...read].filter(r => r.latest && qpsTooFast(r.latest));
   const box = document.getElementById('qpsFlags');
   const undo = qpsUndo ? `<div class="qps-undo" style="margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#eef3ff;font-weight:700;">You ${escHtml(qpsUndo.what)}. <button type="button" class="btn qps-undo-btn">↶ Undo</button></div>` : '';
   if (box) box.innerHTML = undo + ((nTest || nRead) ? `<div class="qps-flags" style="border:2px solid var(--amber,#e0a100);border-radius:12px;padding:10px 14px;margin:0 0 14px;background:rgba(224,161,0,.08);font-weight:800;">
       🔔 To test: ${nTest ? `${nTest} phonics stop${nTest > 1 ? 's' : ''} (${nKids} student${nKids > 1 ? 's' : ''})` : ''}${nTest && nRead ? ' · ' : ''}${nRead ? `${nRead} finished reading course${nRead > 1 ? 's' : ''}` : ''}
-      <span style="font-weight:600;color:var(--muted);"> — in each student's row: ✓ I tested this (they passed your test) · ↩ Send back (they did not)</span></div>` : '');
+      <span style="font-weight:600;color:var(--muted);"> — in each student's row: ✓ I tested this (they passed your test) · ↩ Send back (they did not)</span></div>` : '') +
+    (fast.length ? `<div class="qps-fast-box" style="border:2px solid #c92a2a;border-radius:12px;padding:10px 14px;margin:0 0 14px;background:rgba(201,42,42,.06);font-weight:800;">
+      ⚡ Very fast last Check: ${fast.map(r => `${escHtml(r.name)} (${Number(r.latest.elapsed)} s)`).join(' · ')}
+      <span style="font-weight:600;color:var(--muted);"> — faster than the words can be read; watch them take the next one</span></div>` : '');
   if (box && box.querySelector('.qps-undo-btn')) box.querySelector('.qps-undo-btn').onclick = qpsUndoLast;
   el.innerHTML =
     `<h3 class="qps-h">🔤 Phonics stops</h3>
