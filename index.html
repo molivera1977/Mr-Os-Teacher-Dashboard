@@ -788,6 +788,7 @@ const GAME_LABELS = {
   'qps-9c': '📖 QPS 9c — Four-part words',
   'qps-10': '📖 QPS 10 — Word parts',
   'qps-c-maze': '📖 QPS Comprehension — Maze',
+  'qps-c-maze2': '📖 QPS Comprehension — Maze Round 2',
   'qps-c-context': '📖 QPS Comprehension — Words in context',
   'qps-levels': '📖 QPS — comprehension levels',
   'qps-tests': '📖 QPS — Mr. O\'s tests',
@@ -1683,8 +1684,8 @@ function qpsStopName(id) {
 // for each skill ("context=3;main=2|t=…").
 const isQpsStop = g => /^qps-(\d+|9[abc])$/.test(g);
 const isQpsComp = g => /^qps-c-/.test(g);
-// Maze first, Words in context after (hub 10/21) — the order the student does them
-const QPS_COMP_SKILLS = { maze: '🧩 Maze', context: '🔎 Words in context' };
+// The reading path, in the order the student does it (hub 10/21): Maze → Words in context → Maze Round 2
+const QPS_COMP_SKILLS = { maze: '🧩 Maze', context: '🔎 Words in context', maze2: '🧩 Maze Round 2' };
 // A reading-course Check row passed when its form says so ("· pass 1 of 2", "→ 3", "· finished"); a Maze Check is
 // points against a goal ("· 9½ points (goal 8)"), so the percent alone can't say it.
 // ⚡ A Check finished faster than it can be read (Marcos 10/21: flag them). Floors from the sheet on 10/21: phonics
@@ -1833,7 +1834,7 @@ async function renderQps() {
   const muted = t => `<span style="color:var(--muted);">${t}</span>`;
   const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
   const lastCheck = r => !r.latest ? muted('—')
-    : (r.comp ? `${escHtml((QPS_COMP_SKILLS[r.latest.game.slice(6)] || '').split(' ')[0] || '')} ${escHtml(qpsCheckScore(r.latest))}` : `${r.latest.percent}%`) + ` ${muted(day(r.latest.timestamp))}` + qpsFastTag(r.latest) + (r.latest.wrongQuestions
+    : (r.comp ? `${escHtml(QPS_COMP_SKILLS[r.latest.game.slice(6)] || '')}: ${escHtml(qpsCheckScore(r.latest))}` : `${r.latest.percent}%`) + ` ${muted(day(r.latest.timestamp))}` + qpsFastTag(r.latest) + (r.latest.wrongQuestions
       ? `<details class="qps-missed"><summary>missed words</summary><div style="white-space:normal;">${escHtml(r.latest.wrongQuestions)}</div></details>` : '');
   const phon = rows.filter(r => !r.comp && (r.track || r.checks.length) && !/\(Teacher\)$/.test(r.name));   // not Mr. O's own tries
   const read = rows.filter(r => r.comp);
