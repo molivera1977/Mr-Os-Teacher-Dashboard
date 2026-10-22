@@ -820,6 +820,16 @@ const GAME_LABELS = {
   'lab-ro4': '🧪 Lab RO4 — Round to the Nearest Hundred',
   'lab-ro5': '🧪 Lab RO5 — Round to the Place Named',
   'lab-ro6': '🧪 Lab RO6 — Rounding Check',
+  'lab-bp1': '🧪 Lab BP1 — Big Number Places',
+  'lab-bp2': '🧪 Lab BP2 — Parts in Any Order',
+  'lab-bp3': '🧪 Lab BP3 — More Than 9 in a Place',
+  'lab-bp4': '🧪 Lab BP4 — Compare in Any Form',
+  'lab-bp5': '🧪 Lab BP5 — Big Place Value Check',
+  'lab-br1': '🧪 Lab BR1 — Benchmarks for Big Numbers',
+  'lab-br2': '🧪 Lab BR2 — Round Big Numbers',
+  'lab-br3': '🧪 Lab BR3 — Round to Any Place',
+  'lab-br4': '🧪 Lab BR4 — Which One Rounds To It?',
+  'lab-br5': '🧪 Lab BR5 — Big Rounding Check',
   'lab-rc1': '🧪 Lab RC1 — Find the Proof',
   'lab-rc2': '🧪 Lab RC2 — Part A and Part B',
   'lab-rc3': '🧪 Lab RC3 — Click the Sentences',
@@ -1901,6 +1911,7 @@ async function renderQps() {
 // ═══════════════════════════════════════════════════
 const isLab = g => /^lab-/.test(g);
 const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu3', 'mu4', 'mu5', 'mu6', 'mu7', 'pv1', 'pv2', 'pv3', 'pv4', 'pv5', 'pv6', 'pv7', 'pv8', 'pv9', 'ro1', 'ro2', 'ro3', 'ro4', 'ro5', 'ro6',
+  'bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'br1', 'br2', 'br3', 'br4', 'br5',   // 🚀 Big Numbers (10/22)
   'rc1', 'rc2', 'rc3'];
 // 🔎 Reading for Meaning (10/20): a wrong choice carries a KIND; the Lab sends the counts in lab-progress ("|kinds=notproof:3,…")
 const LAB_KIND_LABEL = { notproof: 'true but not proof', noclue: 'no clue in the passage', toofar: 'went too far', opposite: 'the opposite',
@@ -1930,8 +1941,8 @@ async function renderLab() {
     });
     tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     const done = tries.filter(t => t.status === 'complete');
-    // facts lessons pass at 90%; place value, rounding and reading at 75% (the Lab's own rule, Marcos 10/20)
-    const passMark = id => (/^(PV|RO|RC)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
+    // facts lessons pass at 90%; place value, rounding, Big Numbers and reading at 75% (the Lab's own rule, Marcos 10/20)
+    const passMark = id => (/^(PV|RO|RC|BP|BR)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
     const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= passMark(id)));
     // 🚩 stuck: LAB_STUCK_TRIES or more finished tries on a lesson, none at its mark (a tested-out try is a pass)
     const stuck = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => !passed.includes(id)).map(id => {
