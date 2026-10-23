@@ -1484,7 +1484,12 @@ function applyTheme(t) {
 // ═══════════════════════════════════════════════════
 //  DATA FETCH
 // ═══════════════════════════════════════════════════
+// One load at a time (10/23/2026): a load took 60–90 s, so the 30 s auto-refresh and the Refresh
+// button started new ones on top of it and two or three ran at once.
+let refreshInFlight = false;
 async function refreshData() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
   document.getElementById('lastUpdated').textContent = '⏳ Loading...';
   try {
     const res  = await fetch(`${SHEET_URL}?action=dashboard`, { cache: 'no-store' });
@@ -1505,6 +1510,8 @@ async function refreshData() {
     if (factAssignRows !== null) loadFactAssignments();   // 📌 keep the assignment progress fresh too
   } catch(e) {
     document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
+  } finally {
+    refreshInFlight = false;
   }
 }
 
