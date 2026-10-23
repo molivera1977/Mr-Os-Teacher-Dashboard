@@ -357,6 +357,42 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qps-step small{font-weight:600;opacity:.8;}
 .qps-arrow{color:var(--muted);font-weight:800;}
 .qps-fast{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;background:#fde4e4;color:#c92a2a;font-size:.75rem;font-weight:800;white-space:nowrap;}
+/* 🧪 Lab page (10/23, Marcos: "very confusing and hard to read quickly"): a line per strand, a square per lesson */
+.lab-intro{color:var(--muted);font-weight:600;margin:-4px 0 10px;}
+.lab-sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px;}
+.lab-sum-chip{padding:6px 12px;border-radius:999px;border:2px solid var(--border);background:var(--surface);font-weight:700;font-size:.88rem;}
+.lab-sum-chip.bad{border-color:var(--flagged-border);background:var(--flagged);color:var(--flagged-text);}
+.lab-sum-chip.warn{border-color:var(--inprogress-border);background:var(--inprogress);color:var(--inprogress-text);}
+.lab-sum-chip.live{border-color:var(--blue);color:var(--blue);}
+.lab-key{margin:0 0 14px;font-size:.88rem;}
+.lab-key summary{cursor:pointer;font-weight:800;color:var(--accent);}
+.lab-key ul{margin:8px 0 0 20px;line-height:1.8;font-weight:600;}
+.lab-table td{vertical-align:top;}
+.lab-table td:nth-child(3){min-width:170px;}
+.lab-table:not(.lab-waiting) td:nth-child(4){min-width:230px;}
+.lab-table td:last-child{min-width:160px;}
+.lab-muted{color:var(--muted);font-weight:600;}
+.lab-strand{display:flex;align-items:center;gap:8px;padding:3px 0;}
+.lab-sname{width:190px;flex-shrink:0;font-weight:800;font-size:.84rem;}
+.lab-ls{display:inline-flex;gap:3px;}
+.lab-l{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;font-size:.78rem;font-weight:800;border:2px solid var(--notstarted-border);color:var(--notstarted-text);background:transparent;vertical-align:middle;}
+.lab-l.ok{background:var(--complete);border-color:var(--complete-border);color:var(--complete-text);}
+.lab-l.try{background:var(--inprogress);border-color:var(--inprogress-border);color:var(--inprogress-text);}
+.lab-l.stuck{background:var(--flagged);border-color:var(--flagged-border);color:var(--flagged-text);}
+.lab-l.now{border-color:var(--blue);color:var(--blue);box-shadow:0 0 0 2px rgba(26,106,170,.25);}
+a.lab-link{color:inherit;text-decoration:none;}
+a.lab-link:hover .lab-l{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.18);}
+a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;}
+.lab-count{font-size:.8rem;font-weight:800;color:var(--muted);white-space:nowrap;}
+.lab-count.all{color:var(--green);}
+.lab-help>div+div,.lab-help>details{margin-top:6px;}
+.lab-list summary{cursor:pointer;font-weight:700;}
+.lab-list-mix{margin-left:16px;font-size:.8rem;color:var(--muted);font-weight:600;}
+.lab-qc{font-size:.82rem;white-space:nowrap;}
+.lab-list-g{margin:4px 0;font-weight:600;}
+.lab-bell{margin-top:4px;font-weight:800;color:var(--inprogress-text);}
+.lab-chip{display:inline-block;margin:2px 4px 2px 0;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:.8rem;font-weight:700;}
+.lab-now+.lab-last{margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);}
 .qps-mytest{margin-top:6px;font-size:.8rem;font-weight:700;}
 .qps-mytest.ok{color:var(--success-dark,#157a40);}
 .qps-mytest.bad{color:#c92a2a;}
@@ -541,10 +577,20 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
     </div>
 
-    <!-- LAB VIEW — where each Lab student is, what they passed, and the mistakes they repeat -->
+    <!-- LAB VIEW — where each Lab student is on their plan, and what to help them with (rebuilt 10/23: Marcos "very
+         confusing and hard to read quickly"; "it should be linkable to read an explanation of each lesson") -->
     <div id="view-lab" style="display:none;">
-      <div class="section-title">🧪 The Lab — Adding and Subtracting · Multiplying · Place Value · Rounding · 🔎 Reading for Meaning (Level 1 and 🔭 Level 2) <a href="https://mroteacher.com/behind-the-lab/" target="_blank" rel="noopener" style="font-size:.8em;margin-left:8px;">📘 Behind the LAB</a></div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Students on a plan (a row in the lab-seed tab) come first. Facts lessons (adding, subtracting, multiplying) pass at 90%; place value, rounding and 🔎 Reading for Meaning (both levels) at 75% (8 of 10 on a lesson, 15 of 20 on the Place Value and Rounding Checks; reading: 6 of 8 points, a Part A + Part B question is worth 2). 📖 QPS = the student's QPS stop now, the same pill as the QPS page (two Checks at 80% move them on), and 🔔 a stop waiting for your test. In reading, 🔁 = the same KIND of mistake again, on a new story (for example "true but not proof"); "Most common" = the kind a student has made most. "Skipped" = all 5 Show-what-you-know questions right. ⭐ = the student's own missed facts added to a lesson; 🔁 = the same wrong answer as an earlier miss. "Still on the list" = facts not yet answered right twice in the Lab.</p>
+      <div class="section-title">🧪 The Lab <a href="https://mroteacher.com/behind-the-lab/" target="behind-the-lab" rel="noopener" style="font-size:.8em;margin-left:8px;">📘 Behind the LAB</a></div>
+      <p class="lab-intro">One row per student. Each square is a lesson on their plan: <b>✓</b> = passed. Click a lesson or a strand to read what it teaches.</p>
+      <div id="labSummary" class="lab-sum"></div>
+      <details class="lab-key"><summary>How to read this page</summary><ul>
+        <li><span class="lab-l ok">✓</span> passed · <span class="lab-l try">2</span> tried, not passed yet · <span class="lab-l stuck">!</span> stuck: 3 or more tries, not passed · <span class="lab-l now">4</span> in the middle of it · <span class="lab-l">5</span> not tried yet. Point at a square for its name and best score.</li>
+        <li>To pass: adding, subtracting and multiplying facts 90%. Place value, rounding, Big Numbers and reading 75% (8 of 10 · 15 of 20 on a Check · reading 6 of 8 points, where a Part A + Part B question is worth 2).</li>
+        <li>"Tested out" = all 5 Show-what-you-know questions right, so the lesson was skipped.</li>
+        <li>🔁 Math: the same wrong answer as an earlier miss. Reading: the same KIND of mistake on a new story (for example "true but not proof"). "Most common" = the kind they make most.</li>
+        <li>📋 Still on their list = facts and questions they missed (in the Lab and on the fact sites) that they have not yet gotten right twice in the Lab. Click it to see them.</li>
+        <li>📖 QPS = their QPS stop now, the same as the QPS page (two Checks at 80% move them on). 🔔 = a stop waiting for your test.</li>
+        <li>On a plan = they have a row in the lab-seed tab.</li></ul></details>
       <div id="labFlags"></div>
       <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
     </div>
@@ -1932,83 +1978,215 @@ const LAB_STUCK_TRIES = 3;    // 🚩 Marcos 10/21: finished tries under the mar
 // lab-seed tab on the sheet has a row for them (written from Mr. O's side). They are listed first.
 const labPlan = () => (dashData['lab-seed'] || []).map(s => s.name);
 
+// The Lab's strands in the Lab's order (the-lab script.js STRANDS); a strand's lessons are the LAB_LESSONS with its letters
+const LAB_STRANDS = [
+  { id: 'as', icon: '➕', name: 'Adding and Subtracting' }, { id: 'mu', icon: '✖️', name: 'Multiplying' },
+  { id: 'pv', icon: '🔢', name: 'Place Value' }, { id: 'ro', icon: '🎯', name: 'Rounding' },
+  { id: 'bp', icon: '🚀', name: 'Place Value: Big Numbers' }, { id: 'br', icon: '🗺️', name: 'Rounding: Big Numbers' },
+  { id: 'rc', icon: '🔎', name: 'Reading for Meaning' }, { id: 'rd', icon: '🔭', name: 'Reading for Meaning: Level 2' }];
+const labStrandLessons = id => LAB_LESSONS.filter(x => x.slice(0, 2) === id).map(x => x.toUpperCase());
+// Marcos 10/23: "it should be linkable to read an explanation of each lesson" — Behind the LAB opens #lesson-AS3 / #strand-pv
+const BTL_URL = 'https://mroteacher.com/behind-the-lab/';
+const labLessonName = id => (GAME_LABELS['lab-' + id.toLowerCase()] || id).replace(/^🧪 Lab \S+ — /, '');
+const labLessonLink = (id, inner) => `<a class="lab-link" href="${BTL_URL}#lesson-${escHtml(id)}" target="behind-the-lab" rel="noopener">${inner}</a>`;
+// facts lessons pass at 90%; place value, rounding, Big Numbers and reading at 75% (the Lab's own rule, Marcos 10/20)
+const labPassMark = id => (/^(PV|RO|RC|RD|BP|BR)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
+const labPlanOf = name => {
+  const st = (dashData['lab-seed'] || []).find(s => s.name === name);
+  const form = st && st.sessions && st.sessions.length ? st.sessions[st.sessions.length - 1].form : '';
+  return ((/plan=([a-z,]+)/.exec(form || '') || [])[1] || '').split(',').filter(id => LAB_STRANDS.some(s => s.id === id));
+};
+const LAB_NOW_MINUTES = 30;   // a lesson left open longer than this is "stopped in the middle", not "working now"
+
+// One entry of a student's list, in words: "6 + 8 (13, 14)" is a fact; "R 68749/100 (68750)" is one of the Lab's own
+// place value records (the-lab script.js OWN_RE: V value of a digit · E expanded form · C compare · N rename ·
+// B benchmarks · H halfway · R round). The picks go in the tooltip.
+const LAB_LIST_GROUPS = { add: 'adding', sub: 'subtracting', mul: 'multiplying', pv: 'place value', ro: 'rounding', other: 'other' };
+const LAB_PLACE = { 10: 'ten', 100: 'hundred', 1000: 'thousand', 10000: 'ten thousand', 100000: 'hundred thousand' };
+function labListItem(entry) {
+  const fmt = n => Number(n).toLocaleString('en-US');
+  const f = /^(\d+) ([+−×-]) (\d+) \(([^)]*)\)$/.exec(entry);
+  if (f) return { group: f[2] === '+' ? 'add' : f[2] === '×' ? 'mul' : 'sub', text: `${f[1]} ${f[2] === '-' ? '−' : f[2]} ${f[3]}`, picks: f[4] };
+  const o = /^([VECNBHR]) (\d+)\/(\d+) \(([^)]*)\)$/.exec(entry);
+  if (!o) return { group: 'other', text: entry.replace(/ \([^)]*\)$/, ''), picks: '' };
+  const [, t, a, b, picks] = o, n = Number(a), u = Number(b), place = LAB_PLACE[u] || fmt(u);
+  const text = t === 'R' ? `round ${fmt(n)} to the nearest ${place}`
+    : t === 'B' ? `which two ${place}s ${fmt(n)} is between`
+    : t === 'H' ? `halfway from ${fmt(n - u / 2)} to ${fmt(n + u / 2)}`
+    : t === 'V' ? `the value of the ${String(n).split('').reverse()[u]} in ${fmt(n)}`
+    : t === 'E' ? `${fmt(n)} in expanded form`
+    : t === 'C' ? `compare ${fmt(n)} and ${fmt(u)}`
+    : `how many ${place}s are in ${fmt(n)}`;
+  return { group: /[RBH]/.test(t) ? 'ro' : 'pv', text, picks };
+}
+
+// Everything the page needs about one student, from their Lab rows
+function labStudent(name) {
+  const tries = [];
+  LAB_LESSONS.forEach(x => {
+    const st = (dashData['lab-' + x] || []).find(s => s.name === name);
+    (st && st.sessions || []).forEach(s => tries.push({ ...s, lesson: x.toUpperCase() }));
+  });
+  tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const done = tries.filter(t => t.status === 'complete');
+  const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= labPassMark(id)));
+  // 🚩 stuck: LAB_STUCK_TRIES or more finished tries on a lesson, none at its mark (a tested-out try is a pass)
+  const tried = {};
+  LAB_LESSONS.map(x => x.toUpperCase()).forEach(id => {
+    const mine = done.filter(t => t.lesson === id);
+    const best = mine.reduce((b, t) => (!b || Number(t.percent) > Number(b.percent) ? t : b), null);
+    if (mine.length) tried[id] = { tries: mine.length, best };
+  });
+  const stuck = Object.keys(tried).filter(id => !passed.includes(id) && tried[id].tries >= LAB_STUCK_TRIES).map(id => ({ id, ...tried[id] }));
+  // a running row is "now" unless a finished row of the same try came after it (a redo in the same visit
+  // reuses the running row's id, so compare times, not just ids)
+  const now = tries.find(t => t.status !== 'complete' &&
+    !done.some(d => d.sessionId && t.sessionId && d.sessionId.startsWith(t.sessionId) && new Date(d.timestamp) >= new Date(t.timestamp)));
+  const ev = [];
+  done.forEach(t => { try { JSON.parse(t.events || '[]').forEach(e => ev.push({ ...e, lesson: t.lesson })); } catch (e) {} });
+  const prog = (dashData['lab-progress'] || []).find(s => s.name === name);
+  const p = prog && prog.sessions && prog.sessions.length ? prog.sessions[prog.sessions.length - 1] : null;
+  // reading: the kinds of mistakes, most made first
+  const kinds = (((p && p.form) || '').match(/kinds=([^|]*)/) || [])[1] || '';
+  const topKinds = kinds.split(',').map(x => x.split(':')).filter(x => LAB_KIND_LABEL[x[0]] && Number(x[1]) > 0).sort((a, b) => b[1] - a[1]);
+  const plan = labPlanOf(name);
+  // the strands to draw: the plan's, in the plan's order, then any other strand they have tried
+  const strands = [...plan, ...LAB_STRANDS.map(s => s.id).filter(id => !plan.includes(id) && tries.some(t => t.lesson.slice(0, 2).toLowerCase() === id))];
+  return { name, plan, onPlan: (dashData['lab-seed'] || []).some(s => s.name === name), strands, tries, done, passed, tried, stuck, now,
+           repeats: ev.filter(e => e.e === 'repeat'), mineAsked: ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0),
+           topKinds, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
+           // 📖 QPS: the same standing the QPS page shows (qpsRowFor): the stop they are on now, its passes, 🔔 stops to test
+           qps: qpsRowFor(name) };
+}
+
+// One strand: its name (a link to its explanation), a numbered square per lesson (✓ = passed; each a link), "n of N"
+function labStrandLine(r, id) {
+  const s = LAB_STRANDS.find(x => x.id === id), ids = labStrandLessons(id);
+  const nowId = r.now && r.now.lesson;
+  const squares = ids.map(lid => {
+    const t = r.tried[lid], best = t && t.best ? `best ${Number(t.best.score) || 0} of ${Number(t.best.total) || 0}` : '';
+    const st = r.passed.includes(lid) ? ['ok', '✓', `passed${/Tested out/.test((t.best || {}).form) ? ' (tested out)' : ''} · ${best}`]
+      : r.stuck.some(x => x.id === lid) ? ['stuck', '!', `🚩 stuck · ${t.tries} tries · ${best}`]
+      : lid === nowId ? ['now', lid.slice(2), 'in the middle of it']
+      : t ? ['try', lid.slice(2), `${t.tries} ${t.tries > 1 ? 'tries' : 'try'}, not passed yet · ${best} (needs ${labPassMark(lid)}%)`]
+      : ['', lid.slice(2), 'not tried yet'];
+    return labLessonLink(lid, `<span class="lab-l ${st[0]}" data-id="${lid}" data-state="${st[0] || 'none'}" title="${escHtml(`${lid} · ${labLessonName(lid)} — ${st[2]}`)}">${st[1]}</span>`);
+  }).join('');
+  const n = ids.filter(lid => r.passed.includes(lid)).length;
+  return `<div class="lab-strand" data-strand="${id}">
+    <a class="lab-link lab-sname" href="${BTL_URL}#strand-${id}" target="behind-the-lab" rel="noopener" title="What ${escHtml(s.name)} teaches">${s.icon} ${escHtml(s.name)}</a>
+    <span class="lab-ls">${squares}</span><span class="lab-count${n === ids.length ? ' all' : ''}">${n === ids.length ? '🎉 all' : `${n} of ${ids.length}`}</span>${r.plan.includes(id) ? '' : ' <span class="lab-muted">(not on plan)</span>'}</div>`;
+}
+
+// What they did last: the lesson open now (or left open), then the last finished try
+function labLastCell(r) {
+  const muted = t => `<span class="lab-muted">${t}</span>`;
+  const day = t => escHtml(new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+  const name = id => `${labLessonLink(id, `<b>${escHtml(labLessonName(id))}</b>`)} ${muted(id)}`;
+  const out = [];
+  if (r.now) {
+    const fresh = Date.now() - new Date(r.now.timestamp).getTime() < LAB_NOW_MINUTES * 60000;
+    out.push(`<div class="lab-now"><span class="status-pill inprogress">🔄 ${fresh ? 'Working now' : 'Stopped in the middle'}</span><br>${name(r.now.lesson)}<br>${muted(`${Number(r.now.score) || 0} right so far · ${day(r.now.timestamp)}`)}</div>`);
+  }
+  const t = r.latest;
+  if (t) {
+    const out1 = /Tested out/.test(t.form) ? '✅ tested out' : Number(t.percent) >= labPassMark(t.lesson) ? '✅ passed' : `not passed yet ${muted(`(needs ${labPassMark(t.lesson)}%)`)}`;
+    out.push(`<div class="lab-last">${r.now ? muted('Last finished: ') : ''}${name(t.lesson)}<br>${Number(t.score) || 0} of ${Number(t.total) || 0} · ${out1}<br>${muted(day(t.timestamp))}</div>`);
+  }
+  return out.join('') || muted('—');
+}
+
+// What to help with: the same mistake again, the kinds of reading mistakes, last time's misses, and their list
+function labHelpCell(r) {
+  const muted = t => `<span class="lab-muted">${t}</span>`;
+  const short = (t, n) => { const x = String(t == null ? '' : t); return x.length > n ? x.slice(0, n - 1) + '…' : x; };
+  const out = [];
+  // 🔁 math: the same wrong answer as an earlier miss; reading: the same KIND of mistake on a new story (the pick is a sentence)
+  r.repeats.slice(0, 3).forEach(e => out.push(/^(RC|RD)/.test(e.lesson)
+    ? `<div class="lab-rep" title="${escHtml('Picked: ' + (e.pick || ''))}">🔁 ${escHtml(e.f)} — again ${muted(escHtml(e.lesson))}</div>`
+    : `<div class="lab-rep">🔁 ${escHtml(e.f)} → ${escHtml(short(e.pick, 24))} again ${muted(escHtml(e.lesson))}</div>`));
+  if (r.repeats.length > 3) out.push(`<div>${muted(`+ ${r.repeats.length - 3} more 🔁`)}</div>`);
+  if (r.topKinds.length) out.push(`<div class="lab-kinds">Most common: ${r.topKinds.slice(0, 2).map(([k, n]) => `${escHtml(LAB_KIND_LABEL[k])} ×${n}`).join(' · ')}</div>`);
+  // last try's misses: "[AS2-Q08] (Make 10 to add) What is 4 + 7? (picked: 10)" → "What is 4 + 7? → 10"; reading → the skill
+  const misses = String((r.latest && r.latest.wrongQuestions) || '').split(' | ').filter(Boolean);
+  if (misses.length) {
+    const one = w => {
+      const m = /^\[([^\]]*)\]\s*(?:\(([^)]*)\)\s*)?(.*?)\s*\(picked: (.*)\)$/.exec(w.trim());
+      if (!m) return `<span title="${escHtml(w)}">${escHtml(short(w, 50))}</span>`;
+      const reading = /^(RC|RD)/.test(m[1]);
+      return `<span title="${escHtml(w)}">${escHtml(reading ? (m[2] || short(m[3], 40)) : `${short(m[3], 40)} → ${short(m[4], 20)}`)}</span>`;
+    };
+    out.push(`<div class="lab-missed">${muted('Missed last time:')} ${misses.slice(0, 2).map(one).join('; ')}${misses.length > 2 ? muted(` + ${misses.length - 2} more`) : ''}</div>`);
+  }
+  out.push(labListBox(r));
+  return out.filter(Boolean).join('') || muted('—');
+}
+
+// 📋 the facts and questions on their list (not yet right twice in the Lab), counted by kind; click to see them in words
+function labListBox(r) {
+  if (r.list == null) return r.tries.length ? '<div class="lab-muted">📋 Their list has not reached the sheet yet</div>' : '';
+  const items = r.list.split(' | ').map(x => x.trim()).filter(Boolean).map(labListItem);
+  if (!items.length) return '<div class="lab-list-none">📋 Nothing left on their list</div>';
+  const by = {};
+  items.forEach(x => (by[x.group] = by[x.group] || []).push(x));
+  const keys = Object.keys(LAB_LIST_GROUPS).filter(k => by[k]);
+  return `<details class="lab-list"><summary>📋 Still on their list: <b>${items.length}</b><div class="lab-list-mix">${keys.map(k => `${by[k].length} ${LAB_LIST_GROUPS[k]}`).join(' · ')}</div></summary>
+    ${keys.map(k => `<div class="lab-list-g"><b>${LAB_LIST_GROUPS[k][0].toUpperCase() + LAB_LIST_GROUPS[k].slice(1)} (${by[k].length}):</b> ${by[k].map(x => `<span${x.picks ? ` title="${escHtml('They said: ' + x.picks)}"` : ''}>${escHtml(x.text)}</span>`).join(k === 'pv' || k === 'ro' ? ' · ' : ', ')}</div>`).join('')}
+    <div class="lab-muted">A fact or question leaves the list when they get it right twice in the Lab.${r.mineAsked ? ` ⭐ ${r.mineAsked} of their own misses have been mixed into their lessons so far.` : ''}</div></details>`;
+}
+
+// 📖 QPS: their stop now — the same words as the QPS page (qpsRowFor + qpsReadyPill) — and 🔔 a stop waiting for your test
+function labQpsCell(q) {
+  const muted = t => `<span class="lab-muted">${t}</span>`;
+  const day = t => escHtml(new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  if (q.track === undefined) return muted('—');
+  // the reading course: one short line per course, in the QPS page's words (Level n of 4 · passes; finished)
+  if (q.comp) return Object.keys(QPS_COMP_SKILLS).map(k => { const c = (q.course || {})[k];
+    return `<div class="lab-qc">${QPS_COMP_SKILLS[k]}: ${!c ? muted('not started') : c.finished ? '🎉 Finished' : `Level ${c.level} of 4 · ${c.passes} of ${QPS_PASSES} passes`}</div>`; }).join('');
+  if (q.track === null) return muted('Any stop');
+  return `<b>${escHtml(qpsStopName(q.track))}</b>${q.known ? '' : ' ' + muted('(last practiced)')}` +
+    (q.startedAt && q.track !== q.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(q.startedAt))}`) : '') +
+    `<br>${qpsReadyPill(q)}` + (q.latest ? ` ${muted(`last ${q.latest.percent}% · ${day(q.latest.timestamp)}`)}` : '') +
+    (q.test.length ? `<div class="lab-bell">🔔 to test: ${q.test.map(id => escHtml(qpsStopName(id))).join(', ')}</div>` : '');
+}
+
 async function renderLab() {
   const el = document.getElementById('labGrid');
   await loadQpsTracks();                       // 📖 each student's QPS stop (the hub's TRACKS)
   if (currentView !== 'lab') return;
-  const games = LAB_LESSONS.map(id => 'lab-' + id);
-  const LAB_PLAN = labPlan();
-  const names = [...LAB_PLAN];
-  games.forEach(g => (dashData[g] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
-  const muted = t => `<span style="color:var(--muted);">${t}</span>`;
-  const day = t => escHtml(new Date(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
-  const rows = names.map(name => {
-    const tries = [];
-    games.forEach(g => {
-      const st = (dashData[g] || []).find(s => s.name === name);
-      (st && st.sessions || []).forEach(s => tries.push({ ...s, lesson: g.slice(4).toUpperCase() }));
-    });
-    tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    const done = tries.filter(t => t.status === 'complete');
-    // facts lessons pass at 90%; place value, rounding, Big Numbers and reading at 75% (the Lab's own rule, Marcos 10/20)
-    const passMark = id => (/^(PV|RO|RC|RD|BP|BR)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
-    const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => done.some(t => t.lesson === id && Number(t.percent) >= passMark(id)));
-    // 🚩 stuck: LAB_STUCK_TRIES or more finished tries on a lesson, none at its mark (a tested-out try is a pass)
-    const stuck = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => !passed.includes(id)).map(id => {
-      const mine = done.filter(t => t.lesson === id);
-      const best = mine.reduce((b, t) => (!b || Number(t.percent) > Number(b.percent) ? t : b), null);
-      return { id, tries: mine.length, best };
-    }).filter(x => x.tries >= LAB_STUCK_TRIES);
-    // a running row is "now" unless a finished row of the same try came after it (a redo in the same visit
-    // reuses the running row's id, so compare times, not just ids)
-    const now = tries.find(t => t.status !== 'complete' &&
-      !done.some(d => d.sessionId && t.sessionId && d.sessionId.startsWith(t.sessionId) && new Date(d.timestamp) >= new Date(t.timestamp)));
-    const ev = [];
-    done.forEach(t => { try { JSON.parse(t.events || '[]').forEach(e => ev.push({ ...e, lesson: t.lesson })); } catch (e) {} });
-    const repeats = ev.filter(e => e.e === 'repeat');
-    const mineAsked = ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0);
-    const prog = (dashData['lab-progress'] || []).find(s => s.name === name);
-    const p = prog && prog.sessions && prog.sessions.length ? prog.sessions[prog.sessions.length - 1] : null;
-    // 📖 QPS: the same standing the QPS page shows (qpsRowFor): the stop they are on now, its passes, 🔔 stops to test
-    const qps = qpsRowFor(name);
-    // reading: the kinds of mistakes, most made first
-    const kinds = (((p && p.form) || '').match(/kinds=([^|]*)/) || [])[1] || '';
-    const topKinds = kinds.split(',').map(x => x.split(':')).filter(x => LAB_KIND_LABEL[x[0]] && Number(x[1]) > 0).sort((a, b) => b[1] - a[1]);
-    return { name, onPlan: LAB_PLAN.includes(name), tries, done, passed, stuck, now, repeats, mineAsked, topKinds, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
-             qps };
-  });
-  const head = '<tr><th>Student</th><th>Now</th><th>Passed</th><th>Latest try</th><th>⭐ Own facts asked</th><th>🔁 Same mistake again</th><th>Still on the list</th><th>📖 QPS</th><th>Missed last time</th></tr>';
-  const body = rows.map(r => {
-    const now = r.now ? `<span class="status-pill inprogress">🔄 ${escHtml(r.now.lesson)}</span><br>${muted(`${Number(r.now.score) || 0} right so far`)}<br>${muted(day(r.now.timestamp))}`
-              : r.tries.length ? muted('—') : '<span class="status-pill notstarted">⬜ Not started</span>';
-    const passed = r.passed.length ? r.passed.map(id => `<span class="status-pill complete">✅ ${id}</span>`).join(' ') : muted('none yet');
-    const latest = r.latest ? `${escHtml(r.latest.lesson)} · ${r.latest.score}/${r.latest.total} (${r.latest.percent}%)${/Tested out/.test(r.latest.form) ? ' · skipped' : ''}<br>${muted(day(r.latest.timestamp))}` : '—';
-    // a reading pick is a whole sentence: shown short
-    const short = t => { const x = String(t == null ? '' : t); return x.length > 60 ? x.slice(0, 57) + '…' : x; };
-    const reps = (r.repeats.length ? r.repeats.map(e => `${escHtml(e.f)} → ${escHtml(short(e.pick))} ${muted(escHtml(e.lesson))}`).join('<br>') : muted('—')) +
-      (r.topKinds.length ? `<br>${muted('Most common: ' + r.topKinds.slice(0, 2).map(([k, n]) => `${LAB_KIND_LABEL[k]} ×${n}`).join(' · '))}` : '');
-    const list = r.list == null ? muted('not synced yet') : r.list ? escHtml(r.list.split(' | ').map(x => x.replace(/ \(.*\)$/, '')).join(', ')) : muted('none');
-    const missed = r.latest && r.latest.wrongQuestions ? escHtml(r.latest.wrongQuestions) : '';
-    const q = r.qps;
-    const qLatest = q.latest ? `<br>${q.latest.percent}% ${muted(day(q.latest.timestamp))}${!q.comp && q.onTrack.length > 1 ? ' ' + muted(`· ${q.onTrack.length} checks`) : ''}` : '';
-    const reading = q.track === undefined ? muted('—')
-      : q.comp ? `${Object.values(QPS_COMP_SKILLS).join('<br>')}<br>${qpsReadyPill(q)}${qLatest}`
-      : q.track === null ? muted('Any stop')
-      : `${escHtml(qpsStopName(q.track))}${q.known ? '' : ' ' + muted('(last practiced)')}` +
-        (q.startedAt && q.track !== q.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(q.startedAt))}`) : '') +
-        `<br>${qpsReadyPill(q)}${qLatest}` +
-        (q.test.length ? `<br>🔔 ${muted('to test: ' + q.test.map(id => escHtml(qpsStopName(id))).join(', '))}` : '') +
-        (q.latest && q.latest.wrongQuestions ? `<br>${muted('missed: ' + escHtml(short(q.latest.wrongQuestions)))}` : '');
-    return `<tr><td>${escHtml(r.name)}${r.onPlan ? '' : ' ' + muted('(not on a plan)')}</td><td>${now}</td><td>${passed}</td><td>${latest}</td><td>${r.mineAsked}</td><td style="white-space:normal;">${reps}</td><td style="white-space:normal;">${list}</td><td>${reading}</td><td style="white-space:normal;">${missed}</td></tr>`;
-  }).join('');
-  el.innerHTML = `<table class="grid-table qps-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
-  // 🚩 a student who keeps missing one lesson — so Mr. O can help in person (or let them past with the PIN)
+  // students on a plan (a lab-seed row), then anyone else with Lab tries; Mr. O's own tries are left out
+  const names = [...labPlan()];
+  LAB_LESSONS.forEach(x => (dashData['lab-' + x] || []).forEach(st => { if (!names.includes(st.name)) names.push(st.name); }));
+  const teacher = names.filter(n => /\(Teacher\)$/.test(n));
+  const rows = names.filter(n => !teacher.includes(n)).map(labStudent).sort((a, b) => a.name.localeCompare(b.name));
+  const started = rows.filter(r => r.tries.length), waiting = rows.filter(r => !r.tries.length);
+  const planLine = r => r.plan.length ? r.plan.map(id => { const s = LAB_STRANDS.find(x => x.id === id);
+    return `<a class="lab-link lab-chip" href="${BTL_URL}#strand-${id}" target="behind-the-lab" rel="noopener">${s.icon} ${escHtml(s.name)}</a>`; }).join(' ') : '<span class="lab-muted">no plan</span>';
+  const nameCell = r => `<b>${escHtml(r.name)}</b>${r.onPlan ? '' : '<br><span class="lab-muted">(not on a plan)</span>'}`;
+  const startedRows = started.map(r => `<tr class="lab-row" data-name="${escHtml(r.name)}"><td>${nameCell(r)}</td>
+      <td class="lab-plan">${r.strands.map(id => labStrandLine(r, id)).join('')}</td>
+      <td>${labLastCell(r)}</td><td class="lab-help">${labHelpCell(r)}</td><td>${labQpsCell(r.qps)}</td></tr>`).join('');
+  const waitingRows = waiting.map(r => `<tr class="lab-row" data-name="${escHtml(r.name)}"><td>${nameCell(r)}</td><td class="lab-plan">${planLine(r)}</td><td>${labQpsCell(r.qps)}</td></tr>`).join('');
+  // the line at the top: the whole Lab in one glance
+  const working = started.filter(r => r.now && Date.now() - new Date(r.now.timestamp).getTime() < LAB_NOW_MINUTES * 60000).length;
   const flags = rows.flatMap(r => r.stuck.map(x => ({ name: r.name, ...x })));
+  const nTest = rows.reduce((n, r) => n + ((r.qps && r.qps.test) || []).length, 0);
+  const chip = (cls, html) => `<span class="lab-sum-chip ${cls}">${html}</span>`;
+  document.getElementById('labSummary').innerHTML = chip('', `👥 <b>${rows.filter(r => r.onPlan).length}</b> on a plan`) +
+    chip('', `▶️ <b>${started.length}</b> started`) + chip(working ? 'live' : '', `🔄 <b>${working}</b> working now`) +
+    chip(flags.length ? 'bad' : '', `🚩 <b>${flags.length}</b> stuck`) + chip(nTest ? 'warn' : '', `🔔 <b>${nTest}</b> QPS stop${nTest === 1 ? '' : 's'} to test`);
+  el.innerHTML =
+    (started.length ? `<h3 class="qps-h">▶️ Started (${started.length})</h3>
+     <table class="grid-table lab-table"><thead><tr><th>Student</th><th>Their plan · lessons passed</th><th>Last time</th><th>Help with</th><th>📖 QPS</th></tr></thead><tbody>${startedRows}</tbody></table>` : '') +
+    (waiting.length ? `<h3 class="qps-h">⏳ Not started yet (${waiting.length})</h3>
+     <table class="grid-table lab-table lab-waiting"><thead><tr><th>Student</th><th>On their plan</th><th>📖 QPS</th></tr></thead><tbody>${waitingRows}</tbody></table>` : '') +
+    (!rows.length ? '<p class="lab-muted">No one is on a Lab plan yet.</p>' : '') +
+    (teacher.length ? `<p class="lab-muted" style="margin-top:10px;">Not shown: your own test tries (${teacher.map(escHtml).join(', ')}).</p>` : '');
+  // 🚩 a student who keeps missing one lesson — so Mr. O can help in person (or let them past with the PIN)
   const box = document.getElementById('labFlags');
-  const lessonName = id => (GAME_LABELS['lab-' + id.toLowerCase()] || id).replace(/^🧪 Lab \S+ — /, '');
   if (box) box.innerHTML = !flags.length ? '' : `<div class="lab-flags" style="border:2px solid #c0392b;border-radius:12px;padding:12px 14px;margin:0 0 14px;background:rgba(192,57,43,.06);">
     <div style="font-weight:800;margin-bottom:8px;">🚩 Stuck (${flags.length}) — ${LAB_STUCK_TRIES} or more tries on one lesson, not passed yet</div>
-    ${flags.map(f => `<div class="lab-flag" data-name="${escHtml(f.name)}" data-lesson="${escHtml(f.id)}" style="padding:3px 0;"><b>${escHtml(f.name)}</b> · ${f.tries} tries on ${escHtml(lessonName(f.id))} (${escHtml(f.id)}) · best ${f.best ? `${Number(f.best.score) || 0} of ${Number(f.best.total) || 0}` : '—'}</div>`).join('')}</div>`;
+    ${flags.map(f => `<div class="lab-flag" data-name="${escHtml(f.name)}" data-lesson="${escHtml(f.id)}" style="padding:3px 0;"><b>${escHtml(f.name)}</b> · ${f.tries} tries on ${labLessonLink(f.id, escHtml(labLessonName(f.id)))} (${escHtml(f.id)}) · best ${f.best ? `${Number(f.best.score) || 0} of ${Number(f.best.total) || 0}` : '—'}</div>`).join('')}</div>`;
 }
 
 // Header 📋 Assignment button — always lands on the regular assignments,
