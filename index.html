@@ -369,15 +369,25 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .lab-key{margin:0 0 14px;font-size:.88rem;}
 .lab-key summary{cursor:pointer;font-weight:800;color:var(--accent);}
 .lab-key ul{margin:8px 0 0 20px;line-height:1.8;font-weight:600;}
-.lab-table td{vertical-align:top;}
-.lab-table td:nth-child(3){min-width:170px;}
-.lab-table:not(.lab-waiting) td:nth-child(4){min-width:230px;}
-.lab-table td:last-child{min-width:160px;}
+.lab-table td{vertical-align:top;padding:10px 10px;}
+.lab-table th{padding:10px 10px;}
+.lab-table td:nth-child(3){min-width:150px;}
+.lab-table:not(.lab-waiting) td:nth-child(4){min-width:200px;}
+.lab-table td:last-child{min-width:150px;max-width:200px;}
 .lab-muted{color:var(--muted);font-weight:600;}
 .lab-strand{display:flex;align-items:center;gap:8px;padding:3px 0;}
-.lab-sname{width:190px;flex-shrink:0;font-weight:800;font-size:.84rem;}
+.lab-stage{display:flex;gap:8px;align-items:stretch;padding:3px 0;}
+.lab-stage+.lab-stage{border-top:1px dashed var(--border);margin-top:3px;padding-top:6px;}
+.lab-stage-n{width:52px;flex-shrink:0;font-size:.8rem;font-weight:800;color:var(--muted);padding-top:5px;line-height:1.25;}
+.lab-stage-n small{display:block;font-size:.72rem;font-weight:700;}
+.lab-stage-lines{flex:1;min-width:0;}
+.lab-stage.turns .lab-stage-lines{border-left:3px solid var(--accent);padding-left:8px;}
+.lab-wstage{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 4px;margin:2px 12px 2px 0;}
+.lab-wstage-n{font-size:.78rem;font-weight:800;color:var(--muted);margin-right:2px;}
+.lab-turns{color:var(--muted);font-weight:800;margin:0 2px;}
+.lab-sname{width:158px;flex-shrink:0;font-weight:800;font-size:.84rem;}
 .lab-ls{display:inline-flex;gap:3px;}
-.lab-l{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;font-size:.78rem;font-weight:800;border:2px solid var(--notstarted-border);color:var(--notstarted-text);background:transparent;vertical-align:middle;}
+.lab-l{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:6px;font-size:.78rem;font-weight:800;border:2px solid var(--notstarted-border);color:var(--notstarted-text);background:transparent;vertical-align:middle;}
 .lab-l.ok{background:var(--complete);border-color:var(--complete-border);color:var(--complete-text);}
 .lab-l.try{background:var(--inprogress);border-color:var(--inprogress-border);color:var(--inprogress-text);}
 .lab-l.stuck{background:var(--flagged);border-color:var(--flagged-border);color:var(--flagged-text);}
@@ -390,7 +400,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
 .lab-help>div+div,.lab-help>details{margin-top:6px;}
 .lab-list summary{cursor:pointer;font-weight:700;}
 .lab-list-mix{margin-left:16px;font-size:.8rem;color:var(--muted);font-weight:600;}
-.lab-qc{font-size:.82rem;white-space:nowrap;}
+.lab-qc{font-size:.82rem;}
 .lab-list-g{margin:4px 0;font-weight:600;}
 .lab-bell{margin-top:4px;font-weight:800;color:var(--inprogress-text);}
 .lab-chip{display:inline-block;margin:2px 4px 2px 0;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:.8rem;font-weight:700;}
@@ -583,10 +593,11 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
          confusing and hard to read quickly"; "it should be linkable to read an explanation of each lesson") -->
     <div id="view-lab" style="display:none;">
       <div class="section-title">🧪 The Lab <a href="https://mroteacher.com/behind-the-lab/" target="behind-the-lab" rel="noopener" style="font-size:.8em;margin-left:8px;">📘 Behind the LAB</a></div>
-      <p class="lab-intro">One row per student. Each square is a lesson on their plan: <b>✓</b> = passed. Click a lesson or a strand to read what it teaches.</p>
+      <p class="lab-intro">One row per student. Their strands are stacked in the order they do them; each square is a lesson: <b>✓</b> = passed. Click a lesson or a strand to read what it teaches.</p>
       <div id="labSummary" class="lab-sum"></div>
       <details class="lab-key"><summary>How to read this page</summary><ul>
         <li><span class="lab-l ok">✓</span> passed · <span class="lab-l try">2</span> tried, not passed yet · <span class="lab-l stuck">!</span> stuck: 3 or more tries, not passed · <span class="lab-l now">4</span> in the middle of it · <span class="lab-l">5</span> not tried yet. Point at a square for its name and best score.</li>
+        <li>Strands are stacked in the order the Lab gives them (1st, 2nd …). Two strands marked "takes turns" (⇄) go back and forth: a math lesson, then a reading lesson, then math again — so a kid can have lesson 1 done in one and be on lesson 1 of the other.</li>
         <li>To pass: adding, subtracting and multiplying facts 90%. Place value, rounding, Big Numbers and reading 75% (8 of 10 · 15 of 20 on a Check · reading 6 of 8 points, where a Part A + Part B question is worth 2).</li>
         <li>"Tested out" = all 5 Show-what-you-know questions right, so the lesson was skipped.</li>
         <li>🔁 Math: the same wrong answer as an earlier miss. Reading: the same KIND of mistake on a new story (for example "true but not proof"). "Most common" = the kind they make most.</li>
@@ -2009,6 +2020,43 @@ const labPlanOf = name => {
   const form = st && st.sessions && st.sessions.length ? st.sessions[st.sessions.length - 1].form : '';
   return ((/plan=([a-z,]+)/.exec(form || '') || [])[1] || '').split(',').filter(id => LAB_STRANDS.some(s => s.id === id));
 };
+// The Lab's route (the-lab script.js nextStep; Marcos 10/20 "Take turns"): a strand's lessons go in order; a strand with an
+// "after" waits for that strand only when it is on the plan too; math and reading take turns; with nothing done yet, the
+// plan row's first strand goes first. labRouteOrder = the lessons in the order the Lab gives them if each is passed on its
+// turn (Behind the LAB's route.js gives the same order — dashboard-lab-page.spec.js compares them).
+const LAB_AFTER = { mu: 'as', pv: 'as', ro: 'as', bp: 'pv', br: 'ro', rd: 'rc' };   // the-lab STRANDS "after"
+const labIsReading = sid => sid === 'rc' || sid === 'rd';
+function labRouteOrder(plan) {
+  const passed = new Set(), order = [];
+  const strandDone = sid => labStrandLessons(sid).every(x => passed.has(x));
+  const open = sid => (LAB_AFTER[sid] && plan.includes(LAB_AFTER[sid]) && !strandDone(LAB_AFTER[sid])) ? null : (labStrandLessons(sid).find(x => !passed.has(x)) || null);
+  const firstOpen = list => list.map(open).find(Boolean) || null;
+  const math = plan.filter(sid => !labIsReading(sid)), read = plan.filter(labIsReading);
+  let last = null;
+  for (let guard = 0; guard < 200; guard++) {
+    const nm = firstOpen(math), nr = firstOpen(read);
+    const n = !nm || !nr ? (nm || nr)
+      : !last ? (labIsReading(plan[0]) ? nr : nm)
+      : labIsReading(last.slice(0, 2).toLowerCase()) ? nm : nr;          // take turns
+    if (!n) break;
+    order.push(n); passed.add(n); last = n;
+  }
+  return order;
+}
+// Marcos 10/23: "shouldn't they be then stacked differently? So it goes in order." — the plan's strands stacked in the
+// order the child meets them; strands whose lessons take turns share one stage ("1st · takes turns")
+function labStages(plan) {
+  const order = labRouteOrder(plan).map(x => x.slice(0, 2).toLowerCase());
+  const spans = plan.map(sid => ({ sid, first: order.indexOf(sid), last: order.lastIndexOf(sid) })).filter(x => x.first >= 0).sort((a, b) => a.first - b.first);
+  const stages = [];
+  spans.forEach(x => {
+    const cur = stages[stages.length - 1];
+    if (cur && x.first <= cur.last) { cur.ids.push(x.sid); cur.last = Math.max(cur.last, x.last); }
+    else stages.push({ ids: [x.sid], last: x.last });
+  });
+  return stages.map(st => st.ids);
+}
+const LAB_ORDINAL = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 const LAB_NOW_MINUTES = 30;   // a lesson left open longer than this is "stopped in the middle", not "working now"
 
 // One entry of a student's list, in words: "6 + 8 (13, 14)" is a fact; "R 68749/100 (68750)" is one of the Lab's own
@@ -2063,9 +2111,10 @@ function labStudent(name) {
   const kinds = (((p && p.form) || '').match(/kinds=([^|]*)/) || [])[1] || '';
   const topKinds = kinds.split(',').map(x => x.split(':')).filter(x => LAB_KIND_LABEL[x[0]] && Number(x[1]) > 0).sort((a, b) => b[1] - a[1]);
   const plan = labPlanOf(name);
-  // the strands to draw: the plan's, in the plan's order, then any other strand they have tried
-  const strands = [...plan, ...LAB_STRANDS.map(s => s.id).filter(id => !plan.includes(id) && tries.some(t => t.lesson.slice(0, 2).toLowerCase() === id))];
-  return { name, plan, onPlan: (dashData['lab-seed'] || []).some(s => s.name === name), strands, tries, done, passed, tried, stuck, now,
+  // the strands to draw: the plan's, stacked in the order the Lab gives them; then any other strand they have tried
+  const stages = labStages(plan);
+  const extra = LAB_STRANDS.map(s => s.id).filter(id => !plan.includes(id) && tries.some(t => t.lesson.slice(0, 2).toLowerCase() === id));
+  return { name, plan, onPlan: (dashData['lab-seed'] || []).some(s => s.name === name), stages, extra, tries, done, passed, tried, stuck, now,
            repeats: ev.filter(e => e.e === 'repeat'), mineAsked: ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0),
            topKinds, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
            // 📖 QPS: the same standing the QPS page shows (qpsRowFor): the stop they are on now, its passes, 🔔 stops to test
@@ -2173,11 +2222,17 @@ async function renderLab() {
   const teacher = names.filter(n => /\(Teacher\)$/.test(n));
   const rows = names.filter(n => !teacher.includes(n)).map(labStudent).sort((a, b) => a.name.localeCompare(b.name));
   const started = rows.filter(r => r.tries.length), waiting = rows.filter(r => !r.tries.length);
-  const planLine = r => r.plan.length ? r.plan.map(id => { const s = LAB_STRANDS.find(x => x.id === id);
-    return `<a class="lab-link lab-chip" href="${BTL_URL}#strand-${id}" target="behind-the-lab" rel="noopener">${s.icon} ${escHtml(s.name)}</a>`; }).join(' ') : '<span class="lab-muted">no plan</span>';
+  const planChip = id => { const s = LAB_STRANDS.find(x => x.id === id);
+    return `<a class="lab-link lab-chip" href="${BTL_URL}#strand-${id}" target="behind-the-lab" rel="noopener">${s.icon} ${escHtml(s.name)}</a>`; };
+  // not started: their plan in the order they will meet it; ⇄ = the two strands take turns
+  const planLine = r => r.stages.length ? r.stages.map((ids, i) => `<span class="lab-wstage" data-stage="${i + 1}"><span class="lab-wstage-n">${LAB_ORDINAL[i]}</span>${ids.map(planChip).join('<span class="lab-turns" title="These two take turns: a math lesson, then a reading lesson">⇄</span>')}</span>`).join('') : '<span class="lab-muted">no plan</span>';
+  // started: one stage per step of the route; two strands that take turns share a stage
+  const stagesHtml = r => r.stages.map((ids, i) => `<div class="lab-stage${ids.length > 1 ? ' turns' : ''}" data-stage="${i + 1}">
+      <div class="lab-stage-n">${LAB_ORDINAL[i]}${ids.length > 1 ? '<small>takes turns</small>' : ''}</div><div class="lab-stage-lines">${ids.map(id => labStrandLine(r, id)).join('')}</div></div>`).join('') +
+    (r.extra.length ? `<div class="lab-stage" data-stage="extra"><div class="lab-stage-n"><small>not on plan</small></div><div class="lab-stage-lines">${r.extra.map(id => labStrandLine(r, id)).join('')}</div></div>` : '');
   const nameCell = r => `<b>${escHtml(r.name)}</b>${r.onPlan ? '' : '<br><span class="lab-muted">(not on a plan)</span>'}`;
   const startedRows = started.map(r => `<tr class="lab-row" data-name="${escHtml(r.name)}"><td>${nameCell(r)}</td>
-      <td class="lab-plan">${r.strands.map(id => labStrandLine(r, id)).join('')}</td>
+      <td class="lab-plan">${stagesHtml(r)}</td>
       <td>${labLastCell(r)}</td><td class="lab-help">${labHelpCell(r)}</td><td>${labQpsCell(r.qps)}</td></tr>`).join('');
   const waitingRows = waiting.map(r => `<tr class="lab-row" data-name="${escHtml(r.name)}"><td>${nameCell(r)}</td><td class="lab-plan">${planLine(r)}</td><td>${labQpsCell(r.qps)}</td></tr>`).join('');
   // the line at the top: the whole Lab in one glance
@@ -2190,9 +2245,9 @@ async function renderLab() {
     chip(flags.length ? 'bad' : '', `🚩 <b>${flags.length}</b> stuck`) + chip(nTest ? 'warn' : '', `🔔 <b>${nTest}</b> QPS stop${nTest === 1 ? '' : 's'} to test`);
   el.innerHTML =
     (started.length ? `<h3 class="qps-h">▶️ Started (${started.length})</h3>
-     <table class="grid-table lab-table"><thead><tr><th>Student</th><th>Their plan · lessons passed</th><th>Last time</th><th>Help with</th><th>📖 QPS</th></tr></thead><tbody>${startedRows}</tbody></table>` : '') +
+     <table class="grid-table lab-table"><thead><tr><th>Student</th><th>Their plan, in order · lessons passed</th><th>Last time</th><th>Help with</th><th>📖 QPS</th></tr></thead><tbody>${startedRows}</tbody></table>` : '') +
     (waiting.length ? `<h3 class="qps-h">⏳ Not started yet (${waiting.length})</h3>
-     <table class="grid-table lab-table lab-waiting"><thead><tr><th>Student</th><th>On their plan</th><th>📖 QPS</th></tr></thead><tbody>${waitingRows}</tbody></table>` : '') +
+     <table class="grid-table lab-table lab-waiting"><thead><tr><th>Student</th><th>Their plan, in order</th><th>📖 QPS</th></tr></thead><tbody>${waitingRows}</tbody></table>` : '') +
     (!rows.length ? '<p class="lab-muted">No one is on a Lab plan yet.</p>' : '') +
     (teacher.length ? `<p class="lab-muted" style="margin-top:10px;">Not shown: your own test tries (${teacher.map(escHtml).join(', ')}).</p>` : '');
   // 🚩 a student who keeps missing one lesson — so Mr. O can help in person (or let them past with the PIN)
