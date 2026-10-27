@@ -456,6 +456,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
     <button class="btn btn-ghost btn-sm" onclick="toggleView('gk')" id="tabGk">🌟 General Knowledge</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('qps')" id="tabQps">📖 QPS</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('lab')" id="tabLab">🧪 Lab</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('atq')" id="tabAtq">✨ After the QPS</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -613,6 +614,43 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
         <li>On a plan = they have a row in the lab-seed tab.</li></ul></details>
       <div id="labFlags"></div>
       <div class="table-wrap" id="labGrid" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- ✨ AFTER THE QPS VIEW (Marcos 10/25/2026) — assign a lesson; every finished lesson and re-read -->
+    <div id="view-atq" style="display:none;">
+      <div class="section-title">✨ After the QPS <a href="https://mroteacher.com/after-the-qps/" target="after-the-qps" rel="noopener" style="font-size:.8em;margin-left:8px;">Open the site</a></div>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">Phonics practice after a QPS stop: tricky words, the sound, blending, beat the voice, a story read 3 times, 3 questions and a spelled sentence. A kid with a lesson from you sees only that lesson until it is done; after that they can re-read the stories of lessons you gave them.</p>
+      <div class="fact-assign" id="atqAssign">
+        <div class="section-title">📌 Assign a Lesson
+          <span class="fact-assign-sub">When they sign in to After the QPS, they see only their lesson, one at a time, until they finish it.</span>
+        </div>
+        <div class="fact-assign-form">
+          <label>Lesson<select id="atqAssignLesson"></select></label>
+          <label>Add to<select id="atqAssignWhere">
+            <option value="end">End of their list</option>
+            <option value="front">Front of their list</option>
+          </select></label>
+        </div>
+        <div class="fact-assign-who">
+          <span class="fact-assign-label">Students</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickAtqAll(true)">All</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickAtqAll(false)">None</button>
+          <span class="fact-assign-note">📌 = has a lesson open now · 📌2 = two open</span>
+        </div>
+        <div class="fact-assign-students" id="atqAssignStudents"></div>
+        <div class="fact-assign-send">
+          <button type="button" class="btn btn-primary" id="atqAssignSend" onclick="sendAtqAssignment()">📌 Assign</button>
+          <span id="atqAssignStatus" class="fact-assign-status" role="status"></span>
+        </div>
+        <div class="fact-assign-now">
+          <span class="fact-assign-label">Assigned</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadAtqAssignments()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap" id="atqAssignTable"></div>
+      </div>
+      <div class="section-title">📖 Finished Lessons
+        <span style="font-size:.72rem;color:var(--muted);font-weight:700;">newest first · Questions = right of 3, beside the words they tapped for help on read 1</span></div>
+      <div class="table-wrap" id="atqResults" style="overflow-x:auto;"></div>
     </div>
 
     <div id="view-facts" style="display:none;">
@@ -1665,6 +1703,8 @@ function toggleView(view) {
   document.getElementById('tabQps').className = 'btn btn-sm ' + (view==='qps' ? 'btn-primary' : 'btn-ghost');
   document.getElementById('view-lab').style.display = view === 'lab' ? 'block' : 'none';
   document.getElementById('tabLab').className = 'btn btn-sm ' + (view==='lab' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-atq').style.display = view === 'atq' ? 'block' : 'none';
+  document.getElementById('tabAtq').className = 'btn btn-sm ' + (view==='atq' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
@@ -1675,6 +1715,7 @@ function renderCurrentView() {
   if (currentView === 'gk')         renderGk();
   if (currentView === 'qps')        renderQps();
   if (currentView === 'lab')        renderLab();
+  if (currentView === 'atq')        renderAtq();
 }
 // ═══════════════════════════════════════════════════
 //  QPS VIEW
@@ -2491,6 +2532,232 @@ function setFactSite(site) {
 }
 function setFactOp(op)     { factOp = op; renderFacts(); }
 function setFactStyle(st)  { factStyle = st; renderFacts(); }
+
+// ═══════════════════════════════════════════════════
+//  ✨ AFTER THE QPS (Marcos 10/25/2026) — mroteacher.com/after-the-qps
+//  Phonics practice for kids who passed a QPS stop ("This is just for reinforcement and practice").
+//  Mr. O assigns a lesson here ("I can just assign them lessons based on my need for their need of
+//  practice"); the site's banner holds the kid on it until the lesson is done; after that the kid may
+//  re-read the stories of lessons he gave them. Two sheet tabs, kept off the Overview by the 'atq-' prefix:
+//    atq-assign   one row per assignment, the fact sites' facts-assign shape: name 'Student #<order>' ·
+//                 sessionId 'AQ-<ms>-<n>' · form = the lesson id ('a_e') or 'None' (taken away) · score =
+//                 the ms written (the leaderboard read keeps the newest row per name) · correct = steps
+//                 finished (a Correct equal to the score means 0) · done. A done row stays: it is the
+//                 kid's list of stories to re-read.
+//    atq-lessons  one row per lesson or re-read (sessionId 'ATQ-…'): score = questions right ·
+//                 wrongQuestions = the summary · events = JSON { kind, taps, missed, spell, reads, answers }
+//  He picked what to see per lesson (10/25, all four): the question score beside the help taps on read 1 ·
+//  the words marked "I missed it" · the misspellings before the fix · the time of each read and the re-dos.
+//  Lesson names come from the site's own lessons.js (one source of truth); an id it doesn't know shows as the id.
+// ═══════════════════════════════════════════════════
+HIDDEN_GAME_PREFIXES.push('atq-');
+const ATQ_ASSIGN_GAME  = 'atq-assign';
+const ATQ_RESULTS_GAME = 'atq-lessons';
+const ATQ_MAX_KEY = 1e15;
+const ATQ_STEPS   = 7;          // the site's lesson.js STEPS
+let atqLessons = null;          // the site's ATQ_LESSONS; [] if lessons.js could not be read
+let atqAssignRows = null, atqAssignLoading = false, atqAssignError = '';
+const atqPicked = new Set();
+
+async function loadAtqLessons() {
+  if (atqLessons) return atqLessons;
+  try {
+    const src = await fetch('../after-the-qps/lessons.js', { cache: 'no-store' }).then(r => (r.ok ? r.text() : ''));
+    const box = {};
+    if (src) new Function('window', src)(box);          // lessons.js only sets window.ATQ_LESSONS
+    atqLessons = Array.isArray(box.ATQ_LESSONS) ? box.ATQ_LESSONS : [];
+  } catch (e) { atqLessons = []; }
+  return atqLessons;
+}
+const atqLesson = id => (atqLessons || []).find(l => l.id === id) || null;
+const atqLessonText = id => { const l = atqLesson(id); return l ? `${l.name} · ${l.story.title}` : id; };
+
+function parseAtqAssign(r) {
+  const place = /^(.*) #(-?\d+)$/.exec(String(r.name || ''));
+  if (!place || !STUDENT_ROSTER.includes(place[1])) return null;
+  const form = String(r.form || '').trim();
+  if (!form || form === 'None') return null;
+  const key = Number(r.score) || 0;
+  const steps = Number(r.correct) === key ? 0 : Math.max(0, Number(r.correct) || 0);
+  return { name: place[1], rowName: r.name, order: Number(place[2]), key, id: String(r.sessionId || ''), lessonId: form,
+    steps, done: r.done === true || r.done === 'true', assigned: key ? new Date(key) : null };
+}
+function atqAssignLists() {
+  const items = (atqAssignRows || []).map(parseAtqAssign).filter(Boolean);
+  const open = s => (s.items.some(a => !a.done) ? 0 : 1);
+  return STUDENT_ROSTER
+    .map(name => ({ name, items: items.filter(a => a.name === name).sort((a, b) => a.order - b.order || a.key - b.key) }))
+    .filter(s => s.items.length)
+    .sort((a, b) => open(a) - open(b) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+}
+const atqOpenCount = name => ((atqAssignLists().find(s => s.name === name) || { items: [] }).items).filter(a => !a.done).length;
+
+async function loadAtqAssignments() {
+  atqAssignLoading = true;
+  renderAtqAssignTable();
+  try {
+    const rows = await fetch(`${SHEET_URL}?action=leaderboard&game=${ATQ_ASSIGN_GAME}`, { cache: 'no-store' }).then(r => r.json());
+    if (!Array.isArray(rows)) throw new Error('not a list');
+    atqAssignRows = rows;
+    atqAssignError = '';
+  } catch (e) {
+    atqAssignError = '⚠️ Could not read the lessons you assigned. Check the connection, then press ↻ Refresh.';
+  }
+  atqAssignLoading = false;
+  renderAtqAssignStudents();
+  renderAtqAssignTable();
+  return atqAssignError ? null : atqAssignRows;
+}
+// One 'submit' per row, 5 at a time; no-cors can't read the answer, so the caller reads the tab back
+async function postAtqAssignRows(rows) {
+  for (let i = 0; i < rows.length; i += 5) {
+    await Promise.all(rows.slice(i, i + 5).map(r => fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', game: ATQ_ASSIGN_GAME, sessionId: r.sessionId, name: r.name, form: r.form,
+        score: r.score, maxScore: ATQ_MAX_KEY, correct: 0, total: 0, percent: 0, done: r.done, tabSwitches: 0, wrongQuestions: '' })
+    }).catch(() => {})));
+  }
+}
+const atqLanded = (rows, sent) => sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
+
+async function renderAtq() {
+  await loadAtqLessons();
+  if (currentView !== 'atq') return;
+  const sel = document.getElementById('atqAssignLesson');
+  const keep = sel.value;
+  sel.innerHTML = atqLessons.length
+    ? atqLessons.map(l => `<option value="${escHtml(l.id)}">${escHtml(`${l.skill} · ${l.name} · ${l.story.title}`)}</option>`).join('')
+    : '<option value="">⚠️ the lessons could not be read</option>';
+  if (atqLessons.some(l => l.id === keep)) sel.value = keep;
+  renderAtqAssignStudents();
+  renderAtqAssignTable();
+  renderAtqResults();
+  if (atqAssignRows === null && !atqAssignLoading && !atqAssignError) loadAtqAssignments();
+}
+
+function renderAtqAssignStudents() {
+  document.getElementById('atqAssignStudents').innerHTML = STUDENT_ROSTER.map(name => {
+    const open = atqOpenCount(name);
+    return `<label><input type="checkbox" data-name="${escHtml(name)}"${atqPicked.has(name) ? ' checked' : ''} onchange="pickAtq(this.dataset.name, this.checked)">${escHtml(name)}${open ? ` 📌${open > 1 ? open : ''}` : ''}</label>`;
+  }).join('');
+}
+function pickAtq(name, on) { if (on) atqPicked.add(name); else atqPicked.delete(name); }
+function pickAtqAll(on) { STUDENT_ROSTER.forEach(n => pickAtq(n, on)); renderAtqAssignStudents(); }
+
+function renderAtqAssignTable() {
+  const el = document.getElementById('atqAssignTable');
+  if (!el) return;
+  if (atqAssignRows === null) {
+    el.innerHTML = `<p class="fact-assign-note">${atqAssignLoading ? '⏳ Reading the lessons you assigned…' : escHtml(atqAssignError)}</p>`;
+    return;
+  }
+  const note = atqAssignError ? `<p class="fact-assign-note">${escHtml(atqAssignError)}</p>` : '';
+  const lists = atqAssignLists();
+  if (!lists.length) { el.innerHTML = note + '<p class="fact-assign-note">You have not assigned a lesson yet.</p>'; return; }
+  const rows = lists.map(({ name, items }) => {
+    const current = items.find(a => !a.done);
+    return items.map((a, i) => {
+      const status = a.done ? '<span class="fact-assign-pill done">✅ Done</span>'
+        : a.steps ? `<span class="fact-assign-pill working">✏️ Working · step ${Math.min(a.steps + 1, ATQ_STEPS)} of ${ATQ_STEPS}</span>`
+        : '<span class="fact-assign-pill waiting">⏳ Not started</span>';
+      const who = i ? '' : `<td class="fact-nowrap fact-assign-who-cell" rowspan="${items.length}">${escHtml(name)}</td>`;
+      return `<tr data-student="${escHtml(name)}">${who}
+        <td class="fact-nowrap">${a === current ? '▶ ' : ''}${i + 1}</td>
+        <td>${escHtml(atqLessonText(a.lessonId))}</td>
+        <td class="fact-last">${fmtWhen(a.assigned)}</td>
+        <td>${status}</td>
+        <td>${a.done ? '<span class="fact-assign-note">their story to re-read</span>' : `<button type="button" class="btn btn-ghost btn-sm" data-row="${escHtml(a.rowName)}" onclick="removeAtqAssignment(this.dataset.row)">✕ Remove</button>`}</td>
+      </tr>`;
+    }).join('');
+  }).join('');
+  el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>#</th><th>Lesson</th><th>Assigned</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="fact-assign-note" style="margin-top:8px;">▶ = the one they are on now. A done lesson stays on their list: it is the story they can re-read.</p>`;
+}
+
+async function sendAtqAssignment() {
+  const status = document.getElementById('atqAssignStatus');
+  const lessonId = document.getElementById('atqAssignLesson').value;
+  const where = document.getElementById('atqAssignWhere').value;   // end | front
+  const names = STUDENT_ROSTER.filter(n => atqPicked.has(n));
+  if (!atqLesson(lessonId)) { status.textContent = '⚠️ Pick a lesson.'; return; }
+  if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
+  const who = `${names.length} student${names.length > 1 ? 's' : ''}`;
+  if (!confirm(`${where === 'front' ? 'Put this lesson FIRST on the list' : 'Add this lesson to the end of the list'} for ${who}?\n\n${atqLessonText(lessonId)}`)) return;
+  const btn = document.getElementById('atqAssignSend');
+  btn.disabled = true;
+  status.textContent = '⏳ Sending…';
+  const at = Date.now();
+  const sent = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `AQ-${at}-${i + 1}`, form: lessonId, score: at, done: false }));
+  await postAtqAssignRows(sent);
+  status.textContent = '⏳ Checking that it saved…';
+  const rows = await loadAtqAssignments();
+  const saved = atqLanded(rows, sent);
+  const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
+  saved.forEach(s => atqPicked.delete(s.student));
+  status.textContent = rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
+    : missing.length ? `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`
+    : `✓ Assigned to ${who}${where === 'front' ? ' (first on the list)' : ''}.`;
+  renderAtqAssignStudents();
+  btn.disabled = false;
+}
+
+async function removeAtqAssignment(rowName) {
+  const a = atqAssignLists().flatMap(s => s.items).find(x => x.rowName === rowName);
+  if (!a || a.done) return;
+  if (!confirm(`Take this lesson away from ${a.name}?\n\n${atqLessonText(a.lessonId)}`)) return;
+  const status = document.getElementById('atqAssignStatus');
+  status.textContent = '⏳ Sending…';
+  const at = Date.now();
+  const row = { name: a.rowName, sessionId: `AX-${at}-0`, form: 'None', score: at, done: true };
+  await postAtqAssignRows([row]);
+  const rows = await loadAtqAssignments();
+  status.textContent = atqLanded(rows, [row]).length ? `✓ Taken away from ${a.name}.` : '⚠️ That did not save. Press ↻ Refresh, then try again.';
+}
+
+// Every finished lesson and re-read, newest first (the dashboard read: one entry per student, every session)
+function atqResults() {
+  const out = [];
+  (dashData[ATQ_RESULTS_GAME] || []).forEach(st => {
+    if (!STUDENT_ROSTER.includes(st.name)) return;
+    (st.sessions || []).forEach(s => {
+      if (s.status !== 'complete') return;
+      let ev = {};
+      try { ev = JSON.parse(s.events || '{}') || {}; } catch (e) { ev = {}; }
+      const parts = String(s.form || '').split('·').map(p => p.trim());
+      out.push({ name: st.name, lessonId: ev.lesson || parts[0], kind: ev.kind || (parts[3] === 'Re-read' ? 'reread' : 'lesson'),
+        when: new Date(s.finishedAt || s.timestamp), right: Number(s.score) || 0, total: Number(s.total) || 3,
+        taps: Array.isArray(ev.taps) ? ev.taps.map(t => t.word) : [], missed: ev.missed || { tricky: [], sound: [], blend: [] },
+        spell: Array.isArray(ev.spell) ? ev.spell : [], reads: Array.isArray(ev.reads) ? ev.reads : [], summary: s.wrongQuestions || '' });
+    });
+  });
+  return out.sort((a, b) => b.when - a.when);
+}
+
+function renderAtqResults() {
+  const el = document.getElementById('atqResults');
+  const all = atqResults();
+  if (!all.length) { el.innerHTML = '<p class="fact-assign-note">No finished lessons yet.</p>'; return; }
+  const uniq = xs => [...new Set(xs)];
+  const redos = (r) => all.filter(x => x.name === r.name && x.lessonId === r.lessonId && x.kind === 'reread').length;
+  const list = (xs) => xs.length ? xs.map(escHtml).join(', ') : '<span class="fact-assign-note">none</span>';
+  const rows = all.map(r => {
+    const marked = uniq([...(r.missed.tricky || []).map(w => `${w} (tricky)`), ...(r.missed.sound || []).map(w => `${w} (sound)`), ...(r.missed.blend || []).map(w => `${w} (blend)`)]);
+    const tapWords = uniq(r.taps);
+    return `<tr data-student="${escHtml(r.name)}">
+      <td class="fact-nowrap">${escHtml(r.name)}</td>
+      <td>${escHtml(atqLessonText(r.lessonId))}${r.kind === 'reread' ? ' <span class="fact-assign-pill waiting">🔁 re-read</span>' : ''}</td>
+      <td class="fact-last">${fmtWhen(r.when)}</td>
+      <td class="fact-nowrap atq-q"><strong>${r.right} / ${r.total}</strong> right · <strong>${r.taps.length}</strong> help tap${r.taps.length === 1 ? '' : 's'}</td>
+      <td>${list(tapWords)}</td>
+      <td>${r.kind === 'reread' ? '<span class="fact-assign-note">(story only)</span>' : list(marked)}</td>
+      <td>${r.kind === 'reread' ? '<span class="fact-assign-note">(story only)</span>' : r.spell.length ? r.spell.map(s => `${escHtml(s.want)} → <b>${escHtml(s.typed || '(blank)')}</b>`).join(', ') : '<span class="fact-assign-note">all right the first time</span>'}</td>
+      <td class="fact-nowrap">${r.reads.map(s => (s == null ? '—' : formatTime(s))).join(' · ')}</td>
+      <td class="fact-nowrap">${r.kind === 'reread' ? '' : redos(r)}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<table class="grid-table atq-results"><thead><tr><th>Student</th><th>Lesson</th><th>Finished</th><th>Questions · help taps (read 1)</th><th>Words tapped for help</th><th>Marked "I missed it"</th><th>Spelling (before the fix)</th><th>Reads 1 · 2 · 3</th><th>Re-dos</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="fact-assign-note" style="margin-top:8px;">3 / 3 right with 0 help taps = they read the story on their own. Re-dos = how many times they re-read that story afterwards.</p>`;
+}
 
 // ═══════════════════════════════════════════════════
 //  📌 ASSIGN FACT PRACTICE (Marcos 10/19/2026: "I want to be able to assign specific assignments for the
