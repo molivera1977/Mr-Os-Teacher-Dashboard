@@ -911,10 +911,14 @@ const GAME_LABELS = {
   'lab-rc4': '🧪 Lab RC4 — Choose Two',
   'lab-rc5': '🧪 Lab RC5 — Words That Mean More',
   'lab-rc6': '🧪 Lab RC6 — What Is It Mostly About?',
-  'lab-rd1': '🧪 Lab RD1 — Find the Proof: Level 2',
-  'lab-rd2': '🧪 Lab RD2 — Part A and Part B: Level 2',
-  'lab-rd3': '🧪 Lab RD3 — Click the Sentences: Level 2',
-  'lab-rd4': '🧪 Lab RD4 — Choose Two: Level 2',
+  'lab-rm1': '🧪 Lab RM1 — Find the Proof: Level 2',
+  'lab-rm2': '🧪 Lab RM2 — Part A and Part B: Level 2',
+  'lab-rm3': '🧪 Lab RM3 — Click the Sentences: Level 2',
+  'lab-rm4': '🧪 Lab RM4 — Choose Two: Level 2',
+  'lab-rd1': '🧪 Lab RD1 — Find the Proof: Level 3',
+  'lab-rd2': '🧪 Lab RD2 — Part A and Part B: Level 3',
+  'lab-rd3': '🧪 Lab RD3 — Click the Sentences: Level 3',
+  'lab-rd4': '🧪 Lab RD4 — Choose Two: Level 3',
   'lab-progress': '🧪 Lab — progress backup',
   'lab-seed': '🧪 Lab — fact-site misses (seed)',
   'talent-test-vocab': 'The Talent Show — Test — Vocabulary',
@@ -2004,7 +2008,8 @@ const LAB_LESSONS = ['as1', 'as2', 'as3', 'as4', 'as5', 'as6', 'mu1', 'mu2', 'mu
   'bp1', 'bp2', 'bp3', 'bp4', 'bp5', 'br1', 'br2', 'br3', 'br4', 'br5',   // 🚀 Big Numbers (10/22)
   // 🔎 Reading for Meaning (Part 2 10/22); 10/26 each skill's one-paragraph lesson (rpN) comes right before it
   'rp1', 'rc1', 'rp2', 'rc2', 'rp3', 'rc3', 'rp4', 'rc4', 'rp5', 'rc5', 'rp6', 'rc6',
-  'rd1', 'rd2', 'rd3', 'rd4'];   // 🔭 Reading for Meaning: Level 2 (10/22)
+  'rm1', 'rm2', 'rm3', 'rm4',   // 🪜 Reading for Meaning: Level 2, the middle level (10/26)
+  'rd1', 'rd2', 'rd3', 'rd4'];   // 🔭 Reading for Meaning: Level 3 (10/22; called Level 2 until 10/26)
 // 🔎 Reading for Meaning (10/20): a wrong choice carries a KIND; the Lab sends the counts in lab-progress ("|kinds=notproof:3,…")
 const LAB_KIND_LABEL = { notproof: 'true but not proof', noclue: 'no clue in the passage', toofar: 'went too far', opposite: 'the opposite',
   onedetail: 'one detail, not the main idea', wrongwho: 'the wrong person', wrongtime: 'the wrong part of the passage', literal: 'word for word',
@@ -2021,12 +2026,14 @@ const LAB_STRANDS = [
   { id: 'as', icon: '➕', name: 'Adding and Subtracting' }, { id: 'mu', icon: '✖️', name: 'Multiplying' },
   { id: 'pv', icon: '🔢', name: 'Place Value' }, { id: 'ro', icon: '🎯', name: 'Rounding' },
   { id: 'bp', icon: '🚀', name: 'Place Value: Big Numbers' }, { id: 'br', icon: '🗺️', name: 'Rounding: Big Numbers' },
-  { id: 'rc', icon: '🔎', name: 'Reading for Meaning' }, { id: 'rd', icon: '🔭', name: 'Reading for Meaning: Level 2' }];
+  { id: 'rc', icon: '🔎', name: 'Reading for Meaning' }, { id: 'rm', icon: '🪜', name: 'Reading for Meaning: Level 2' },
+  { id: 'rd', icon: '🔭', name: 'Reading for Meaning: Level 3' }];
 // a lesson's strand: its letters, except a one-paragraph lesson (RP1 …), which is in Reading for Meaning (rc) — 10/26
 const labStrandOf = x => (/^rp/i.test(x) ? 'rc' : String(x).slice(0, 2).toLowerCase());
 const labStrandLessons = id => LAB_LESSONS.filter(x => labStrandOf(x) === id).map(x => x.toUpperCase());
-// passing a full lesson counts for its one-paragraph lesson (the Lab's PARAGRAPH_OF: RP1 → RC1 …)
-const LAB_PARAGRAPH_OF = { RP1: 'RC1', RP2: 'RC2', RP3: 'RC3', RP4: 'RC4', RP5: 'RC5', RP6: 'RC6' };
+// a lesson that counts as passed once its harder lesson is (the Lab's PASSED_WITH): a one-paragraph lesson → its full
+// lesson (RP1 → RC1 …), a Level 2 lesson → its Level 3 lesson (RM1 → RD1 …)
+const LAB_PASSED_WITH = { RP1: 'RC1', RP2: 'RC2', RP3: 'RC3', RP4: 'RC4', RP5: 'RC5', RP6: 'RC6', RM1: 'RD1', RM2: 'RD2', RM3: 'RD3', RM4: 'RD4' };
 // a square's label: the lesson's number; ¶ marks a one-paragraph lesson (¶1 comes before 1)
 const labSquareLabel = lid => (/^RP/.test(lid) ? '¶' : '') + lid.slice(2);
 // Marcos 10/23: "it should be linkable to read an explanation of each lesson" — Behind the LAB opens #lesson-AS3 / #strand-pv
@@ -2034,7 +2041,7 @@ const BTL_URL = 'https://mroteacher.com/behind-the-lab/';
 const labLessonName = id => (GAME_LABELS['lab-' + id.toLowerCase()] || id).replace(/^🧪 Lab \S+ — /, '');
 const labLessonLink = (id, inner) => `<a class="lab-link" href="${BTL_URL}#lesson-${escHtml(id)}" target="behind-the-lab" rel="noopener">${inner}</a>`;
 // facts lessons pass at 90%; place value, rounding, Big Numbers and reading at 75% (the Lab's own rule, Marcos 10/20)
-const labPassMark = id => (/^(PV|RO|RC|RD|RP|BP|BR)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
+const labPassMark = id => (/^(PV|RO|RC|RD|RP|RM|BP|BR)/.test(id) ? LAB_PASS_OTHER : LAB_PASS);
 const labPlanOf = name => {
   const st = (dashData['lab-seed'] || []).find(s => s.name === name);
   const form = st && st.sessions && st.sessions.length ? st.sessions[st.sessions.length - 1].form : '';
@@ -2044,12 +2051,13 @@ const labPlanOf = name => {
 // "after" waits for that strand only when it is on the plan too; math and reading take turns; with nothing done yet, the
 // plan row's first strand goes first. labRouteOrder = the lessons in the order the Lab gives them if each is passed on its
 // turn (Behind the LAB's route.js gives the same order — dashboard-lab-page.spec.js compares them).
-const LAB_AFTER = { mu: 'as', pv: 'as', ro: 'as', bp: 'pv', br: 'ro', rd: 'rc' };   // the-lab STRANDS "after"
-const labIsReading = sid => sid === 'rc' || sid === 'rd';
+const LAB_AFTER = { mu: 'as', pv: 'as', ro: 'as', bp: 'pv', br: 'ro', rm: 'rc', rd: ['rc', 'rm'] };   // the-lab STRANDS "after" (one id or a list)
+const labAfterOf = sid => [].concat(LAB_AFTER[sid] || []);
+const labIsReading = sid => sid === 'rc' || sid === 'rm' || sid === 'rd';
 function labRouteOrder(plan) {
   const passed = new Set(), order = [];
   const strandDone = sid => labStrandLessons(sid).every(x => passed.has(x));
-  const open = sid => (LAB_AFTER[sid] && plan.includes(LAB_AFTER[sid]) && !strandDone(LAB_AFTER[sid])) ? null : (labStrandLessons(sid).find(x => !passed.has(x)) || null);
+  const open = sid => labAfterOf(sid).some(a => plan.includes(a) && !strandDone(a)) ? null : (labStrandLessons(sid).find(x => !passed.has(x)) || null);
   const firstOpen = list => list.map(open).find(Boolean) || null;
   const math = plan.filter(sid => !labIsReading(sid)), read = plan.filter(labIsReading);
   let last = null;
@@ -2111,7 +2119,7 @@ function labStudent(name) {
   tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const done = tries.filter(t => t.status === 'complete');
   const passedOwn = id => done.some(t => t.lesson === id && Number(t.percent) >= labPassMark(id));
-  const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => passedOwn(id) || (LAB_PARAGRAPH_OF[id] && passedOwn(LAB_PARAGRAPH_OF[id])));
+  const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => passedOwn(id) || (LAB_PASSED_WITH[id] && passedOwn(LAB_PASSED_WITH[id])));
   // 🚩 stuck: LAB_STUCK_TRIES or more finished tries on a lesson, none at its mark (a tested-out try is a pass)
   const tried = {};
   LAB_LESSONS.map(x => x.toUpperCase()).forEach(id => {
@@ -2148,7 +2156,7 @@ function labStrandLine(r, id) {
   const nowId = r.now && r.now.lesson;
   const squares = ids.map(lid => {
     const t = r.tried[lid], best = t && t.best ? `best ${Number(t.best.score) || 0} of ${Number(t.best.total) || 0}` : '';
-    const st = r.passed.includes(lid) ? ['ok', '✓', !t && LAB_PARAGRAPH_OF[lid] ? `counts as passed: ${LAB_PARAGRAPH_OF[lid]} (the full lesson) is passed`
+    const st = r.passed.includes(lid) ? ['ok', '✓', !t && LAB_PASSED_WITH[lid] ? `counts as passed: ${LAB_PASSED_WITH[lid]} (the harder lesson) is passed`
         : `passed${/Tested out/.test(((t && t.best) || {}).form) ? ' (tested out)' : ''} · ${best}`]
       : r.stuck.some(x => x.id === lid) ? ['stuck', '!', `🚩 stuck · ${t.tries} tries · ${best}`]
       : lid === nowId ? ['now', labSquareLabel(lid), 'in the middle of it']
