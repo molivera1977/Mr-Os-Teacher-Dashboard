@@ -418,6 +418,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
 .fact-assign-list .fact-missed{min-width:90px;}
 .fact-assign-list .fa-miss,.fact-assign-list .fa-how span{white-space:nowrap;}   /* a missed fact, "🔘 Multiple Choice" never split across lines */
 .fact-assign-list .fa-how{font-size:.75rem;font-weight:700;color:var(--muted);margin-top:3px;line-height:1.35;}
+.fact-assign-list .fa-facts{font-size:.75rem;color:var(--muted);margin-top:2px;line-height:1.35;}   /* 🔁 Second Chance: their facts */
 .fact-assign-list tr.fa-next-student td{border-top:3px solid var(--border);}
 .fact-assign-pill{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:800;white-space:nowrap;border:1px solid;}
 .fact-assign-pill.done{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
@@ -658,12 +659,12 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
            sign-in: a student with an open assignment sees only it until they get the goal right. -->
       <div class="fact-assign" id="factAssign">
         <div class="section-title">📌 Assign Fact Practice
-          <span class="fact-assign-sub">When they sign in to a fact site, they see only their list, one assignment at a time, until they finish it.</span>
+          <span class="fact-assign-sub">When they sign in to Math Fact Review, they see only their list, one assignment at a time, until they finish it.</span>
         </div>
         <div class="fact-assign-form">
-          <label>Site<select id="factAssignSite" onchange="renderFactAssignForm()"></select></label>
+          <label>Facts<select id="factAssignSite" onchange="renderFactAssignForm(); followFactAssignSet()"></select></label>
           <label>Operation<select id="factAssignOp"></select></label>
-          <label>Set<select id="factAssignSet"></select></label>
+          <label>Set<select id="factAssignSet" onchange="followFactAssignSet()"></select></label>
           <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric" oninput="followFactAssignGoal()"></label>
           <label>Stop after … tries<input id="factAssignLimit" type="number" min="1" max="500" step="1" value="40" inputmode="numeric" oninput="factAssignLimitTouched = true"></label>
           <label>Add to<select id="factAssignWhere">
@@ -826,7 +827,7 @@ const LAST_YEAR_GAMES = [
 // Game keys that have been retired — hide them even if sheet data still exists
 const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'talent_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliabw_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
-  'facts-review', 'facts-tens', 'facts-addsub',
+  'facts-review', 'facts-tens', 'facts-addsub', 'facts-second',
   // 📌 assignments for the fact sites — shown in the Assign box on that tab
   'facts-assign']);
 // Whole groups of sheet tabs to hide by how their key starts (filled in further down, e.g. a vocab
@@ -2388,6 +2389,7 @@ const FACT_OPS = {
   Div:  { sym: '÷', word: 'division',       label: '÷ Division' },
   Add:  { sym: '+', word: 'addition',       label: '+ Addition' },
   Sub:  { sym: '−', word: 'subtraction',    label: '− Subtraction' },
+  Mix:  { sym: '🔁', word: 'mixed',          label: '🔁 Their own facts' },   // 🔁 Second Chance
 };
 const FACT_SETS = ['2','3','4','5','6','7','8','9','10','11','12','Mixed 2-4','Mixed 5-7','Mixed 8-10','Mixed 11-12','All 2-12'];
 // The Add & Subtract site starts its sets at 1 (1s, Mixed 1-4, All 1-12).
@@ -2423,10 +2425,61 @@ function getFactSessions(game) {
         elapsed: s.elapsed,
         done:    s.status === 'complete',
         missed:  String(s.wrongQuestions || '').split(' | ').filter(Boolean),
+        tally:   factTally(s.events),   // { '7 × 8': [right, wrong] } — rows from 10/27 on; null before
       });
     });
   });
   return out.sort((a, b) => (a.started || 0) - (b.started || 0));
+}
+
+// The events column of a fact row: every fact answered, right and wrong (Marcos 10/27: "yes, track the right ones too")
+function factTally(events) {
+  try {
+    const e = JSON.parse(events || 'null');
+    return e && e.facts && typeof e.facts === 'object' ? e.facts : null;
+  } catch (err) { return null; }
+}
+
+// ═══════════════════════════════════════════════════
+//  🔁 SECOND CHANCE (Marcos 10/27: "a second chance assignment that would practice only the top 5, 8, or 10 most
+//  incorrect questions a particular student gets" · "mix kinds, the last two weeks, get what they have" · "5, 8, 10").
+//  Each picked student gets their own facts, any kind mixed, in their own facts-assign row:
+//    form 'facts-second · Mix · 7 × 8, 63 ÷ 9, 15 − 7 · Get 15 right · Type It · Stop after 30 tries'
+//  Their practice rows go to the facts-second tab ('Mix · 5 facts · Assigned').
+// ═══════════════════════════════════════════════════
+const FACT_SECOND       = 'facts-second';
+const FACT_SECOND_LABEL = '🔁 Second Chance';
+const FACT_SECOND_SETS  = ['Top 5', 'Top 8', 'Top 10'];
+const FACT_SECOND_DAYS  = 14;   // "the last two weeks"
+const FACT_SECOND_DROP  = 3;    // right this many times in practice after its last miss → off the list
+const FACT_SECOND_PER_FACT = 3; // the goal starts at 3 right per fact (Top 5 → Get 15 right)
+
+/* A student's most-missed facts in the last two weeks, any kind. A miss counts every wrong answer when the row has a
+   tally (10/27 on), or once per practice where the fact was missed (older rows). A fact answered right
+   FACT_SECOND_DROP times in later practice, after its last miss, is left off. Most misses first; ties: the latest miss. */
+function factSecondChanceFacts(name, count, now = Date.now()) {
+  const since = now - FACT_SECOND_DAYS * 864e5;
+  const factOf = text => (/(\d+) ([+−×÷]) (\d+)/.exec(String(text)) || [])[0];   // '7 × 8 (54)' → '7 × 8'
+  const facts = {};
+  [...Object.keys(FACT_SITES), FACT_SECOND].flatMap(g => getFactSessions(g))
+    .filter(s => s.name === name && s.started && s.started.getTime() >= since && s.started.getTime() <= now)
+    .sort((a, b) => a.started - b.started)
+    .forEach(s => {
+      const wrong = {};
+      if (s.tally) Object.entries(s.tally).forEach(([f, [, w]]) => { if (w > 0 && factOf(f) === f) wrong[f] = Number(w); });
+      else s.missed.forEach(m => { const f = factOf(m); if (f) wrong[f] = 1; });
+      Object.entries(wrong).forEach(([f, w]) => {
+        facts[f] = { misses: ((facts[f] || {}).misses || 0) + w, rightSince: 0, last: s.started.getTime() };
+      });
+      if (s.tally) Object.entries(s.tally).forEach(([f, [r]]) => {
+        if (!wrong[f] && facts[f]) facts[f] = { ...facts[f], rightSince: facts[f].rightSince + Number(r || 0) };
+      });
+    });
+  return Object.entries(facts)
+    .filter(([, x]) => x.rightSince < FACT_SECOND_DROP)
+    .sort((a, b) => b[1].misses - a[1].misses || b[1].last - a[1].last)
+    .slice(0, count)
+    .map(([f]) => f);
 }
 
 function factCellColor(pct) {
@@ -2801,7 +2854,7 @@ function parseFactAssign(r) {
   const [site, op, set, goalText, how, stopText] = String(r.form || '').split('·').map(p => p.trim());
   const goal  = Number((/^Get (\d+) right$/.exec(goalText || '') || [])[1]) || 0;
   const limit = Number((/^Stop after (\d+) tries$/.exec(stopText || '') || [])[1]) || 0;   // 0 = no limit
-  if (!FACT_SITES[site] || !FACT_OPS[op] || !set || !goal || !FACT_ASSIGN_HOW[how] || (stopText && !limit)) return null;
+  if (!(FACT_SITES[site] || site === FACT_SECOND) || !FACT_OPS[op] || !set || !goal || !FACT_ASSIGN_HOW[how] || (stopText && !limit)) return null;
   const key   = Number(r.score) || 0;
   const right = Number(r.correct) === key ? 0 : Number(r.correct) || 0;
   const answered = Math.max(right, Number(r.total) || 0);
@@ -2809,6 +2862,7 @@ function parseFactAssign(r) {
   return {
     name, rowName, key, order: place ? Number(place[2]) : key,
     id: String(r.sessionId || ''), site, op, set, goal, limit, how, right, answered, stopped,
+    facts:    site === FACT_SECOND ? set.split(',').map(f => f.trim()).filter(Boolean) : null,   // 🔁 their own facts
     done:     r.done === true || r.done === 'true' || right >= goal || stopped,
     missed:   String(r.wrongQuestions || '').split(' | ').filter(Boolean),
     elapsed:  Number(r.elapsedSeconds) || 0,
@@ -2827,12 +2881,15 @@ function factAssignLists() {
 }
 const factAssignItemsOf   = name => (factAssignLists().find(s => s.name === name) || { items: [] }).items;
 const factAssignOpenCount = name => factAssignItemsOf(name).filter(a => !a.done).length;
-const factAssignText = a => `${FACT_SITES[a.site]} · ${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}` +
+// 🔁 a Second Chance row says how many facts ("🔁 5 facts"); the others say the set ("× 6s")
+const factAssignWhat = a => a.facts ? `🔁 ${a.facts.length} fact${a.facts.length === 1 ? '' : 's'}` : `${FACT_OPS[a.op].sym} ${a.set}`;
+const factAssignText = a => `${FACT_SITES[a.site] || FACT_SECOND_LABEL} · ${factAssignWhat(a)}${a.facts ? ` (${a.facts.join(', ')})` : ''} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}` +
   (a.limit ? ` · Stop after ${a.limit} tries` : '');
 // The same, for the Assign list: "− Mixed 1-4 · Get 25 right" on top, "➕ Add & Subtract · 🔘 Multiple Choice" under it
 // (the try limit is in Progress: "12 of 50 tries")
-const factAssignCell = a => `<div class="fa-what">${escHtml(`${FACT_OPS[a.op].sym} ${a.set} · Get ${a.goal} right`)}</div>` +
-  `<div class="fa-how"><span>${escHtml(FACT_SITES[a.site])}</span> · <span>${escHtml(FACT_ASSIGN_HOW[a.how])}</span></div>`;
+const factAssignCell = a => `<div class="fa-what">${escHtml(`${factAssignWhat(a)} · Get ${a.goal} right`)}</div>` +
+  `<div class="fa-how"><span>${escHtml(FACT_SITES[a.site] || FACT_SECOND_LABEL)}</span> · <span>${escHtml(FACT_ASSIGN_HOW[a.how])}</span></div>` +
+  (a.facts ? `<div class="fa-facts">${a.facts.map(escHtml).join(' · ')}</div>` : '');
 
 // "Stop after … tries" starts at 2x the goal and follows it, until Mr. O types his own number
 function followFactAssignGoal() {
@@ -2889,7 +2946,8 @@ function renderFactAssign() {
 function renderFactAssignForm() {
   const siteSel = document.getElementById('factAssignSite');
   if (!siteSel.options.length) {
-    siteSel.innerHTML = Object.entries(FACT_SITES).map(([k, label]) => `<option value="${k}">${escHtml(label)}</option>`).join('');
+    siteSel.innerHTML = Object.entries(FACT_SITES).map(([k, label]) => `<option value="${k}">${escHtml(label)}</option>`).join('') +
+      `<option value="${FACT_SECOND}">${FACT_SECOND_LABEL} — their most-missed</option>`;
   }
   const site = siteSel.value;
   const fill = (id, values, label) => {
@@ -2897,8 +2955,22 @@ function renderFactAssignForm() {
     sel.innerHTML = values.map(v => `<option value="${escHtml(v)}">${escHtml(label(v))}</option>`).join('');
     if (values.includes(keep)) sel.value = keep;
   };
+  if (site === FACT_SECOND) {   // 🔁 each student's own facts: Top 5 / 8 / 10 of the last two weeks, any kind
+    fill('factAssignOp', ['Mix'], op => FACT_OPS[op].label);
+    fill('factAssignSet', FACT_SECOND_SETS, set => `${set} (last 2 weeks)`);
+    return;
+  }
   fill('factAssignOp', FACT_SITE_OPS[site], op => FACT_OPS[op].label);
   fill('factAssignSet', factSetsFor(site).map(factAssignSetLabel), set => set);
+}
+
+// 🔁 Second Chance: "Get … right" starts at 3 per fact (Top 5 → 15), and the try limit follows it as always
+function followFactAssignSet() {
+  if (document.getElementById('factAssignSite').value !== FACT_SECOND) return;
+  const n = Number((/^Top (\d+)$/.exec(document.getElementById('factAssignSet').value) || [])[1]);
+  if (!n) return;
+  document.getElementById('factAssignGoal').value = String(n * FACT_SECOND_PER_FACT);
+  followFactAssignGoal();
 }
 
 function renderFactAssignStudents() {
@@ -2975,11 +3047,25 @@ async function sendFactAssignment() {
   const where = document.getElementById('factAssignWhere').value;   // end | front | replace
   const goal  = Number(document.getElementById('factAssignGoal').value);
   const limit = Number(document.getElementById('factAssignLimit').value);
-  const names = STUDENT_ROSTER.filter(n => factAssignPicked.has(n));
-  if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
+  const picked = STUDENT_ROSTER.filter(n => factAssignPicked.has(n));
+  if (!picked.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
   if (!Number.isInteger(goal) || goal < 1 || goal > 100) { status.textContent = '⚠️ "Get … right" must be a whole number from 1 to 100.'; return; }
   if (!Number.isInteger(limit) || limit < goal || limit > 500) { status.textContent = `⚠️ "Stop after … tries" must be a whole number from ${goal} (the goal) to 500.`; return; }
-  const text = factAssignText({ site, op, set, goal, how, limit });
+  // 🔁 Second Chance: each student's own facts; fewer than the Top N → what they have; none → skipped
+  const second  = site === FACT_SECOND;
+  const top     = second ? Number(set.replace('Top ', '')) : 0;
+  const ownList = second ? Object.fromEntries(picked.map(n => [n, factSecondChanceFacts(n, top)])) : {};
+  const skipped = second ? picked.filter(n => !ownList[n].length) : [];
+  const names   = picked.filter(n => !skipped.includes(n));
+  if (!names.length) {
+    status.textContent = `⚠️ No one picked missed a fact in the last 2 weeks — nothing to assign: ${skipped.join('; ')}.`;
+    return;
+  }
+  const text = second
+    ? `${FACT_SECOND_LABEL} · their own ${set} most-missed facts (last 2 weeks, any kind) · Get ${goal} right · ${FACT_ASSIGN_HOW[how]} · Stop after ${limit} tries\n\n` +
+      names.map(n => `${n}: ${ownList[n].join(', ')}${ownList[n].length < top ? ` (only ${ownList[n].length})` : ''}`).join('\n') +
+      (skipped.length ? `\n\nSkipped — no misses in the last 2 weeks: ${skipped.join('; ')}` : '')
+    : factAssignText({ site, op, set, goal, how, limit });
   const who  = `${names.length} student${names.length > 1 ? 's' : ''}`;
   const replacing = where === 'replace' ? names.filter(n => factAssignOpenCount(n) > 0) : [];
   const ask = (where === 'front' ? `Add this to the FRONT of the list for ${who}? It comes before anything they have now.`
@@ -2992,8 +3078,8 @@ async function sendFactAssignment() {
   btn.disabled = true;
   status.textContent = '⏳ Sending…';
   const at    = Date.now();
-  const form  = `${site} · ${op} · ${set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
-  const sent  = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `FA-${at}-${i + 1}`, form, score: at, done: false }));
+  const formOf = name => `${site} · ${op} · ${second ? ownList[name].join(', ') : set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
+  const sent  = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `FA-${at}-${i + 1}`, form: formOf(name), score: at, done: false }));
   const clear = replacing.flatMap((name, i) => factAssignItemsOf(name).filter(a => !a.done).map((a, k) => factAssignNoneRow(a, at, `${i + 1}-${k + 1}`)));
   await postFactAssignRows([...clear, ...sent]);
   status.textContent = '⏳ Checking that it saved…';
@@ -3002,10 +3088,12 @@ async function sendFactAssignment() {
   const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
   const unclear = clear.length - factAssignLanded(rows, clear).length;
   saved.forEach(s => factAssignPicked.delete(s.student));   // anyone not saved stays picked, ready to send again
+  skipped.forEach(n => factAssignPicked.delete(n));          // 🔁 nothing to send them
   status.textContent = rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
     : missing.length ? `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`
     : unclear ? `⚠️ Assigned, but ${unclear} old assignment${unclear > 1 ? 's were' : ' was'} not taken away. Use ✕ Remove on ${unclear > 1 ? 'them' : 'it'}.`
-    : `✓ Assigned to ${who}${where === 'front' ? ' (front of the list)' : where === 'replace' ? ' (list replaced)' : ''}.`;
+    : `✓ Assigned to ${who}${where === 'front' ? ' (front of the list)' : where === 'replace' ? ' (list replaced)' : ''}.` +
+      (skipped.length ? ` Skipped (no misses in the last 2 weeks): ${skipped.join('; ')}.` : '');
   renderFactAssignStudents();
   btn.disabled = false;
 }
@@ -3103,7 +3191,7 @@ function renderFactStudent() {
   panel.style.display = 'block';
   document.getElementById('factDetailName').textContent = factStudent;
 
-  const sessions = Object.keys(FACT_SITES)
+  const sessions = [...Object.keys(FACT_SITES), FACT_SECOND]
     .flatMap(g => getFactSessions(g))
     .filter(s => s.name === factStudent)
     .sort((a, b) => (b.started || 0) - (a.started || 0));
@@ -3114,16 +3202,19 @@ function renderFactStudent() {
     missCount[fact] = (missCount[fact] || 0) + 1;
   }));
   const topMissed = Object.entries(missCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
-  document.getElementById('factDetailMissed').innerHTML = topMissed.length
+  const secondNow = factSecondChanceFacts(factStudent, 10);
+  document.getElementById('factDetailMissed').innerHTML = (topMissed.length
     ? `<div class="fact-miss-title">Facts to work on (times missed):</div>` +
       topMissed.map(([f, n]) => `<span class="fact-chip">${escHtml(f)}${n > 1 ? ` <b>×${n}</b>` : ''}</span>`).join('')
-    : '';
+    : '') + (secondNow.length
+    ? `<div class="fact-miss-title" style="margin-top:10px;">${FACT_SECOND_LABEL} now (last 2 weeks, top 10):</div><div class="fact-second-now">${secondNow.map(escHtml).join(' · ')}</div>`
+    : '');
 
   document.getElementById('factDetailBody').innerHTML = sessions.length ? sessions.map(s => {
     const mins = s.elapsed != null ? `${Math.floor(s.elapsed / 60)}:${String(s.elapsed % 60).padStart(2, '0')}` : '—';
     return `<tr>
       <td class="fact-nowrap">${fmtWhen(s.started)}</td>
-      <td class="fact-nowrap">${FACT_SITES[s.game]}</td>
+      <td class="fact-nowrap">${FACT_SITES[s.game] || FACT_SECOND_LABEL}</td>
       <td class="fact-nowrap">${FACT_OPS[s.op]?.sym ?? '?'} ${escHtml(s.set)}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
       <td style="color:var(--green)">${s.correct}</td>
       <td style="color:var(--red)">${s.total - s.correct}</td>
