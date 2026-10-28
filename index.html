@@ -2159,7 +2159,12 @@ function labStudent(name) {
   });
   tries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   const done = tries.filter(t => t.status === 'complete');
-  const passedOwn = id => done.some(t => t.lesson === id && Number(t.percent) >= labPassMark(id));
+  // a skip (Tested out) of a one-paragraph or Level 2 lesson stops counting once its harder lesson is tried and not
+  // passed: the Lab teaches it after all (the Lab's skipDoesNotCount, Marcos 10/27 "undo those skips")
+  const atMark = (id, t) => Number(t.percent) >= labPassMark(id);
+  const failedHarder = id => { const h = LAB_PASSED_WITH[id]; return !!h && done.some(t => t.lesson === h) && !done.some(t => t.lesson === h && atMark(h, t)); };
+  const passedOwn = id => done.some(t => t.lesson === id && atMark(id, t) && !(/Tested out/.test(t.form) && failedHarder(id)));
+  const skipVoid = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => failedHarder(id) && !passedOwn(id) && done.some(t => t.lesson === id && /Tested out/.test(t.form)));
   const passed = LAB_LESSONS.map(x => x.toUpperCase()).filter(id => passedOwn(id) || (LAB_PASSED_WITH[id] && passedOwn(LAB_PASSED_WITH[id])));
   // 🚩 stuck: LAB_STUCK_TRIES or more finished tries on a lesson, none at its mark (a tested-out try is a pass)
   const tried = {};
@@ -2184,7 +2189,7 @@ function labStudent(name) {
   // the strands to draw: the plan's, stacked in the order the Lab gives them; then any other strand they have tried
   const stages = labStages(plan);
   const extra = LAB_STRANDS.map(s => s.id).filter(id => !plan.includes(id) && tries.some(t => labStrandOf(t.lesson) === id));
-  return { name, plan, onPlan: (dashData['lab-seed'] || []).some(s => s.name === name), stages, extra, tries, done, passed, tried, stuck, now,
+  return { name, plan, onPlan: (dashData['lab-seed'] || []).some(s => s.name === name), stages, extra, tries, done, passed, tried, stuck, now, skipVoid,
            repeats: ev.filter(e => e.e === 'repeat'), mineAsked: ev.filter(e => e.e === 'start').reduce((n, e) => n + (Number(e.mine) || 0), 0),
            topKinds, list: p ? (p.wrongQuestions || '') : null, latest: done[0] || null,
            // 📖 QPS: the same standing the QPS page shows (qpsRowFor): the stop they are on now, its passes, 🔔 stops to test
@@ -2199,6 +2204,7 @@ function labStrandLine(r, id) {
     const t = r.tried[lid], best = t && t.best ? `best ${Number(t.best.score) || 0} of ${Number(t.best.total) || 0}` : '';
     const st = r.passed.includes(lid) ? ['ok', '✓', !t && LAB_PASSED_WITH[lid] ? `counts as passed: ${LAB_PASSED_WITH[lid]} (the harder lesson) is passed`
         : `passed${/Tested out/.test(((t && t.best) || {}).form) ? ' (tested out)' : ''} · ${best}`]
+      : (r.skipVoid || []).includes(lid) ? ['try', labSquareLabel(lid), `skipped (tested out), but ${LAB_PASSED_WITH[lid]} was not passed: the Lab teaches it next`]
       : r.stuck.some(x => x.id === lid) ? ['stuck', '!', `🚩 stuck · ${t.tries} tries · ${best}`]
       : lid === nowId ? ['now', labSquareLabel(lid), 'in the middle of it']
       : t ? ['try', labSquareLabel(lid), `${t.tries} ${t.tries > 1 ? 'tries' : 'try'}, not passed yet · ${best} (needs ${labPassMark(lid)}%)`]
