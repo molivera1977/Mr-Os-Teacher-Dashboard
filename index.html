@@ -2747,9 +2747,7 @@ async function sendAtqAssignment() {
   status.textContent = '⏳ Sending…';
   const at = Date.now();
   const sent = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `AQ-${at}-${i + 1}`, form: lessonId, score: at, done: false }));
-  await postAtqAssignRows(sent);
-  status.textContent = '⏳ Checking that it saved…';
-  const rows = await loadAtqAssignments();
+  const rows = await sendUntilSaved(sent, postAtqAssignRows, loadAtqAssignments, atqLanded, status);
   const saved = atqLanded(rows, sent);
   const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
   saved.forEach(s => atqPicked.delete(s.student));
@@ -2768,8 +2766,7 @@ async function removeAtqAssignment(rowName) {
   status.textContent = '⏳ Sending…';
   const at = Date.now();
   const row = { name: a.rowName, sessionId: `AX-${at}-0`, form: 'None', score: at, done: true };
-  await postAtqAssignRows([row]);
-  const rows = await loadAtqAssignments();
+  const rows = await sendUntilSaved([row], postAtqAssignRows, loadAtqAssignments, atqLanded, status);
   status.textContent = atqLanded(rows, [row]).length ? `✓ Taken away from ${a.name}.` : '⚠️ That did not save. Press ↻ Refresh, then try again.';
 }
 
@@ -2936,6 +2933,27 @@ const factAssignNoneRow = (a, at, n) => ({ name: a.rowName, sessionId: `FX-${at}
 // …and is saved once the tab's row for that name is it
 const factAssignLanded = (rows, sent) => sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
 
+// 10/31 (Marcos: "a few kids get left off and i have to reassign for those few"): about 1 send in 10 never
+// reached the sheet — 34 of 339 on the facts-assign tab, 10/19–10/30, at night too. So: send, read the tab
+// back, and send the ones that did not land again, up to 3 more times, before saying anything. Still 5 at a
+// time ("the one at a time sounds really slow"). A send again keeps its Session ID, so it can't make a second
+// assignment. Returns the last read (null = the tab could not be read).
+const ASSIGN_RESENDS = 3;
+async function sendUntilSaved(rows, post, load, landed, status) {
+  await post(rows);
+  status.textContent = '⏳ Checking that it saved…';
+  let read = await load();
+  for (let n = 1; n <= ASSIGN_RESENDS && read !== null; n++) {
+    const missing = rows.filter(r => !landed(read, [r]).length);
+    if (!missing.length) break;
+    status.textContent = `⏳ ${missing.length} did not save — sending ${missing.length > 1 ? 'them' : 'it'} again…`;
+    await new Promise(done => setTimeout(done, 1500 * n));
+    await post(missing);
+    read = await load();
+  }
+  return read;
+}
+
 function renderFactAssign() {
   renderFactAssignForm();
   renderFactAssignStudents();
@@ -3081,9 +3099,7 @@ async function sendFactAssignment() {
   const formOf = name => `${site} · ${op} · ${second ? ownList[name].join(', ') : set} · Get ${goal} right · ${how} · Stop after ${limit} tries`;
   const sent  = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `FA-${at}-${i + 1}`, form: formOf(name), score: at, done: false }));
   const clear = replacing.flatMap((name, i) => factAssignItemsOf(name).filter(a => !a.done).map((a, k) => factAssignNoneRow(a, at, `${i + 1}-${k + 1}`)));
-  await postFactAssignRows([...clear, ...sent]);
-  status.textContent = '⏳ Checking that it saved…';
-  const rows    = await loadFactAssignments();
+  const rows    = await sendUntilSaved([...clear, ...sent], postFactAssignRows, loadFactAssignments, factAssignLanded, status);
   const saved   = factAssignLanded(rows, sent);
   const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
   const unclear = clear.length - factAssignLanded(rows, clear).length;
@@ -3107,8 +3123,7 @@ async function removeFactAssignment(rowName) {
   const status = document.getElementById('factAssignStatus');
   status.textContent = '⏳ Sending…';
   const row = factAssignNoneRow(a, Date.now(), 0);
-  await postFactAssignRows([row]);
-  const rows = await loadFactAssignments();
+  const rows = await sendUntilSaved([row], postFactAssignRows, loadFactAssignments, factAssignLanded, status);
   status.textContent = factAssignLanded(rows, [row]).length
     ? (a.done ? `✓ Cleared from ${a.name}'s list.` : `✓ Taken away from ${a.name}.`)
     : '⚠️ That did not save. Press ↻ Refresh, then try again.';
@@ -3123,8 +3138,7 @@ async function clearFactAssignList(name) {
   status.textContent = '⏳ Sending…';
   const at   = Date.now();
   const sent = items.map((a, k) => factAssignNoneRow(a, at, k + 1));
-  await postFactAssignRows(sent);
-  const rows = await loadFactAssignments();
+  const rows = await sendUntilSaved(sent, postFactAssignRows, loadFactAssignments, factAssignLanded, status);
   status.textContent = factAssignLanded(rows, sent).length === sent.length
     ? `✓ Cleared ${name}'s list.` : '⚠️ Not all of it saved. Press ↻ Refresh, then try again.';
 }
