@@ -796,6 +796,8 @@ const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 // Add new game keys to the FRONT of this array when you deploy a new activity.
 // Any game key not listed here will appear after the listed ones.
 const GAME_ORDER = [
+  'ds-test-vocab', 'ds-test-comp', 'ds-test-cloze',
+  'ds-review-vocab', 'ds-review-comp', 'ds-review-cloze',
   'talent-test-vocab', 'talent-test-comp', 'talent-test-cloze',
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
@@ -825,7 +827,7 @@ const LAST_YEAR_GAMES = [
 ];
 
 // Game keys that have been retired — hide them even if sheet data still exists
-const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'talent_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliabw_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
+const HIDDEN_GAMES = new Set(['startstop_written', 'awoc_test_written', 'talent_test_written', 'ds_test_written', 'mod16review', 'mod16_a', 'mod16_b', 'mod16_c', 'djt_comp_written', 'wwrt_comp_written', 'mod16-test-written', 'rad_quiz1_written', 'rliabw_written', 'rliaba_written', 'rliabb_written', 'rliabc_written', 'mod1a_test_written', 'mod1b_test_written', 'mod1c_test_written', ...LAST_YEAR_GAMES,
   // Fact practice is open-ended (no max score) — it has its own 🧮 Fact Fluency tab instead
   'facts-review', 'facts-tens', 'facts-addsub', 'facts-second',
   // 📌 assignments for the fact sites — shown in the Assign box on that tab
@@ -843,6 +845,7 @@ const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
 // Science 1.1 (startstop-lesson) is NOT here on purpose: the 3-day lesson has no written
 // question — it still posts a blank row to startstop_written on finish, which stays hidden.
 const WRITTEN_GAME_MAP = {
+  'ds-test-comp': 'ds_test_written',
   'talent-test-comp': 'talent_test_written',
   'awoc-test-comp': 'awoc_test_written',
   'mod1a-test':    'mod1a_test_written',
@@ -860,6 +863,7 @@ const WRITTEN_GAME_MAP = {
 
 // Labels shown above each written answer (W1, W2, W3) in the student detail view.
 const WRITTEN_PROMPT_LABELS = {
+  'ds-test-comp': ["21. How did Blake Mycoskie’s trip to Argentina lead to TOMS? Use details from page 59. (R.A.D. fill-in: boxes + the whole answer retyped)","22. The Essential Question asks, “How can starting a business help others?” How does Hard Rock Cafe help others? Use details from pages 60 and 61. (R.A.D. fill-in: boxes + the whole answer retyped)"],
   'talent-test-comp': ["21. How does Maura change from the beginning of the story to the end? Use details from pages 35 and 37. (R.A.D. fill-in: boxes + the whole answer retyped)","22. The Essential Question asks, “How do your actions affect others?” How did Tina’s actions affect Maura? Use details from page 36. (R.A.D. fill-in: boxes + the whole answer retyped)"],
   'awoc-test-comp': ['21. The text says, “Whether they are slow or fast, both kinds of changes have a great effect on our planet.” Explain how slow changes and fast changes each affect the surface of Earth. Use details from the text to support your answer.', '22. What do the letters R.A.D. stand for? Explain what you do for each letter when you write an answer.'],
   'mod1a-test': ["Jayden rounded 364,872 to the nearest thousand. He wrote 364,000. Jayden says: \"I just changed all the digits after the thousands place to zeros.\" Is Jayden correct? Explain his mistake and tell the correct answer.", "Which number is greater: 48,307 or 48,370? Explain how you know. Use place value words like thousands, hundreds, tens, and ones."],
@@ -960,6 +964,12 @@ const GAME_LABELS = {
   'lab-rd4': '🧪 Lab RD4 — Choose Two: Level 3',
   'lab-progress': '🧪 Lab — progress backup',
   'lab-seed': '🧪 Lab — fact-site misses (seed)',
+  'ds-test-vocab': 'Dollars and Sense — Test — Vocabulary',
+  'ds-test-comp':  'Dollars and Sense — Test — Comprehension',
+  'ds-test-cloze': 'Dollars and Sense — Test — Cloze',
+  'ds-review-vocab': 'Dollars and Sense — Review — Vocabulary',
+  'ds-review-comp':  'Dollars and Sense — Review — Comprehension',
+  'ds-review-cloze': 'Dollars and Sense — Review — Cloze',
   'talent-test-vocab': 'The Talent Show — Test — Vocabulary',
   'talent-test-comp':  'The Talent Show — Test — Comprehension',
   'talent-test-cloze': 'The Talent Show — Test — Cloze',
@@ -1044,6 +1054,13 @@ const MAX_SCORES = {
   'qps-9c': 10,
   'qps-10': 10,
   'qps-c-context': 10,
+  // Dollars and Sense Review + Test: one question = one point; the test's 2 written answers are graded by hand
+  'ds-test-vocab': 24,
+  'ds-test-comp':  20,
+  'ds-test-cloze': 24,
+  'ds-review-vocab': 24,
+  'ds-review-comp':  20,
+  'ds-review-cloze': 24,
   // The Talent Show Review + Test: one question = one point; the test's 2 written answers are graded by hand
   'talent-test-vocab': 24,
   'talent-test-comp':  20,
@@ -1453,7 +1470,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'ds-test-vocab': 180, 'ds-test-comp': 300, 'ds-test-cloze': 180, 'ds-review-vocab': 180, 'ds-review-comp': 300, 'ds-review-cloze': 180, 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -3472,6 +3489,8 @@ function buildDotGrid(games, { label, open, profiles }) {
 const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practice': 'rounding', 'rounding-review': 'rounding', 'rounding-quiz': 'rounding',
   'rounding2-practice-a': 'rounding2', 'rounding2-practice': 'rounding2', 'rounding2-review': 'rounding2', 'rounding2-quiz': 'rounding2',
   // Review and Test of one story = ONE section, its six parts (Marcos 10/21: "the Review and Test should be under one section")
+  'ds-review-vocab': 'ds', 'ds-review-comp': 'ds', 'ds-review-cloze': 'ds',
+  'ds-test-vocab': 'ds', 'ds-test-comp': 'ds', 'ds-test-cloze': 'ds',
   'talent-review-vocab': 'talent', 'talent-review-comp': 'talent', 'talent-review-cloze': 'talent',
   'talent-test-vocab': 'talent', 'talent-test-comp': 'talent', 'talent-test-cloze': 'talent',
   'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
@@ -3488,11 +3507,12 @@ const FORM_FAMILY_LABELS = {
   'pvfiab-review': '🔢 SBAC Place Value',
   'rounding':      '🎯 Rounding Review and Quiz - Mechanics Edition',
   'rounding2':     '🎯 Rounding Review and Quiz - Numberline Edition',
+  'ds':            'Dollars and Sense Review and Test',
   'talent':        'The Talent Show Review and Test',
   'awoc':          'A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
+const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -3507,8 +3527,8 @@ function familyOf(game) {
 function formLetterOf(game) {
   if (/^pos-/.test(game) && typeof POSHQ_ORDER !== 'undefined' && POSHQ_ORDER[game]) return POSHQ_ORDER[game];   // Parts of Speech HQ: part, then stage
   if (/-warmup$/.test(game)) return '0';   // Warm-Up comes first in its section (Marcos 10/21)
-  if (/^(talent|awoc)-review-/.test(game)) return 'R';   // one story's section: Review parts first,
-  if (/^(talent|awoc)-test-/.test(game)) return 'T';     // then the Test's
+  if (/^(ds|talent|awoc)-review-/.test(game)) return 'R';   // one story's section: Review parts first,
+  if (/^(ds|talent|awoc)-test-/.test(game)) return 'T';     // then the Test's
   const mm1 = /^mod1([abc])-(review|test)$/.exec(game);   // MM1: Reviews A → C, then the Test and its Retakes
   if (mm1) return (mm1[2] === 'review' ? 'R' : 'T') + mm1[1].toUpperCase();
   if (/-practice-a$/.test(game)) return '0';  // Practice A, then Practice B, then Form A
@@ -4551,6 +4571,301 @@ const AWOC_COMP_STANDARDS  = { "Key details": "RI.4.1", "Drawing conclusions": "
 const AWOC_SKILL_BANK = {};
 Object.keys(AWOC_QUESTIONS).forEach(id => { AWOC_SKILL_BANK[id] = `(${AWOC_SKILLS_BY_ID[id]}) ${AWOC_QUESTIONS[id]}`; });
 
+// ── Dollars and Sense Review + Test (Wonders TIME for Kids, pages 58–61) — written new 11/3/2026 (never last year's).
+//    Same shape as The Talent Show: Review and Test cover the same words and article parts with DIFFERENT sentences
+//    and stems, at the same level (Marcos 11/3). The review has TWO sets (try 1 = Set 1, try 2 = Set 2, same ids,
+//    each vocabulary word asked the other kind in Set 2). Vocabulary = Used Right + Endings (Marcos 11/3), the
+//    test's all new. The review text below is Set 1's — a missed question's row
+//    in the sheet carries the wording that student saw. Made from the sites' own data/banks.js + data/skills.js.
+const DS_REVIEW_QUESTIONS = {
+  C01: "After watching the space show, Ana had a __________ to become an astronaut someday.",
+  C02: "At the end of the year, the shoe store looked at its __________ to see if it made or lost money.",
+  C03: "The __________ lunch helper gave a warm hug to the new student who missed her old school.",
+  C04: "The __________ that makes our school buses hired ten new workers this month.",
+  C05: "The vet will __________ how much my puppy weighs on a special scale.",
+  C06: "Before every game, the team follows the same __________: stretch, run two laps, then practice kicks.",
+  C07: "The __________ girl had a clever idea: she made a raincoat for her doll out of a plastic bag.",
+  C08: "Painting the whole school fence was a big __________ that took the class three weekends.",
+  C09: "We will __________ our costumes on our favorite book characters, with the same hats and capes.",
+  C10: "In our family, we __________ eat pancakes on the first day of school, like we have for years.",
+  C11: "The museum has an __________ new tour where a robot guide walks you from room to room.",
+  C12: "Our school __________ the playground by adding a climbing wall and three new swings.",
+  C13: "The librarian was __________ that every student returned their books on time.",
+  C14: "Selling fresh eggs from their chickens became the Lopez family’s new __________.",
+  C15: "The runners raised money for __________ to help families who lost their homes in a fire.",
+  C16: "The library’s __________, “Read every day,” is painted above the front desk.",
+  C17: "The animal shelter needs more __________ to buy food and blankets for the dogs.",
+  C18: "Making apple juice is a __________: wash the apples, cut them, then press out the juice.",
+  C19: "Our class will __________ a new school flag by drawing ideas and choosing the colors.",
+  C20: "Mark the __________ of the treasure on the map with a big red X.",
+  C21: "Our class had an __________ year, with the best reading scores in the whole school.",
+  C22: "A __________ gave money to our town so that every child could get free swimming lessons.",
+  C23: "Mia sold her painted rocks for two dollars each and made a __________ after buying the paint.",
+  C24: "Sunscreen is a __________ on a hot, sunny day at the beach.",
+  P01: "After starting and running four businesses, what did Blake Mycoskie want? (page 59)",
+  P02: "In 2006, where did Mycoskie travel? (page 59)",
+  P03: "Mycoskie visited poor villages. What did very few of the children there have? (page 59)",
+  P04: "What did Mycoskie name his new business? (page 59)",
+  P05: "What does TOMS give away for every pair of shoes that is purchased? (page 59)",
+  P06: "The company has expanded. What new thing does it sell? (page 60)",
+  P07: "What did the Hard Rock Cafe company launch in 1990? (page 60)",
+  P08: "Hard Rock Cafe has a motto. What is it? (page 60)",
+  P09: "Who designs the art that goes on the Hard Rock Cafe T-shirts? (page 60)",
+  P10: "Look at the graph on page 61. Which charity got the most donations in 2016? (page 61)",
+  P11: "Part A: What can the reader infer about why Mycoskie started TOMS? (page 59)",
+  P12: "Part B: Which sentence from page 59 best supports the answer to Part A?",
+  P13: "Part A: Why is Mycoskie pleased and surprised? (page 60)",
+  P14: "Part B: Which sentence from page 60 best supports the answer to Part A?",
+  P15: "Part A: What can the reader conclude about buying a Hard Rock Cafe T-shirt? (page 60)",
+  P16: "Part B: Which sentence from page 60 best supports the answer to Part A?",
+  P17: "Part A: What can the reader conclude from the graph on page 61? (page 61)",
+  P18: "Part B: Which sentence from page 61 best supports the answer to Part A?",
+  P19: "Part A: What does the author think about businesses that help others? (pages 59–61)",
+  P20: "Part B: Which sentence from page 61 best supports the answer to Part A?",
+  V01: "Which sentence uses desire the right way?",
+  V04: "Which sentence uses company the right way?",
+  V06: "Which sentence uses routine the right way?",
+  V08: "Which sentence uses undertaking the right way?",
+  V10: "Which sentence uses traditionally the right way?",
+  V12: "Which sentence uses expanded the right way?",
+  V13: "Which sentence uses pleased the right way?",
+  V16: "Which sentence uses motto the right way?",
+  V17: "Which sentence uses funds the right way?",
+  V20: "Which sentence uses location the right way?",
+  V22: "Which sentence uses foundation the right way?",
+  V24: "Which sentence uses necessity the right way?",
+  V26: "The car wash had a great bottom line this summer because __________ Which ending makes the most sense?",
+  V27: "Ana is compassionate , so when her friend was sad, she __________ Which ending makes the most sense?",
+  V29: "To measure how heavy her backpack was, Rosa __________ Which ending makes the most sense?",
+  V31: "Luis is so inventive that he __________ Which ending makes the most sense?",
+  V33: "Tess will model her clay pot on one she saw at the museum, so she will __________ Which ending makes the most sense?",
+  V35: "The innovative company found a new way to __________ Which ending makes the most sense?",
+  V38: "For her new enterprise , Zoe __________ Which ending makes the most sense?",
+  V39: "Tickets for our school play raised money for a charity that __________ Which ending makes the most sense?",
+  V42: "Making a clay pot is a long process , so you __________ Which ending makes the most sense?",
+  V43: "To design a new board game, Nico started by __________ Which ending makes the most sense?",
+  V45: "Her painting was exceptional , so __________ Which ending makes the most sense?",
+  V47: "Because the art club's sale had a profit , the club __________ Which ending makes the most sense?",
+};
+const DS_TEST_QUESTIONS = {
+  C01: "Ever since he saw the race cars, Jamal has had a strong __________ to learn how engines work.",
+  C02: "The farmers market checked its __________ at the end of the summer to see how much money it made.",
+  C03: "The __________ coach stayed after practice to help the player who was sad about losing.",
+  C04: "Grandpa worked for a __________ that made trains for forty years.",
+  C05: "Before planting, we will __________ how wide the garden is so we know how many seeds to buy.",
+  C06: "The zookeeper has the same daily __________: feed the lions, clean the pens, and check the water.",
+  C07: "The __________ students used cardboard and string to build a working elevator for their toys.",
+  C08: "Writing and printing a whole class newspaper was a big __________ for our team.",
+  C09: "The students will __________ their bridge on the famous Golden Gate Bridge, with tall towers and long cables.",
+  C10: "My grandmother __________ makes rice and beans on Sunday, just as her mother did.",
+  C11: "The __________ shoes light up and count your steps, which no shoes did before.",
+  C12: "The museum __________ its dinosaur room, so now it holds twice as many bones.",
+  C13: "The principal was __________ to see every class lined up quietly for the fire drill.",
+  C14: "Building birdhouses to sell at the fair was Carlos’s new __________.",
+  C15: "The bakery gives its extra bread to __________ so that hungry families can have it.",
+  C16: "Our classroom __________, “Try your best,” hangs above the door.",
+  C17: "The town is collecting __________ to fix the old playground.",
+  C18: "Making paper is a long __________: you soak old paper, mash it, and let it dry flat.",
+  C19: "An artist will __________ the new mural by drawing a plan of the whole wall first.",
+  C20: "Please write down the __________ of the party so we can find the right house.",
+  C21: "Ana is the most __________ artist in our school, and her drawings look almost like photographs.",
+  C22: "The __________ gives money every year to help children who are sick.",
+  C23: "The bike shop paid for its parts and workers and still had a __________ at the end of the month.",
+  C24: "A helmet is a __________ when you ride a bike, because it keeps your head safe.",
+  P01: "Blake Mycoskie had started and run four businesses. What did he want a break from? (page 59)",
+  P02: "Where did Mycoskie travel in 2006? (page 59)",
+  P03: "In the poor villages Mycoskie visited, what did very few of the children have? (page 59)",
+  P04: "Mycoskie started the business using his own money. What did he name it? (page 59)",
+  P05: "What is TOMS’ innovative one-for-one program? (page 59)",
+  P06: "The company has expanded. What does it sell now besides shoes? (page 60)",
+  P07: "In 1990, the Hard Rock Cafe company launched a new enterprise. What was it? (page 60)",
+  P08: "What is the motto of the Hard Rock Cafe company? (page 60)",
+  P09: "How does the process for the Hard Rock Cafe T-shirts start? (page 60)",
+  P10: "Look at the graph on page 61. Which charity was number 5, with the least money of the five? (page 61)",
+  P11: "Part A: What can the reader conclude about how TOMS helps others? (page 59)",
+  P12: "Part B: Which sentence from page 59 best supports the answer to Part A?",
+  P13: "Part A: What can the reader infer about Mycoskie’s plan for his life before TOMS? (page 60)",
+  P14: "Part B: Which sentence from page 60 best supports the answer to Part A?",
+  P15: "Part A: What can the reader conclude about the ways Hard Rock Cafe helps others? (page 60)",
+  P16: "Part B: Which sentence from page 60 best supports the answer to Part A?",
+  P17: "Part A: Why did the author most likely include the graph on page 61? (page 61)",
+  P18: "Part B: Which sentence from page 61 best supports the answer to Part A?",
+  P19: "Part A: The Essential Question asks, “How can starting a business help others?” What answer does the article give? (pages 59–61)",
+  P20: "Part B: Which sentence from page 61 best supports the answer to Part A?",
+  V01: "Which sentence uses desire the right way?",
+  V04: "Which sentence uses company the right way?",
+  V06: "Which sentence uses routine the right way?",
+  V08: "Which sentence uses undertaking the right way?",
+  V10: "Which sentence uses traditionally the right way?",
+  V12: "Which sentence uses expanded the right way?",
+  V13: "Which sentence uses pleased the right way?",
+  V16: "Which sentence uses motto the right way?",
+  V17: "Which sentence uses funds the right way?",
+  V20: "Which sentence uses location the right way?",
+  V22: "Which sentence uses foundation the right way?",
+  V24: "Which sentence uses necessity the right way?",
+  V26: "When the farm stand added up its bottom line in the fall, it learned __________ Which ending makes the most sense?",
+  V27: "When the old man dropped his groceries, the compassionate boy __________ Which ending makes the most sense?",
+  V29: "Before buying a rug, Mom wanted to measure the floor, so she __________ Which ending makes the most sense?",
+  V31: "When the class ran out of paper, the inventive students __________ Which ending makes the most sense?",
+  V33: "To model its next stuffed animal on a real giraffe, the toy company made it __________ Which ending makes the most sense?",
+  V35: "The school's innovative idea for lunch was to __________ Which ending makes the most sense?",
+  V38: "Grandpa started an enterprise when he __________ Which ending makes the most sense?",
+  V39: "Instead of selling her old books, Aunt Rose donated them to a charity , and now __________ Which ending makes the most sense?",
+  V42: "Getting a library card is a process : first __________ Which ending makes the most sense?",
+  V43: "To design a new costume for the play, Mr. Ruiz __________ Which ending makes the most sense?",
+  V45: "Because the soccer player was exceptional , she __________ Which ending makes the most sense?",
+  V47: "Sam spent $5 on supplies and sold his crafts for $12, so his profit __________ Which ending makes the most sense?",
+};
+const DS_REVIEW_SKILLS_BY_ID = {
+  C01: "Thing and idea words",
+  C02: "Thing and idea words",
+  C03: "Describing words",
+  C04: "Thing and idea words",
+  C05: "Action words",
+  C06: "Thing and idea words",
+  C07: "Describing words",
+  C08: "Thing and idea words",
+  C09: "Action words",
+  C10: "Describing words",
+  C11: "Describing words",
+  C12: "Action words",
+  C13: "Feeling words",
+  C14: "Thing and idea words",
+  C15: "Thing and idea words",
+  C16: "Thing and idea words",
+  C17: "Thing and idea words",
+  C18: "Thing and idea words",
+  C19: "Action words",
+  C20: "Thing and idea words",
+  C21: "Describing words",
+  C22: "Thing and idea words",
+  C23: "Thing and idea words",
+  C24: "Thing and idea words",
+  P01: "Key details",
+  P02: "Key details",
+  P03: "Key details",
+  P04: "Key details",
+  P05: "Key details",
+  P06: "Key details",
+  P07: "Key details",
+  P08: "Key details",
+  P09: "Key details",
+  P10: "Text features",
+  P11: "Making inferences",
+  P12: "Finding text evidence",
+  P13: "Making inferences",
+  P14: "Finding text evidence",
+  P15: "Drawing conclusions",
+  P16: "Finding text evidence",
+  P17: "Text features",
+  P18: "Finding text evidence",
+  P19: "Main idea",
+  P20: "Finding text evidence",
+  V01: "Thing and idea words",
+  V04: "Thing and idea words",
+  V06: "Thing and idea words",
+  V08: "Thing and idea words",
+  V10: "Describing words",
+  V12: "Action words",
+  V13: "Feeling words",
+  V16: "Thing and idea words",
+  V17: "Thing and idea words",
+  V20: "Thing and idea words",
+  V22: "Thing and idea words",
+  V24: "Thing and idea words",
+  V26: "Thing and idea words",
+  V27: "Describing words",
+  V29: "Action words",
+  V31: "Describing words",
+  V33: "Action words",
+  V35: "Describing words",
+  V38: "Thing and idea words",
+  V39: "Thing and idea words",
+  V42: "Thing and idea words",
+  V43: "Action words",
+  V45: "Describing words",
+  V47: "Thing and idea words",
+};
+const DS_TEST_SKILLS_BY_ID = {
+  C01: "Thing and idea words",
+  C02: "Thing and idea words",
+  C03: "Describing words",
+  C04: "Thing and idea words",
+  C05: "Action words",
+  C06: "Thing and idea words",
+  C07: "Describing words",
+  C08: "Thing and idea words",
+  C09: "Action words",
+  C10: "Describing words",
+  C11: "Describing words",
+  C12: "Action words",
+  C13: "Feeling words",
+  C14: "Thing and idea words",
+  C15: "Thing and idea words",
+  C16: "Thing and idea words",
+  C17: "Thing and idea words",
+  C18: "Thing and idea words",
+  C19: "Action words",
+  C20: "Thing and idea words",
+  C21: "Describing words",
+  C22: "Thing and idea words",
+  C23: "Thing and idea words",
+  C24: "Thing and idea words",
+  P01: "Key details",
+  P02: "Key details",
+  P03: "Key details",
+  P04: "Key details",
+  P05: "Key details",
+  P06: "Key details",
+  P07: "Key details",
+  P08: "Key details",
+  P09: "Key details",
+  P10: "Text features",
+  P11: "Making inferences",
+  P12: "Finding text evidence",
+  P13: "Making inferences",
+  P14: "Finding text evidence",
+  P15: "Drawing conclusions",
+  P16: "Finding text evidence",
+  P17: "Text features",
+  P18: "Finding text evidence",
+  P19: "Main idea",
+  P20: "Finding text evidence",
+  V01: "Thing and idea words",
+  V04: "Thing and idea words",
+  V06: "Thing and idea words",
+  V08: "Thing and idea words",
+  V10: "Describing words",
+  V12: "Action words",
+  V13: "Feeling words",
+  V16: "Thing and idea words",
+  V17: "Thing and idea words",
+  V20: "Thing and idea words",
+  V22: "Thing and idea words",
+  V24: "Thing and idea words",
+  V26: "Thing and idea words",
+  V27: "Describing words",
+  V29: "Action words",
+  V31: "Describing words",
+  V33: "Action words",
+  V35: "Describing words",
+  V38: "Thing and idea words",
+  V39: "Thing and idea words",
+  V42: "Thing and idea words",
+  V43: "Action words",
+  V45: "Describing words",
+  V47: "Thing and idea words",
+};
+const DS_VOCAB_STANDARDS = {"Thing and idea words":"L.4.6","Describing words":"L.4.6","Action words":"L.4.6","Feeling words":"L.4.6"};
+const DS_CLOZE_STANDARDS = {"Thing and idea words":"L.4.4a","Describing words":"L.4.4a","Action words":"L.4.4a","Feeling words":"L.4.4a"};
+const DS_COMP_STANDARDS  = {"Key details":"RI.4.1","Making inferences":"RI.4.1","Drawing conclusions":"RI.4.1","Finding text evidence":"RI.4.1","Main idea":"RI.4.2","Text features":"RI.4.7"};
+const DS_REVIEW_SKILL_BANK = {};
+Object.keys(DS_REVIEW_QUESTIONS).forEach(id => { DS_REVIEW_SKILL_BANK[id] = `(${DS_REVIEW_SKILLS_BY_ID[id]}) ${DS_REVIEW_QUESTIONS[id]}`; });
+const DS_TEST_SKILL_BANK = {};
+Object.keys(DS_TEST_QUESTIONS).forEach(id => { DS_TEST_SKILL_BANK[id] = `(${DS_TEST_SKILLS_BY_ID[id]}) ${DS_TEST_QUESTIONS[id]}`; });
+
+
 // ── The Talent Show Review + Test (Wonders U1 W3) — written new 10/21/2026 (never last year's test).
 //    Review and Test cover the same words and story parts with DIFFERENT sentences and stems, so each
 //    has its own question text. Skill names match on both, so review → test compares skill by skill.
@@ -4900,6 +5215,8 @@ const STANDARD_NAMES = {
   'RL.4.4': 'Determine the meaning of words, phrases & the author\'s word choice',
   'RL.4.7': 'Connect the text of a story to its pictures and visuals',
   'RI.4.1': 'Refer to details & examples when explaining what an informational text says and when drawing inferences',
+  'RI.4.2': 'Determine the main idea of an informational text; explain how key details support it',
+  'RI.4.7': 'Interpret information shown visually (graphs, headings, captions) and explain how it helps the text',
   'L.4.4a': 'Use context (the rest of the sentence) as a clue to the meaning of a word',
   'L.4.6':  'Know and use grade-level academic & science words',
   '4.NBT.1': 'A digit is 10× the same digit one place to its right',
@@ -5056,6 +5373,13 @@ Object.entries(ENERGYMOTION_SKILLS).forEach(([skill, ids]) =>
 
 const SKILL_REPORTS = {
   // the test reuses the review's ids + skill tags, so review → test compares skill by skill
+  // Dollars and Sense: review and test have their own question text, same skill names (the review's Set 1 text)
+  'ds-test-vocab': { bank: DS_TEST_SKILL_BANK, form: 'V', standards: DS_VOCAB_STANDARDS, site: 'dollars-sense-unit-test' },
+  'ds-test-comp':  { bank: DS_TEST_SKILL_BANK, form: 'P', standards: DS_COMP_STANDARDS,  site: 'dollars-sense-unit-test' },
+  'ds-test-cloze': { bank: DS_TEST_SKILL_BANK, form: 'C', standards: DS_CLOZE_STANDARDS, site: 'dollars-sense-unit-test' },
+  'ds-review-vocab': { bank: DS_REVIEW_SKILL_BANK, form: 'V', standards: DS_VOCAB_STANDARDS, site: 'dollars-sense-review' },
+  'ds-review-comp':  { bank: DS_REVIEW_SKILL_BANK, form: 'P', standards: DS_COMP_STANDARDS,  site: 'dollars-sense-review' },
+  'ds-review-cloze': { bank: DS_REVIEW_SKILL_BANK, form: 'C', standards: DS_CLOZE_STANDARDS, site: 'dollars-sense-review' },
   // The Talent Show: review and test have their own question text, same skill names
   'talent-test-vocab': { bank: TALENT_TEST_SKILL_BANK, form: 'V', standards: TALENT_VOCAB_STANDARDS, site: 'talent-show-unit-test' },
   'talent-test-comp':  { bank: TALENT_TEST_SKILL_BANK, form: 'P', standards: TALENT_COMP_STANDARDS,  site: 'talent-show-unit-test' },
@@ -5394,6 +5718,9 @@ const REVIEW_FILES = {
   // A World of Change Review + Test: all three parts in data/banks.js (answer = index into choices)
   'a-world-of-change-review':    { file: 'data/banks.js', adapt: box => awocBankItems(box) },
   'a-world-of-change-unit-test': { file: 'data/banks.js', adapt: box => awocBankItems(box) },
+  // Dollars and Sense Review + Test: same file shape (the review's Set 2 is data/banks-2.js; Set 1 is shown here)
+  'dollars-sense-review':    { file: 'data/banks.js', adapt: box => awocBankItems(box) },
+  'dollars-sense-unit-test': { file: 'data/banks.js', adapt: box => awocBankItems(box) },
   // The Talent Show Review + Test: same file shape as A World of Change
   'talent-show-review':    { file: 'data/banks.js', adapt: box => awocBankItems(box) },
   'talent-show-unit-test': { file: 'data/banks.js', adapt: box => awocBankItems(box) },
@@ -6348,6 +6675,12 @@ function getQuestionText(id) {
     ...RADP_QUESTION_BANKS,
     ...INFP_QUESTION_BANKS,
     ...POSHQ_QUESTION_BANKS,
+    'ds-test-vocab':   DS_TEST_QUESTIONS,
+    'ds-test-comp':    DS_TEST_QUESTIONS,
+    'ds-test-cloze':   DS_TEST_QUESTIONS,
+    'ds-review-vocab': DS_REVIEW_QUESTIONS,
+    'ds-review-comp':  DS_REVIEW_QUESTIONS,
+    'ds-review-cloze': DS_REVIEW_QUESTIONS,
     'talent-test-vocab':   TALENT_TEST_QUESTIONS,
     'talent-test-comp':    TALENT_TEST_QUESTIONS,
     'talent-test-cloze':   TALENT_TEST_QUESTIONS,
