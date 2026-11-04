@@ -801,6 +801,7 @@ const GAME_ORDER = [
   'talent-test-vocab', 'talent-test-comp', 'talent-test-cloze',
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
+  'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
@@ -1008,6 +1009,12 @@ const GAME_LABELS = {
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'mod3w-warmup': '🔥 MM3 — Warm-Up',          // 11/3: Times as Many — the Module 2 engine and part names
+  'mod3-practice': '🌱 MM3 — Practice A',
+  'mod3a-review': '🧭 MM3 — Practice B',
+  'mod3b-review': '📘 MM3 — Review',
+  'mod3t-test':   '📝 MM3 — Test',
+  'mod3u-test':   '📝 MM3 — Test (Retake)',
   'mod2w-warmup': '🔥 MM2 — Warm-Up',          // 10/15: before Practice A — watch, step by step, 12 scored questions
   'mod2-practice': '🌱 MM2 — Practice A',
   'mod2a-review': '🧭 MM2 — Practice B',
@@ -1102,6 +1109,12 @@ const MAX_SCORES = {
   'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
+  'mod3t-test': 17,
+  'mod3u-test': 17,
+  'mod3a-review': 17,
+  'mod3b-review': 17,
+  'mod3-practice': 17,
+  'mod3w-warmup': 12,      // only its 12 questions are scored (the worked examples and the steps are not)
   'mod2t-test': 17,
   'mod2u-test': 17,
   'mod2a-review': 17,
@@ -1470,7 +1483,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'ds-test-vocab': 180, 'ds-test-comp': 300, 'ds-test-cloze': 180, 'ds-review-vocab': 180, 'ds-review-comp': 300, 'ds-review-cloze': 180, 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'ds-test-vocab': 180, 'ds-test-comp': 300, 'ds-test-cloze': 180, 'ds-review-vocab': 180, 'ds-review-comp': 300, 'ds-review-cloze': 180, 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod3t-test': 240, 'mod3u-test': 240, 'mod3a-review': 240, 'mod3b-review': 240, 'mod3-practice': 240, 'mod3w-warmup': 240, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -3496,10 +3509,12 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
   'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
+  'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2',
   // MM1's Review and Test = one section too (Marcos 10/23: "mm1 review and test card should be combined")
   'mod1a-review': 'mod1', 'mod1b-review': 'mod1', 'mod1c-review': 'mod1', 'mod1a-test': 'mod1', 'mod1b-test': 'mod1', 'mod1c-test': 'mod1' };
 const FORM_FAMILY_LABELS = {
+  'mod3':          '🧮 Math Module 3 Review and Test',
   'mod2':          '🧮 Math Module 2 Review and Test',
   'mod1':          '🔢 Math Module 1 Review and Test',
   'rliab-review':  '📚 SBAC Read Literary',
@@ -3512,7 +3527,7 @@ const FORM_FAMILY_LABELS = {
   'awoc':          'A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
+const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -4150,6 +4165,188 @@ const MOD2_STANDARDS = {
 const MOD2_SKILL_BANK = {};
 Object.entries(MOD2_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD2_SKILL_BANK[id] = `(${skill}) ${MOD2_QUESTIONS[id]}`; }));
+
+// ── Math Module 3 Review and Test (math-module-3, built 11/3) — "Times as Many", the Module 2 engine and part names:
+// Warm-Up (mod3w-warmup, W01–W34: 7 worked examples "Watch: …", 15 steps "Step: …" (not scored), 12 scored) ·
+// Practice A (mod3-practice, P01–P17) · Practice B (mod3a-review, A01–A17) · Review (mod3b-review, B01–B17) ·
+// Test (mod3t-test, T01–T17; retake = mod3u-test, U01–U17). The same 17 kinds of question at the same spots on every
+// part, so they compare skill by skill. X01–X17 / Y01–Y17 = "try one like it" after a miss in Practice B / the Review.
+// Four versions of W/P/A/B (a retry gets new numbers); these labels are version 1. Built from math-module-3/data by
+// the site's tools — numbers and stories are our own, not HMH's.
+const MOD3_QUESTIONS = {
+  W01: "Watch: Times as many means multiply",
+  W02: "Step: Leo has 5 crayons. Raj has 3 times as many crayons as Leo. How many groups does Raj have?",
+  W03: "Step: How many crayons are in each group?",
+  W04: "Step: Multiply. 3 × 5 = ?",
+  W05: "What number is 4 times as many as 2?",
+  W06: "What number is 2 times as many as 3?",
+  W07: "Watch: Read the bar model",
+  W08: "Step: Look at the bar model. How many boxes are in Omar's bar?",
+  W09: "Step: Each box holds 3. Multiply. 5 × 3 = ?",
+  W10: "Raj has 4 apples. Rosa has 3 times as many apples as Raj. Look at the bar model. How many apples does Rosa have?",
+  W11: "Dan has 5 kites. Sara has 2 times as many kites as Dan. How many kites does Sara have?",
+  W12: "Watch: Find the smaller amount",
+  W13: "Step: Ella has 18 apples. That is 3 times as many as Tom has. How many boxes does Ella have?",
+  W14: "Step: Share 18 into 3 equal boxes. 18 ÷ 3 = ?",
+  W15: "A pond has 3 times as many frogs as turtles. The pond has 6 frogs. 3 × t = 6. How many turtles, t, are in the pond?",
+  W16: "There are 5 times as many cars as trucks in the parking lot. There are 10 cars. How many trucks are in the parking lot?",
+  W17: "Watch: How many times as many?",
+  W18: "Step: Count by 5s. What number comes after 5?",
+  W19: "Step: Count by 5s to 20: 5, 10, 15, 20. How many jumps is that?",
+  W20: "Raj has 2 toy cars. Omar has 12 toy cars. How many times as many toy cars does Omar have as Raj?",
+  W21: "Watch: True or false?",
+  W22: "Step: Is this true? 21 is 2 times as many as 7. First multiply. 2 × 7 = ?",
+  W23: "Step: 2 × 7 = 14. Is 21 the same as 14?",
+  W24: "True or false? 6 is 3 times as many as 2.",
+  W25: "True or false? 7 is 2 times as many as 3.",
+  W26: "Watch: Pick the equation",
+  W27: "Step: Jake has 8 shells. Sara has 2 times as many. Which sign shows times as many?",
+  W28: "Step: Which equation finds Sara's shells, f?",
+  W29: "Dan counts 2 green apples. There are 4 times as many red apples as green apples. Which equation can be used to find the number of red apples, r?",
+  W30: "On Sunday, Sam did 8 jumping jacks. That is 2 times as many jumping jacks as on Wednesday. Part A: Which equation can be used to find how many jumping jacks, j, Sam did on Wednesday?",
+  W31: "Watch: Two steps: how many more?",
+  W32: "Step: Ivy counts 9 drums and 2 times as many violins. Step 1: 2 × 9 = ?",
+  W33: "Step: Step 2: how many more violins than drums? 18 − 9 = ?",
+  W34: "Rosa counts 4 red cars. Rosa counts 2 times as many blue cars as red cars. How many more blue cars than red cars does Rosa count?",
+  P01: "Ana has 5 stickers. Rosa has 4 times as many stickers as Ana. Look at the bar model. How many stickers does Rosa have?",
+  P02: "Eva has 12 apples. That is 3 times as many apples as Sara has. Which equation shows how many apples, p, Sara has?",
+  P03: "What number is 4 times as many as 3?",
+  P04: "A farm has 6 times as many hens as cows. The farm has 18 hens. 6 × c = 18. How many cows, c, are on the farm?",
+  P05: "What number is 2 times as many as 7?",
+  P06: "True or false? 16 is 7 times as many as 2.",
+  P07: "True or false? 15 is 3 times as many as 5.",
+  P08: "True or false? 18 is 8 times as many as 2.",
+  P09: "The first floor has 8 clocks. The whole building has 2 times as many clocks as the first floor. Which equation shows how many clocks, c, are in the whole building?",
+  P10: "Sam counts 2 red cars. Sam counts 5 times as many blue cars as red cars. How many more blue cars than red cars does Sam count?",
+  P11: "Lily plants 7 seeds. Ana plants 14 seeds. How many times as many seeds does Ana plant as Lily?",
+  P12: "Raj has 2 buttons. Tom has 6 times as many buttons as Raj. How many buttons does Tom have?",
+  P13: "There are 2 times as many kids as teachers in the gym. There are 12 kids. How many teachers are in the gym?",
+  P14: "Leo counts 2 cups. There are 7 times as many plates as cups. Which equation can be used to find the number of plates, p?",
+  P15: "Eva has 2 beads. Jake has 6 times as many beads as Eva. Which equation can be used to find the number of beads, b, for Jake?",
+  P16: "On Friday, Tom ran 15 laps. That is 3 times as many laps as on Monday. Part A: Which equation can be used to find how many laps, n, Tom ran on Monday?",
+  P17: "On Friday, Tom ran 15 laps. That is 3 times as many laps as on Monday. Part B: How many laps did Tom run on Monday?",
+  A01: "Dan has 7 rocks. Zoe has 4 times as many rocks as Dan. Look at the bar model. How many rocks does Zoe have?",
+  A02: "Owen has 14 kites. That is 7 times as many kites as Lily has. Which equation shows how many kites, k, Lily has?",
+  A03: "What number is 9 times as many as 2?",
+  A04: "A farm has 4 times as many hens as cows. The farm has 24 hens. 4 × c = 24. How many cows, c, are on the farm?",
+  A05: "What number is 5 times as many as 3?",
+  A06: "True or false? 19 is 4 times as many as 5.",
+  A07: "True or false? 24 is 8 times as many as 3.",
+  A08: "True or false? 20 is 7 times as many as 3.",
+  A09: "The first table has 9 crayons. The whole classroom has 4 times as many crayons as the first table. Which equation shows how many crayons, c, are in the whole classroom?",
+  A10: "Nina counts 6 red cars. Nina counts 2 times as many blue cars as red cars. How many more blue cars than red cars does Nina count?",
+  A11: "Ruby picks 3 apples. Kim picks 18 apples. How many times as many apples does Kim pick as Ruby?",
+  A12: "Eva has 2 cards. Ana has 9 times as many cards as Eva. How many cards does Ana have?",
+  A13: "There are 3 times as many apples as pears in the basket. There are 18 apples. How many pears are in the basket?",
+  A14: "Leo counts 8 almonds. There are 2 times as many raisins as almonds. Which equation can be used to find the number of raisins, r?",
+  A15: "Ben has 3 toy cars. Nina has 5 times as many toy cars as Ben. Which equation can be used to find the number of toy cars, t, for Nina?",
+  A16: "On Sunday, Kim ran 20 laps. That is 2 times as many laps as on Wednesday. Part A: Which equation can be used to find how many laps, n, Kim ran on Wednesday?",
+  A17: "On Sunday, Kim ran 20 laps. That is 2 times as many laps as on Wednesday. Part B: How many laps did Kim run on Wednesday?",
+  B01: "Sara has 20 apples. Kai has 3 times as many apples as Sara. Look at the bar model. How many apples does Kai have?",
+  B02: "Tom has 16 kites. That is 8 times as many kites as Nina has. Which equation shows how many kites, k, Nina has?",
+  B03: "What number is 5 times as many as 4?",
+  B04: "A box has 8 times as many pens as markers. The box has 40 pens. 8 × m = 40. How many markers, m, are in the box?",
+  B05: "What number is 9 times as many as 2?",
+  B06: "True or false? 31 is 5 times as many as 6.",
+  B07: "True or false? 29 is 6 times as many as 5.",
+  B08: "True or false? 27 is 3 times as many as 9.",
+  B09: "The first row has 5 plants. The whole garden has 10 times as many plants as the first row. Which equation shows how many plants, p, are in the whole garden?",
+  B10: "Lily counts 7 hats. Lily counts 3 times as many scarves as hats. How many more scarves than hats does Lily count?",
+  B11: "Ben bakes 7 cookies. Owen bakes 28 cookies. How many times as many cookies does Owen bake as Ben?",
+  B12: "Omar finds 8 rocks. Sam finds 3 times as many rocks as Omar. How many rocks does Sam find?",
+  B13: "There are 8 times as many cars as trucks in the parking lot. There are 24 cars. How many trucks are in the parking lot?",
+  B14: "Noah counts 3 green apples. There are 6 times as many red apples as green apples. Which equation can be used to find the number of red apples, r?",
+  B15: "Ruby has 2 pencils. Ben has 9 times as many pencils as Ruby. Which equation can be used to find the number of pencils, p, for Ben?",
+  B16: "On Saturday, Dan did 24 hops. That is 4 times as many hops as on Tuesday. Part A: Which equation can be used to find how many hops, h, Dan did on Tuesday?",
+  B17: "On Saturday, Dan did 24 hops. That is 4 times as many hops as on Tuesday. Part B: How many hops did Dan do on Tuesday?",
+  T01: "Nina has 40 fish. Tom has 2 times as many fish as Nina. Look at the bar model. How many fish does Tom have?",
+  T02: "Eva has 18 books. That is 2 times as many books as Omar has. Which equation shows how many books, b, Omar has?",
+  T03: "What number is 4 times as many as 7?",
+  T04: "A box has 9 times as many pens as markers. The box has 45 pens. 9 × m = 45. How many markers, m, are in the box?",
+  T05: "What number is 8 times as many as 3?",
+  T06: "True or false? 35 is 5 times as many as 7.",
+  T07: "True or false? 41 is 7 times as many as 6.",
+  T08: "True or false? 36 is 4 times as many as 9.",
+  T09: "The first page has 6 pictures. The whole book has 10 times as many pictures as the first page. Which equation shows how many pictures, p, are in the whole book?",
+  T10: "Kim counts 6 ducks. Kim counts 4 times as many geese as ducks. How many more geese than ducks does Kim count?",
+  T11: "Lucy has 5 kites. Ana has 40 kites. How many times as many kites does Ana have as Lucy?",
+  T12: "Tom has 4 crayons. Ella has 8 times as many crayons as Tom. How many crayons does Ella have?",
+  T13: "There are 3 times as many kids as teachers in the gym. There are 27 kids. How many teachers are in the gym?",
+  T14: "Jake counts 4 red beads. There are 5 times as many blue beads as red beads. Which equation can be used to find the number of blue beads, b?",
+  T15: "Ana has 7 crayons. Owen has 3 times as many crayons as Ana. Which equation can be used to find the number of crayons, c, for Owen?",
+  T16: "On Sunday, Raj did 30 jumping jacks. That is 5 times as many jumping jacks as on Wednesday. Part A: Which equation can be used to find how many jumping jacks, j, Raj did on Wednesday?",
+  T17: "On Sunday, Raj did 30 jumping jacks. That is 5 times as many jumping jacks as on Wednesday. Part B: How many jumping jacks did Raj do on Wednesday?",
+  U01: "Kim has 30 fish. Sam has 3 times as many fish as Kim. Look at the bar model. How many fish does Sam have?",
+  U02: "Ruby has 18 crayons. That is 6 times as many crayons as Jake has. Which equation shows how many crayons, c, Jake has?",
+  U03: "What number is 4 times as many as 6?",
+  U04: "A pond has 5 times as many frogs as turtles. The pond has 45 frogs. 5 × t = 45. How many turtles, t, are in the pond?",
+  U05: "What number is 9 times as many as 3?",
+  U06: "True or false? 34 is 7 times as many as 5.",
+  U07: "True or false? 42 is 6 times as many as 7.",
+  U08: "True or false? 40 is 9 times as many as 4.",
+  U09: "The first table has 9 crayons. The whole classroom has 10 times as many crayons as the first table. Which equation shows how many crayons, c, are in the whole classroom?",
+  U10: "Dan counts 8 roses. Dan counts 3 times as many daisies as roses. How many more daisies than roses does Dan count?",
+  U11: "Noah has 8 pencils. Ella has 40 pencils. How many times as many pencils does Ella have as Noah?",
+  U12: "Ruby picks 8 apples. Kim picks 4 times as many apples as Ruby. How many apples does Kim pick?",
+  U13: "There are 4 times as many kids as teachers in the gym. There are 28 kids. How many teachers are in the gym?",
+  U14: "Sam counts 5 cups. There are 4 times as many plates as cups. Which equation can be used to find the number of plates, p?",
+  U15: "Ella bakes 3 cookies. Tom bakes 7 times as many cookies as Ella. Which equation can be used to find the number of cookies, c, for Tom?",
+  U16: "On Friday, Leo did 30 jumping jacks. That is 6 times as many jumping jacks as on Monday. Part A: Which equation can be used to find how many jumping jacks, j, Leo did on Monday?",
+  U17: "On Friday, Leo did 30 jumping jacks. That is 6 times as many jumping jacks as on Monday. Part B: How many jumping jacks did Leo do on Monday?",
+  X01: "Kai has 5 fish. Ana has 4 times as many fish as Kai. Look at the bar model. How many fish does Ana have?",
+  X02: "Lily has 12 buttons. That is 6 times as many buttons as Sam has. Which equation shows how many buttons, b, Sam has?",
+  X03: "What number is 3 times as many as 5?",
+  X04: "A farm has 6 times as many hens as cows. The farm has 18 hens. 6 × c = 18. How many cows, c, are on the farm?",
+  X05: "What number is 2 times as many as 7?",
+  X06: "True or false? 15 is 2 times as many as 8.",
+  X07: "True or false? 20 is 5 times as many as 4.",
+  X08: "True or false? 17 is 6 times as many as 3.",
+  X09: "The first page has 6 pictures. The whole book has 4 times as many pictures as the first page. Which equation shows how many pictures, p, are in the whole book?",
+  X10: "Dan counts 3 pens. Dan counts 4 times as many pencils as pens. How many more pencils than pens does Dan count?",
+  X11: "Zoe has 6 pencils. Lucy has 18 pencils. How many times as many pencils does Lucy have as Zoe?",
+  X12: "Lily has 8 crayons. Ivy has 2 times as many crayons as Lily. How many crayons does Ivy have?",
+  X13: "There are 2 times as many birds as squirrels in the park. There are 16 birds. How many squirrels are in the park?",
+  X14: "Raj counts 7 tomato seeds. There are 2 times as many bean seeds as tomato seeds. Which equation can be used to find the number of bean seeds, b?",
+  X15: "Ruby finds 2 rocks. Tom finds 7 times as many rocks as Ruby. Which equation can be used to find the number of rocks, r, for Tom?",
+  X16: "On Saturday, Kai ran 15 laps. That is 3 times as many laps as on Tuesday. Part A: Which equation can be used to find how many laps, n, Kai ran on Tuesday?",
+  X17: "On Saturday, Kai ran 15 laps. That is 3 times as many laps as on Tuesday. Part B: How many laps did Kai run on Tuesday?",
+  Y01: "Lucy has 7 cards. Lily has 5 times as many cards as Lucy. Look at the bar model. How many cards does Lily have?",
+  Y02: "Ruby has 15 rocks. That is 3 times as many rocks as Eva has. Which equation shows how many rocks, r, Eva has?",
+  Y03: "What number is 9 times as many as 2?",
+  Y04: "A pond has 7 times as many frogs as turtles. The pond has 28 frogs. 7 × t = 28. How many turtles, t, are in the pond?",
+  Y05: "What number is 2 times as many as 9?",
+  Y06: "True or false? 27 is 8 times as many as 3.",
+  Y07: "True or false? 28 is 7 times as many as 4.",
+  Y08: "True or false? 25 is 3 times as many as 8.",
+  Y09: "The first row has 9 plants. The whole garden has 4 times as many plants as the first row. Which equation shows how many plants, p, are in the whole garden?",
+  Y10: "Jake counts 9 drums. Jake counts 2 times as many violins as drums. How many more violins than drums does Jake count?",
+  Y11: "Lucy finds 6 shells. Ivy finds 24 shells. How many times as many shells does Ivy find as Lucy?",
+  Y12: "Sam catches 3 fish. Nina catches 7 times as many fish as Sam. How many fish does Nina catch?",
+  Y13: "There are 5 times as many ducks as swans in the pond. There are 20 ducks. How many swans are in the pond?",
+  Y14: "Ana counts 8 almonds. There are 2 times as many raisins as almonds. Which equation can be used to find the number of raisins, r?",
+  Y15: "Noah picks 8 apples. Raj picks 2 times as many apples as Noah. Which equation can be used to find the number of apples, p, for Raj?",
+  Y16: "On Saturday, Rosa did 20 push-ups. That is 4 times as many push-ups as on Tuesday. Part A: Which equation can be used to find how many push-ups, p, Rosa did on Tuesday?",
+  Y17: "On Saturday, Rosa did 20 push-ups. That is 4 times as many push-ups as on Tuesday. Part B: How many push-ups did Rosa do on Tuesday?",
+};
+const MOD3_SKILLS = {
+  "Times as many: find the bigger amount": ['W05','W06','W10','W11','P01','P03','P05','P12','A01','A03','A05','A12','B01','B03','B05','B12','T01','T03','T05','T12','U01','U03','U05','U12'],
+  "Times as many: find the smaller amount": ['W15','W16','P04','P13','P17','A04','A13','A17','B04','B13','B17','T04','T13','T17','U04','U13','U17'],
+  "How many times as many": ['W20','P11','A11','B11','T11','U11'],
+  "True or false: times as many": ['W24','W25','P06','P07','P08','A06','A07','A08','B06','B07','B08','T06','T07','T08','U06','U07','U08'],
+  "Pick the equation": ['W29','W30','P02','P09','P14','P15','P16','A02','A09','A14','A15','A16','B02','B09','B14','B15','B16','T02','T09','T14','T15','T16','U02','U09','U14','U15','U16'],
+  "Two steps: how many more": ['W34','P10','A10','B10','T10','U10'],
+};
+const MOD3_STANDARDS = {
+  "Times as many: find the bigger amount": '4.OA.2',
+  "Times as many: find the smaller amount": '4.OA.2',
+  "How many times as many": '4.OA.2',
+  "True or false: times as many": '4.OA.1',
+  "Pick the equation": '4.OA.2',
+  "Two steps: how many more": '4.OA.3',
+};
+const MOD3_SKILL_BANK = {};
+Object.entries(MOD3_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD3_SKILL_BANK[id] = `(${skill}) ${MOD3_QUESTIONS[id]}`; }));
 
 // ── Math Module 1 TEST bank — the review's 51 questions + 3 per form added to the
 // test only (10/5). Kept separate so the review's skill reports never count
@@ -5413,6 +5610,12 @@ const SKILL_REPORTS = {
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   // one site — the id letter is the part: P = Practice A, A = Practice B, B = Review, T = Test, U = its retake
+  'mod3t-test':     { bank: MOD3_SKILL_BANK,   form: 'T', standards: MOD3_STANDARDS,   site: 'math-module-3' },
+  'mod3u-test':     { bank: MOD3_SKILL_BANK,   form: 'U', standards: MOD3_STANDARDS,   site: 'math-module-3' },
+  'mod3a-review':   { bank: MOD3_SKILL_BANK,   form: 'A', standards: MOD3_STANDARDS,   site: 'math-module-3' },
+  'mod3b-review':   { bank: MOD3_SKILL_BANK,   form: 'B', standards: MOD3_STANDARDS,   site: 'math-module-3' },
+  'mod3-practice':  { bank: MOD3_SKILL_BANK,   form: 'P', standards: MOD3_STANDARDS,   site: 'math-module-3' },
+  'mod3w-warmup':   { bank: MOD3_SKILL_BANK,   form: 'W', standards: MOD3_STANDARDS,   site: 'math-module-3' },   // W = Warm-Up
   'mod2t-test':     { bank: MOD2_SKILL_BANK,   form: 'T', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
@@ -6711,6 +6914,12 @@ function getQuestionText(id) {
     'rounding-practice': ROUNDQ_QUESTIONS,
     'rounding-review': ROUNDQ_QUESTIONS,
     'rounding-quiz':     ROUNDQ_QUESTIONS,
+    'mod3t-test': MOD3_QUESTIONS,
+    'mod3u-test': MOD3_QUESTIONS,
+    'mod3a-review': MOD3_QUESTIONS,
+    'mod3b-review': MOD3_QUESTIONS,
+    'mod3-practice': MOD3_QUESTIONS,
+    'mod3w-warmup': MOD3_QUESTIONS,
     'mod2t-test': MOD2_QUESTIONS,
     'mod2u-test': MOD2_QUESTIONS,
     'mod2a-review': MOD2_QUESTIONS,
@@ -6767,6 +6976,7 @@ function hintOpensOf(sessions) {
 // (a student shown here as ready who is still locked on a new Chromebook needs the PIN).
 // 10/15: a Warm-Up comes first — 70% on it opens Practice A (a student who already passed Practice A keeps it).
 const UNIT_GATES = [
+  { warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
 function gatesHTML(game) {
