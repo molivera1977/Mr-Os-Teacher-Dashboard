@@ -95,6 +95,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .status-pill.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .status-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .status-pill.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+.on-question{margin-top:3px;font-size:.72rem;font-weight:800;color:var(--inprogress-text);white-space:nowrap;}   /* "on 14 of 34" under In Progress (11/5) */
 .flag-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);margin-left:6px;}
 .score-bar-wrap{display:flex;align-items:center;gap:8px;}
 .score-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);min-width:60px;}
@@ -3475,9 +3476,10 @@ function buildDotGrid(games, { label, open, profiles }) {
       const max     = MAX_SCORES[game] || 100;
       const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
       const icon    = status==='complete' ? '✓' : status==='inprogress' ? '…' : '';
+      const onNow   = onQuestion(student);
       const tip     = status==='complete' ? `${pct}%` : status==='inprogress' ? 'In Progress' : 'Not Started';
       const writtenBadge = status === 'complete' ? getWrittenBadge(game, name) : '';
-      cells += `<td><span class="status-dot ${status}" title="${tip}" data-game="${escHtml(game)}">${icon}</span>${writtenBadge}</td>`;
+      cells += `<td><span class="status-dot ${status}" title="${tip}${onNow ? ' · ' + onNow : ''}" data-game="${escHtml(game)}">${icon}</span>${writtenBadge}</td>`;
     });
     tr.innerHTML = cells;
     tbody.appendChild(tr);
@@ -3752,10 +3754,11 @@ function renderAssignment() {
       const hintBadge = hintN ? `<span class="hint-badge" title="Hints opened, all attempts">💡 ${hintN}</span>` : '';
       const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
       const writtenBadge = student.status === 'complete' ? getWrittenBadge(currentGame, name) : '';
+      const onNow     = onQuestion(student);
 
       tr.innerHTML = `
         <td style="font-weight:800;">${name}${flagBadge}${hintBadge}${writtenBadge}</td>
-        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
+        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>${onNow ? `<div class="on-question">${onNow}</div>` : ''}</td>
         <td>
           <div class="score-bar-wrap">
             <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
@@ -6521,7 +6524,7 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Time on Task</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
-    <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status${onQuestion(student) ? ' · ' + onQuestion(student) : ''}</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
     ${WRITTEN_GAME_MAP[currentGame.toLowerCase()] ? (() => {
       const g = currentGame.toLowerCase();
@@ -7261,6 +7264,20 @@ function formatClockError(shiftMs) {
 }
 
 function statusIcon(s)  { return s==='complete'?'✅':s==='inprogress'?'🔄':'⬜'; }
+/* Which question a student is on right now (Marcos 11/5: "i should know what question they are on"). A site that sends a
+   row at every question ends that row's log with { e: 'on', q, of } (Math Module 3); the sheet keeps the log, not the
+   status text. Only when the student's newest row is still in progress — a finished try leaves its last in-progress
+   row behind under another session id. '' when there is nothing to tell. */
+function onQuestion(student) {
+  const when = s => new Date(s.timestamp).getTime() || 0;
+  const newest = (student && student.sessions || []).reduce((b, s) => !b || when(s) >= when(b) ? s : b, null);   // a tie → the later row
+  if (!newest || newest.status !== 'inprogress' || !newest.events) return '';
+  let log; try { log = JSON.parse(newest.events); } catch (e) { return ''; }
+  const on = Array.isArray(log) ? log[log.length - 1] : null;
+  if (!on || on.e !== 'on') return '';
+  const q = Number(on.q), of = Number(on.of);
+  return Number.isInteger(q) && Number.isInteger(of) && q >= 1 && q <= of ? `on ${q} of ${of}` : '';
+}
 function statusLabel(s) { return s==='complete'?'Complete':s==='inprogress'?'In Progress':'Not Started'; }
 
 function formatTime(s) {
