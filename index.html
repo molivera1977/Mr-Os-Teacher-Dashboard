@@ -96,6 +96,23 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .status-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .status-pill.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
 .on-question{margin-top:3px;font-size:.72rem;font-weight:800;color:var(--inprogress-text);white-space:nowrap;}   /* "on 14 of 34" under In Progress (11/5) */
+.live-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:-4px 0 12px;font-size:.8rem;font-weight:700;color:var(--muted);}   /* 📍 Right now (11/6) */
+.live-head label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--text);}
+.live-row{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(170px,1.3fr) 3fr;gap:6px 14px;align-items:start;padding:10px 0;border-top:1px solid var(--border);}
+.live-row:first-child{border-top:none;}
+.live-row.waiting{background:var(--inprogress);border-radius:10px;padding:10px;border-top:none;margin:4px 0;}
+.live-name{font-weight:800;}
+.live-when{font-size:.72rem;font-weight:700;color:var(--muted);margin-top:2px;}
+.live-where{font-size:.85rem;font-weight:800;}
+.live-where small{display:block;font-size:.72rem;font-weight:700;color:var(--muted);}
+.live-wait{display:inline-block;margin-top:3px;font-size:.72rem;font-weight:800;color:var(--inprogress-text);}
+.live-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.live-chip{font-size:.7rem;font-weight:800;padding:2px 6px;border-radius:6px;border:1px solid;cursor:default;}
+.live-chip.ok{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.live-chip.ok2{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.live-chip.miss{background:var(--flagged);color:var(--flagged-text);border-color:var(--flagged-border);}
+.live-missed{font-size:.75rem;font-weight:700;color:var(--flagged-text);margin-top:5px;line-height:1.45;}
+@media (max-width:700px){.live-row{grid-template-columns:1fr;}}
 .flag-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);margin-left:6px;}
 .score-bar-wrap{display:flex;align-items:center;gap:8px;}
 .score-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);min-width:60px;}
@@ -503,6 +520,14 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
 
       <!-- Assignment stats -->
       <div class="stats-row" id="assignmentStats"></div>
+
+      <!-- 📍 Right now (Marcos 11/6: "progress through each question or section", "built into the dashboard"): science lessons only -->
+      <div class="heatmap-wrap" id="liveWrap" style="display:none;">
+        <div class="section-title">📍 Right Now
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="liveSubtitle"></span>
+        </div>
+        <div id="liveBody"></div>
+      </div>
 
       <!-- Student list for this assignment -->
       <div class="section-title">📋 Student Results</div>
@@ -3780,6 +3805,7 @@ function renderAssignment() {
   // Heatmap
   buildHeatmap(data);
   buildSkillReport(data); // after the heatmap, which settles 1st vs 2nd Try
+  renderScienceLive(data);
 }
 
 // ═══════════════════════════════════════════════════
@@ -5665,6 +5691,121 @@ const SKILL_REPORTS = {
   'startstop-lesson': { bank: STARTSTOP_SKILL_BANK, form: 'L', standards: STARTSTOP_STANDARDS, site: 'science-starting-and-stopping' }, // exactly the asked ids, one form
   'energymotion-lesson': { bank: ENERGYMOTION_SKILL_BANK, form: 'E', standards: ENERGYMOTION_STANDARDS, site: 'science-energy-and-motion' }, // all 39 asked ids, one form
 };
+// ── 📍 Right now: where each student is in a science lesson (Marcos 11/6) ──
+// "i am talking progress through each question or section" → "i want these updates built into the dashboard".
+// Every screen change on a science lesson sends a row, and the row's log (`events`) says the screen each step
+// happened on (`p`) and every answer ({ e:'answer', id, ok, t }: t 1 = first try, 2 = the second try after a
+// miss). So for each student who worked on the lesson TODAY: the day and section they are on now, a box per
+// question answered (✓ first try · 2nd = right on the second try · ✗ missed), what they missed, and when the
+// site last heard from them. Students at the end of a day wait for "Mr. O said..." — they come first.
+// Section names come from the lesson's own data files, so a renamed section needs no change here.
+const SCIENCE_LIVE = {
+  'startstop-lesson':    { site: 'science-starting-and-stopping', questions: STARTSTOP_QUESTIONS },
+  'energymotion-lesson': { site: 'science-energy-and-motion',     questions: ENERGYMOTION_QUESTIONS },
+};
+// Screens the data files do not name: shared ones, and Lesson 1.1's test steps (its engine, not its data, makes them).
+const LIVE_SCREEN_NAMES = {
+  start: 'Name page', cover: 'Cover', why: 'Why', care: 'Why care', summary: 'What we talked about', plan: 'The plan',
+  cart: 'Meet the cart', vocab: 'Words', vq: 'Word check', analysis: 'Analysis', claims: 'Claims', write: 'Explanation',
+  exit: 'Exit ticket', end: 'Done', small: 'Small push page', medium: 'Medium push page', big: 'Big push page',
+  ...Object.fromEntries(['A', 'B', 'C', 'D'].flatMap((t, i) => [
+    [`predict${t}`, `Test ${i + 1} · predict`], [`run${t}`, `Test ${i + 1} · pushes`],
+    [`graph${t}`, `Test ${i + 1} · results`], [`check${t}`, `Test ${i + 1} · check`]])),
+};
+const liveScreens = {};   // site → Promise of { names: { phase: name }, gates: { phase: day } }
+function loadLiveScreens(site) {
+  if (!liveScreens[site]) {
+    liveScreens[site] = Promise.all(['data/lesson.js', 'data/questions.js'].map(f =>
+      fetch(`../${site}/${f}`, { cache: 'no-store' }).then(r => (r.ok ? r.text() : '')).catch(() => '')))
+      .then(([lesson, questions]) => {
+        const box = {};
+        try { new Function('window', `${lesson}\n;\n${questions}`)(box); } catch (e) { /* names fall back below */ }
+        const names = {}, gates = {};
+        // a check is often titled like the pages before it ("High and low"): say which one the student is on
+        Object.entries(box.CHECKS || {}).forEach(([k, v]) => { names[k] = /check|\?$/i.test(v.title) ? v.title : `${v.title} · questions`; });
+        Object.entries(box.LEARN || {}).forEach(([k, v]) => { names[k] = v.rail || v.title; });
+        Object.entries(box.DAY_GATES || {}).forEach(([k, v]) => { gates[k] = Number(v.day) || 1; });
+        return { names, gates };
+      });
+  }
+  return liveScreens[site];
+}
+const plainText = html => { const d = document.createElement('div'); d.innerHTML = String(html || ''); return (d.textContent || '').trim(); };
+
+function liveStudent(student, screens) {
+  const sessions = student.sessions || [];
+  const when = x => new Date(x.timestamp).getTime() || 0;
+  const newest = sessions.reduce((b, x) => (!b || when(x) >= when(b) ? x : b), null);
+  if (!newest || new Date(when(newest)).toDateString() !== new Date().toDateString()) return null;   // today only
+  const events = eventsOf(newest);
+  const marks = new Map();   // id → 'ok' | 'ok2' | 'miss', in the order first answered
+  events.forEach(e => {
+    if (!e || e.e !== 'answer' || !e.id) return;
+    const was = marks.get(e.id);
+    if (e.ok && Number(e.t) !== 2) marks.set(e.id, 'ok');
+    else if (e.ok) marks.set(e.id, was === 'ok' ? 'ok' : 'ok2');
+    else if (!was) marks.set(e.id, 'miss');
+  });
+  const screen = [...events].reverse().find(e => e && e.p);
+  const p = screen ? screen.p : '';
+  const day = events.reduce((d, e) => { const m = /^day(\d+)_start$/.exec((e && e.e) || ''); return m ? Math.max(d, Number(m[1])) : d; }, 1);
+  const gateDay = screens.gates[p] || (/^daygate(\d*)$/.test(p) ? Number(/\d+/.exec(p) || 1) : 0);
+  const done = newest.status === 'complete' || p === 'end';
+  const where = done ? '✅ Finished the lesson' : gateDay ? `End of Day ${gateDay}` : (screens.names[p] || LIVE_SCREEN_NAMES[p] || p || '—');
+  const right = [...marks.values()].filter(m => m !== 'miss').length;
+  return { name: student.name, where, day: gateDay || day, waiting: !done && !!gateDay, done, marks, right, answered: marks.size, at: when(newest) };
+}
+
+let liveToken = 0;
+function renderScienceLive(data) {
+  const wrap = document.getElementById('liveWrap');
+  const cfg = SCIENCE_LIVE[currentGame];
+  if (!cfg) { wrap.style.display = 'none'; return; }
+  const token = ++liveToken, game = currentGame;
+  loadLiveScreens(cfg.site).then(screens => {
+    if (token !== liveToken || game !== currentGame) return;   // another tab was opened, or newer data came in
+    const people = (data || []).filter(s => s.name !== 'Mr. O (Teacher)').map(s => liveStudent(s, screens)).filter(Boolean);
+    const pct = x => (x.answered ? x.right / x.answered : 1);
+    people.sort((a, b) => (b.waiting - a.waiting) || (a.done - b.done) || (pct(a) - pct(b)) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+    const autoOn = document.getElementById('autoRefresh').checked;
+    const waiting = people.filter(x => x.waiting).length;
+    document.getElementById('liveSubtitle').textContent = people.length
+      ? `${people.length} student${people.length > 1 ? 's' : ''} worked on this lesson today` + (waiting ? ` · ${waiting} waiting for you` : '')
+      : 'nobody has worked on this lesson today';
+    const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ${m % 60} min ago`; };
+    const clock = t => new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const qText = id => plainText(cfg.questions[id]) || id;
+    const markLabel = { ok: '✓', ok2: '2nd', miss: '✗' };
+    const markTip = { ok: 'right on the first try', ok2: 'right on the second try', miss: 'missed' };
+    const rows = people.map(x => {
+      const chips = [...x.marks].map(([id, m]) =>
+        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]} · ${qText(id)}`)}">${escHtml(id)} ${markLabel[m]}</span>`).join('');
+      const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => `${escHtml(id)} ${escHtml(qText(id))}`);
+      return `<div class="live-row${x.waiting ? ' waiting' : ''}">
+        <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
+        <div class="live-where">${x.done ? '' : `<small>Day ${x.day}</small>`}${escHtml(x.where)}
+          ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
+          <small>${x.right} of ${x.answered} right</small></div>
+        <div><div class="live-chips">${chips || '<span class="live-when">no questions answered yet</span>'}</div>
+          ${missed.length ? `<div class="live-missed">Missed: ${missed.join(' · ')}</div>` : ''}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('liveBody').innerHTML = `
+      <div class="live-head">
+        <label><input type="checkbox" id="liveAuto" ${autoOn ? 'checked' : ''} onchange="setLiveAuto(this.checked)"/> Keep this up to date (every 30 s)</label>
+        <span>✓ right · 2nd = right on the second try · ✗ missed · hover a box for the question</span>
+      </div>${rows}`;
+    wrap.style.display = 'block';
+  });
+}
+// The panel's switch is the Overview's Auto-refresh switch, so the two never disagree.
+function setLiveAuto(on) {
+  const box = document.getElementById('autoRefresh');
+  if (box.checked === on) return;
+  box.checked = on;
+  toggleAutoRefresh();
+}
+
 const SKILL_CUTOFF = 70; // students under this % are flagged in the click-through list
 let skillReportRows = {};
 let skillReportContext = { attempts: [], bank: {} };
