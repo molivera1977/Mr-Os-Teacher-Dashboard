@@ -7009,14 +7009,17 @@ function hintOpensOf(sessions) {
 // The site remembers scores on the device; this list reads the sheet, so it stays right after a device change
 // (a student shown here as ready who is still locked on a new Chromebook needs the PIN).
 // 10/15: a Warm-Up comes first — 70% on it opens Practice A (a student who already passed Practice A keeps it).
+// 11/6 (Marcos: "add it"): Module 3 has a Pre-Warm-Up — after a Warm-Up under 70%, the next Warm-Up waits until the
+// Pre-Warm-Up is finished once (any score). Those students are listed as "Needs the Pre-Warm-Up"; a student who did it
+// shows its score beside the Warm-Up's.
 const UNIT_GATES = [
-  { warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
+  { preWarmUp: 'mod3z-prewarmup', warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
 function gatesHTML(game) {
-  const unit = UNIT_GATES.find(u => [u.warmUp, u.practiceA, u.practiceB, u.review, ...u.tests].filter(Boolean).includes(game));
+  const unit = UNIT_GATES.find(u => [u.preWarmUp, u.warmUp, u.practiceA, u.practiceB, u.review, ...u.tests].filter(Boolean).includes(game));
   if (!unit) return '';
-  const games = [unit.warmUp, unit.practiceA, unit.practiceB, unit.review, ...unit.tests].filter(Boolean);
+  const games = [unit.preWarmUp, unit.warmUp, unit.practiceA, unit.practiceB, unit.review, ...unit.tests].filter(Boolean);
   const real = st => st.name !== 'Mr. O (Teacher)';
   if (!games.some(g => (dashData[g] || []).some(st => real(st) && (st.sessions || []).length))) return '';   // nobody has started
   // name → { tries, best: { score, total, pct } } from finished attempts
@@ -7034,13 +7037,14 @@ function gatesHTML(game) {
     });
     return m;
   };
+  const Z = unit.preWarmUp ? tally(unit.preWarmUp) : new Map();
   const W = unit.warmUp ? tally(unit.warmUp) : new Map();
   const A = tally(unit.practiceA), B = tally(unit.practiceB), R = tally(unit.review);
   const T = new Map();
   unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
   const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
 
-  const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
+  const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needZ: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
   STUDENT_ROSTER.forEach(n => {
     if (T.has(n))                 stage.tested.push([n, T.get(n)]);
     else if (pass(R.get(n)))      stage.readyTest.push([n, R.get(n)]);
@@ -7048,27 +7052,30 @@ function gatesHTML(game) {
     else if (pass(B.get(n)))      (A.has(n) ? stage.readyReview : stage.needA).push([n, B.get(n)]);
     else if (B.has(n))            stage.stuckB.push([n, B.get(n)]);
     else if (pass(A.get(n)))      stage.readyB.push([n, A.get(n)]);
+    else if (W.has(n) && !pass(W.get(n)) && unit.preWarmUp)   // the next Warm-Up waits for one finished Pre-Warm-Up
+                                  (Z.has(n) ? stage.stuckW : stage.needZ).push([n, { ...W.get(n), pre: Z.get(n) }]);
     else if (W.has(n))            (pass(W.get(n)) ? (A.has(n) ? stage.stuckA.push([n, A.get(n)]) : stage.readyA.push([n, W.get(n)])) : stage.stuckW.push([n, W.get(n)]));
     else if (A.has(n))            (unit.warmUp ? stage.stuckW : stage.stuckA).push([n, A.get(n)]);   // Practice A under 70% and no Warm-Up yet
     else                          stage.none.push([n, null]);
   });
   const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
-  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst); stage.stuckW.sort(mostTriesFirst);
+  stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst); stage.stuckW.sort(mostTriesFirst); stage.needZ.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
   const tries = v => `${v.tries} ${v.tries === 1 ? 'try' : 'tries'}`;
   const chip = (n, v, kind) => {
     const cls = kind === 'stuck' ? (v.tries >= 2 ? 'nm-repeat' : '') : kind === 'ok' ? 'nm-ready' : '';
-    const detail = !v ? '' : kind === 'stuck' ? ` · best ${v.best.score}/${v.best.total} (${v.best.pct}%) · ${tries(v)}` : ` · ${v.best.score}/${v.best.total} (${v.best.pct}%)`;
+    const detail = !v ? '' : kind === 'stuck' ? ` · best ${v.best.score}/${v.best.total} (${v.best.pct}%) · ${tries(v)}${v.pre ? ` · Pre-Warm-Up ${v.pre.best.score}/${v.pre.best.total}` : ''}` : ` · ${v.best.score}/${v.best.total} (${v.best.pct}%)`;
     return `<span class="nm-name ${cls}" style="cursor:default">${escHtml(n)}${detail}</span>`;
   };
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
     `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
-  return `<div class="nm-head">🚦 Where each student is — ${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens Practice A · ` : ''}${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
+  return `<div class="nm-head">🚦 Where each student is — ${unit.preWarmUp ? `under ${unit.cutoff}% on the Warm-Up: finish the Pre-Warm-Up once, then try the Warm-Up again · ` : ''}${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens Practice A · ` : ''}${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
     row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
     row('Stuck at the Review gate', `Practice B under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
     row('Stuck at the Practice B gate', `Practice A under ${unit.cutoff}%`, stage.stuckA, 'stuck') +
     row('Stuck at the Practice A gate', `the Warm-Up not passed yet (under ${unit.cutoff}%, or a Practice A under ${unit.cutoff}% and no Warm-Up) — the score shown is the one that holds them`, stage.stuckW, 'stuck') +
+    row('Needs the Pre-Warm-Up', `Warm-Up under ${unit.cutoff}% · the next Warm-Up waits until they finish the Pre-Warm-Up once (any score), or your PIN`, stage.needZ, 'stuck') +
     row('Passed Practice B — still needs Practice A', 'let in by PIN; the Review stays closed until Practice A is finished', stage.needA, '') +
     row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
     row('Ready for the Review', `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
