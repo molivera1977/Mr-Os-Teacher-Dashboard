@@ -802,7 +802,7 @@ const GAME_ORDER = [
   'talent-test-vocab', 'talent-test-comp', 'talent-test-cloze',
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
-  'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup',
+  'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup', 'mod3z-prewarmup',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
   'startstop-lesson',
@@ -1010,6 +1010,7 @@ const GAME_LABELS = {
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'mod3z-prewarmup': '🧱 MM3 — Pre-Warm-Up',   // 11/6: for a Warm-Up below 9 of 12
   'mod3w-warmup': '🔥 MM3 — Warm-Up',          // 11/3: Times as Many — the Module 2 engine and part names
   'mod3-practice': '🌱 MM3 — Practice A',
   'mod3a-review': '🧭 MM3 — Practice B',
@@ -1115,6 +1116,7 @@ const MAX_SCORES = {
   'mod3a-review': 17,
   'mod3b-review': 17,
   'mod3-practice': 17,
+  'mod3z-prewarmup': 8,    // only its 8 questions are scored (11/6)
   'mod3w-warmup': 12,      // only its 12 questions are scored (the worked examples and the steps are not)
   'mod2t-test': 17,
   'mod2u-test': 17,
@@ -1484,7 +1486,7 @@ const DJ_CLOZE_QUESTIONS = {
 };
 
 // ── Minimum realistic completion time per game ──
-const MIN_COMPLETION_SECS = { 'ds-test-vocab': 180, 'ds-test-comp': 300, 'ds-test-cloze': 180, 'ds-review-vocab': 180, 'ds-review-comp': 300, 'ds-review-cloze': 180, 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod3t-test': 240, 'mod3u-test': 240, 'mod3a-review': 240, 'mod3b-review': 240, 'mod3-practice': 240, 'mod3w-warmup': 240, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
+const MIN_COMPLETION_SECS = { 'ds-test-vocab': 180, 'ds-test-comp': 300, 'ds-test-cloze': 180, 'ds-review-vocab': 180, 'ds-review-comp': 300, 'ds-review-cloze': 180, 'talent-test-vocab': 180, 'talent-test-comp': 300, 'talent-test-cloze': 180, 'talent-review-vocab': 180, 'talent-review-comp': 300, 'talent-review-cloze': 180, 'mod3t-test': 240, 'mod3u-test': 240, 'mod3a-review': 240, 'mod3b-review': 240, 'mod3-practice': 240, 'mod3w-warmup': 240, 'mod3z-prewarmup': 240, 'mod2t-test': 240, 'mod2u-test': 240, 'mod2a-review': 240, 'mod2b-review': 240, 'mod2-practice': 240, 'mod2w-warmup': 240, 'awoc-test-vocab': 240, 'awoc-test-comp': 300, 'awoc-test-cloze': 240, 'rounding2-practice-a': 150, 'rounding2-practice': 150, 'rounding2-review': 180, 'rounding2-quiz': 180, 'awoc-review-vocab': 240, 'awoc-review-comp': 300, 'awoc-review-cloze': 240, 'rounding-practice-a': 150, 'rounding-practice': 150, 'rounding-review': 180, 'rounding-quiz': 180, 'mod1a-test': 180, 'mod1b-test': 180, 'mod1c-test': 180, 'rliabw-review': 300, 'rliaba-review': 600, 'rliabb-review': 600, 'rliabc-review': 600, 'ilfiaba-review': 420, 'ilfiabb-review': 420, 'ilfiabc-review': 420, 'pvfiaba-review': 180, 'pvfiabb-review': 180, 'pvfiabc-review': 180, rad_quiz1: 240, 'mod1a-review': 180, 'mod1b-review': 180, 'mod1c-review': 180, cloze: 330, monsters: 120, 'mod16a-review': 180, 'mod16b-review': 180, 'mod16c-review': 180, dj_vocab: 240, dj_comp: 300, dj_cloze: 240, djt_vocab: 240, djt_comp: 300, djt_cloze: 240, wwrt_vocab: 240, wwrt_comp: 300, wwrt_cloze: 240, 'mod16-test': 300 };
 let dashData      = {};
 let currentView   = 'overview';
 let currentGame   = null;
@@ -3511,7 +3513,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
   'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
-  'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
+  'mod3z-prewarmup': 'mod3', 'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2',
   // MM1's Review and Test = one section too (Marcos 10/23: "mm1 review and test card should be combined")
   'mod1a-review': 'mod1', 'mod1b-review': 'mod1', 'mod1c-review': 'mod1', 'mod1a-test': 'mod1', 'mod1b-test': 'mod1', 'mod1c-test': 'mod1' };
@@ -4170,6 +4172,7 @@ Object.entries(MOD2_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD2_SKILL_BANK[id] = `(${skill}) ${MOD2_QUESTIONS[id]}`; }));
 
 // ── Math Module 3 Review and Test (math-module-3, built 11/3) — "Times as Many", the Module 2 engine and part names:
+// Pre-Warm-Up (mod3z-prewarmup, 11/6, Z01–Z23: 4 worked examples, 11 steps, 8 scored; for a Warm-Up below 9) ·
 // Warm-Up (mod3w-warmup, W01–W34: 7 worked examples "Watch: …", 15 steps "Step: …" (not scored), 12 scored) ·
 // Practice A (mod3-practice, P01–P17) · Practice B (mod3a-review, A01–A17) · Review (mod3b-review, B01–B17) ·
 // Test (mod3t-test, T01–T17; retake = mod3u-test, U01–U17). The same 17 kinds of question at the same spots on every
@@ -4330,14 +4333,39 @@ const MOD3_QUESTIONS = {
   Y15: "Noah picks 8 apples. Raj picks 2 times as many apples as Noah. Which equation can be used to find the number of apples, p, for Raj?",
   Y16: "On Saturday, Rosa did 20 push-ups. That is 4 times as many push-ups as on Tuesday. Part A: Which equation can be used to find how many push-ups, p, Rosa did on Tuesday?",
   Y17: "On Saturday, Rosa did 20 push-ups. That is 4 times as many push-ups as on Tuesday. Part B: How many push-ups did Rosa do on Tuesday?",
+  // Pre-Warm-Up (mod3z-prewarmup, 11/6): 4 worked examples, 11 steps (not scored), 8 scored — version 1
+  Z01: "Watch: Times as many means equal groups",
+  Z02: "Step: Max has 5 rocks. Lucy has 2 times as many rocks as Max. How many groups does Lucy have?",
+  Z03: "Step: Each group has 5. Count the dots in all 2 groups. How many in all?",
+  Z04: "Step: 2 + 5 = 7. Is 7 how many rocks Lucy has?",
+  Z05: "What number is 2 times as many as 4?",
+  Z06: "Omar catches 2 fish. Ana catches 3 times as many fish as Omar. How many fish does Ana catch?",
+  Z07: "Watch: The times number tells how many groups",
+  Z08: "Step: There are 6 cupcakes. That is 3 times as many cupcakes as pies. Which number tells how many groups?",
+  Z09: "Step: Which number is all of the cupcakes?",
+  Z10: "Step: Is the number of pies 3?",
+  Z11: "There are 10 tents at the camp. That is 2 times as many tents as cabins. Which number tells how many groups?",
+  Z12: "Eva has 5 cookies. Nina has 2 times as many cookies as Eva. Which number tells how many are in each group?",
+  Z13: "Watch: Find the smaller amount: share",
+  Z14: "Step: Share 10 dots into 2 equal groups. How many dots are in each group?",
+  Z15: "Step: The smaller amount is one group. Is 5 smaller than 10?",
+  Z16: "There are 2 times as many birds as squirrels in the park. There are 6 birds. How many squirrels are in the park?",
+  Z17: "A shelf has 4 times as many books as games. The shelf has 8 books. 4 × g = 8. How many games, g, are on the shelf?",
+  Z18: "Watch: Two steps: how many more?",
+  Z19: "Step: Ella counts 2 apples and 5 times as many oranges. Step 1: 5 × 2 = ?",
+  Z20: "Step: The question asks how many more oranges than apples. Is 10 the answer?",
+  Z21: "Step: Step 2: how many more oranges than apples? 10 − 2 = ?",
+  Z22: "Sam counts 2 cats. Sam counts 3 times as many dogs as cats. How many more dogs than cats does Sam count?",
+  Z23: "Mia counts 2 roses. Mia counts 4 times as many daisies as roses. How many more daisies than roses does Mia count?",
 };
 const MOD3_SKILLS = {
-  "Times as many: find the bigger amount": ['W05','W06','W10','W11','P01','P03','P05','P12','A01','A03','A05','A12','B01','B03','B05','B12','T01','T03','T05','T12','U01','U03','U05','U12'],
-  "Times as many: find the smaller amount": ['W15','W16','P04','P13','P17','A04','A13','A17','B04','B13','B17','T04','T13','T17','U04','U13','U17'],
+  "Times as many: find the bigger amount": ['Z05','Z06','W05','W06','W10','W11','P01','P03','P05','P12','A01','A03','A05','A12','B01','B03','B05','B12','T01','T03','T05','T12','U01','U03','U05','U12'],
+  "Times as many: find the smaller amount": ['Z16','Z17','W15','W16','P04','P13','P17','A04','A13','A17','B04','B13','B17','T04','T13','T17','U04','U13','U17'],
   "How many times as many": ['W20','P11','A11','B11','T11','U11'],
   "True or false: times as many": ['W24','W25','P06','P07','P08','A06','A07','A08','B06','B07','B08','T06','T07','T08','U06','U07','U08'],
   "Pick the equation": ['W29','W30','P02','P09','P14','P15','P16','A02','A09','A14','A15','A16','B02','B09','B14','B15','B16','T02','T09','T14','T15','T16','U02','U09','U14','U15','U16'],
-  "Two steps: how many more": ['W34','P10','A10','B10','T10','U10'],
+  "Times as many: what each number means": ['Z11','Z12'],
+  "Two steps: how many more": ['Z22','Z23','W34','P10','A10','B10','T10','U10'],
 };
 const MOD3_STANDARDS = {
   "Times as many: find the bigger amount": '4.OA.2',
@@ -4346,6 +4374,7 @@ const MOD3_STANDARDS = {
   "True or false: times as many": '4.OA.1',
   "Pick the equation": '4.OA.2',
   "Two steps: how many more": '4.OA.3',
+  "Times as many: what each number means": '4.OA.1',   // the Pre-Warm-Up's (11/6)
 };
 const MOD3_SKILL_BANK = {};
 Object.entries(MOD3_SKILLS).forEach(([skill, ids]) =>
@@ -5619,6 +5648,7 @@ const SKILL_REPORTS = {
   'mod3b-review':   { bank: MOD3_SKILL_BANK,   form: 'B', standards: MOD3_STANDARDS,   site: 'math-module-3' },
   'mod3-practice':  { bank: MOD3_SKILL_BANK,   form: 'P', standards: MOD3_STANDARDS,   site: 'math-module-3' },
   'mod3w-warmup':   { bank: MOD3_SKILL_BANK,   form: 'W', standards: MOD3_STANDARDS,   site: 'math-module-3' },   // W = Warm-Up
+  'mod3z-prewarmup': { bank: MOD3_SKILL_BANK,  form: 'Z', standards: MOD3_STANDARDS,   site: 'math-module-3' },   // Z = Pre-Warm-Up (11/6)
   'mod2t-test':     { bank: MOD2_SKILL_BANK,   form: 'T', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2u-test':     { bank: MOD2_SKILL_BANK,   form: 'U', standards: MOD2_STANDARDS,   site: 'math-module-2' },
   'mod2a-review':   { bank: MOD2_SKILL_BANK,   form: 'A', standards: MOD2_STANDARDS,   site: 'math-module-2' },
@@ -6923,6 +6953,7 @@ function getQuestionText(id) {
     'mod3b-review': MOD3_QUESTIONS,
     'mod3-practice': MOD3_QUESTIONS,
     'mod3w-warmup': MOD3_QUESTIONS,
+    'mod3z-prewarmup': MOD3_QUESTIONS,
     'mod2t-test': MOD2_QUESTIONS,
     'mod2u-test': MOD2_QUESTIONS,
     'mod2a-review': MOD2_QUESTIONS,
