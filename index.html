@@ -5753,17 +5753,26 @@ function liveStudent(name, rows, screens, cfg) {
     const m = /^\[([^\]]+)\]\s*(?:\([^)]*\)\s*)?(.*?)(?:\s*\(picked: .*\))?$/.exec(t.trim());
     if (m) missText[m[1]] = m[2];
   });
-  // A row from before the site logged answers (a Chromebook still on the old page): its misses and score still tell
-  const early = !marks.size;
-  if (early) Object.keys(missText).forEach(id => marks.set(id, 'miss'));
-  const right = early ? Number(newest.score) || 0 : [...marks.values()].filter(m => m !== 'miss').length;
-  const base = { name, marks, right, answered: early ? right + marks.size : marks.size, at: when(newest), missText };
+  const right = [...marks.values()].filter(m => m !== 'miss').length;
+  const base = { name, marks, right, answered: marks.size, unboxed: 0, at: when(newest), missText };
   if (cfg.group) {   // a row at every question, ending with { e:'on', q, of }; no day stops, so nobody waits
-    const on = events.length && events[events.length - 1].e === 'on' ? events[events.length - 1]
-      : [...events].reverse().find(e => e && Number(e.q) > 0 && e.e !== 'finish');   // the old page: every log item has its q
+    // A page opened before the 11/9 update logs no answers and sends its first row after question 5; one reloaded since
+    // logs only the answers after the reload. The row's own score and misses always count every question, and a miss
+    // from before the logging keeps its box, first (it was answered first).
+    const oldMisses = Object.keys(missText).filter(id => !marks.has(id));
+    const boxes = new Map([...oldMisses.map(id => [id, 'miss']), ...marks]);
+    const rowRight = Number(newest.score) || 0;
+    const answered = rowRight + [...boxes.values()].filter(m => m === 'miss').length;
+    const total = Number(newest.total) || 0;
+    const last = events[events.length - 1];
+    const on = last && last.e === 'on' ? last : null;
     const done = newest.status === 'complete';
-    const where = done ? `✅ Finished · ${newest.score} of ${newest.total}` : on ? `Question ${on.q} of ${on.of || newest.total}` : 'Just started';
-    return { ...base, where, step: `${cfg.labels[newest.game] || newest.game} · ${String(newest.form || '').replace(/ · .*/, '')}`, waiting: false, done };
+    const where = done ? `✅ Finished · ${newest.score} of ${newest.total}`
+      : on ? `Question ${on.q} of ${on.of || total}`
+      : answered ? `Question ${Math.min(answered + 1, total || answered + 1)} of ${total}`   // the old page: the one after those answered
+      : 'Just started';
+    return { ...base, marks: boxes, right: rowRight, answered, unboxed: Math.max(0, answered - boxes.size), where,
+      step: `${cfg.labels[newest.game] || newest.game} · ${String(newest.form || '').replace(/ · .*/, '')}`, waiting: false, done };
   }
   const screen = [...events].reverse().find(e => e && e.p);
   const p = screen ? screen.p : '';
@@ -5812,7 +5821,7 @@ function renderRightNow(data) {
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
           <small>${x.right} of ${x.answered} right</small></div>
-        <div><div class="live-chips">${chips || '<span class="live-when">no questions answered yet</span>'}</div>
+        <div><div class="live-chips">${chips || (x.unboxed ? '' : '<span class="live-when">no questions answered yet</span>')}${x.unboxed ? `<span class="live-when live-unboxed">+${x.unboxed} right on the older page (no box)</span>` : ''}</div>
           ${missed.length ? `<div class="live-missed">Missed: ${missed.join(' · ')}</div>` : ''}</div>
       </div>`;
     }).join('');
