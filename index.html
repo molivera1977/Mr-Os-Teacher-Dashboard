@@ -3805,7 +3805,7 @@ function renderAssignment() {
   // Heatmap
   buildHeatmap(data);
   buildSkillReport(data); // after the heatmap, which settles 1st vs 2nd Try
-  renderScienceLive(data);
+  renderRightNow(data);
 }
 
 // ═══════════════════════════════════════════════════
@@ -5699,7 +5699,8 @@ const SKILL_REPORTS = {
 // question answered (✓ first try · 2nd = right on the second try · ✗ missed), what they missed, and when the
 // site last heard from them. Students at the end of a day wait for "Mr. O said..." — they come first.
 // Section names come from the lesson's own data files, so a renamed section needs no change here.
-const SCIENCE_LIVE = {
+// 11/9 (Marcos: "does the inference site have this" → "Yes, add it"): Inference Practice too — see INFP below.
+const LIVE_LESSONS = {
   'startstop-lesson':    { site: 'science-starting-and-stopping', questions: STARTSTOP_QUESTIONS },
   'energymotion-lesson': { site: 'science-energy-and-motion',     questions: ENERGYMOTION_QUESTIONS },
 };
@@ -5732,10 +5733,10 @@ function loadLiveScreens(site) {
 }
 const plainText = html => { const d = document.createElement('div'); d.innerHTML = String(html || ''); return (d.textContent || '').trim(); };
 
-function liveStudent(student, screens) {
-  const sessions = student.sessions || [];
+// One student's newest row today, from any game in the panel (a science lesson is one game; Inference Practice is eight).
+function liveStudent(name, rows, screens, cfg) {
   const when = x => new Date(x.timestamp).getTime() || 0;
-  const newest = sessions.reduce((b, x) => (!b || when(x) >= when(b) ? x : b), null);
+  const newest = rows.reduce((b, x) => (!b || when(x) >= when(b) ? x : b), null);
   if (!newest || new Date(when(newest)).toDateString() !== new Date().toDateString()) return null;   // today only
   const events = eventsOf(newest);
   const marks = new Map();   // id → 'ok' | 'ok2' | 'miss', in the order first answered
@@ -5746,44 +5747,69 @@ function liveStudent(student, screens) {
     else if (e.ok) marks.set(e.id, was === 'ok' ? 'ok' : 'ok2');
     else if (!was) marks.set(e.id, 'miss');
   });
+  // the row's own miss text names the real question (Inference Practice: at the student's level)
+  const missText = {};
+  String(newest.wrongQuestions || '').split(' | ').forEach(t => {
+    const m = /^\[([^\]]+)\]\s*(?:\([^)]*\)\s*)?(.*?)(?:\s*\(picked: .*\))?$/.exec(t.trim());
+    if (m) missText[m[1]] = m[2];
+  });
+  // A row from before the site logged answers (a Chromebook still on the old page): its misses and score still tell
+  const early = !marks.size;
+  if (early) Object.keys(missText).forEach(id => marks.set(id, 'miss'));
+  const right = early ? Number(newest.score) || 0 : [...marks.values()].filter(m => m !== 'miss').length;
+  const base = { name, marks, right, answered: early ? right + marks.size : marks.size, at: when(newest), missText };
+  if (cfg.group) {   // a row at every question, ending with { e:'on', q, of }; no day stops, so nobody waits
+    const on = events.length && events[events.length - 1].e === 'on' ? events[events.length - 1]
+      : [...events].reverse().find(e => e && Number(e.q) > 0 && e.e !== 'finish');   // the old page: every log item has its q
+    const done = newest.status === 'complete';
+    const where = done ? `✅ Finished · ${newest.score} of ${newest.total}` : on ? `Question ${on.q} of ${on.of || newest.total}` : 'Just started';
+    return { ...base, where, step: `${cfg.labels[newest.game] || newest.game} · ${String(newest.form || '').replace(/ · .*/, '')}`, waiting: false, done };
+  }
   const screen = [...events].reverse().find(e => e && e.p);
   const p = screen ? screen.p : '';
   const day = events.reduce((d, e) => { const m = /^day(\d+)_start$/.exec((e && e.e) || ''); return m ? Math.max(d, Number(m[1])) : d; }, 1);
   const gateDay = screens.gates[p] || (/^daygate(\d*)$/.test(p) ? Number(/\d+/.exec(p) || 1) : 0);
   const done = newest.status === 'complete' || p === 'end';
   const where = done ? '✅ Finished the lesson' : gateDay ? `End of Day ${gateDay}` : (screens.names[p] || LIVE_SCREEN_NAMES[p] || p || '—');
-  const right = [...marks.values()].filter(m => m !== 'miss').length;
-  return { name: student.name, where, day: gateDay || day, waiting: !done && !!gateDay, done, marks, right, answered: marks.size, at: when(newest) };
+  return { ...base, where, step: done ? '' : `Day ${gateDay || day}`, waiting: !done && !!gateDay, done };
 }
 
 let liveToken = 0;
-function renderScienceLive(data) {
+function renderRightNow(data) {
   const wrap = document.getElementById('liveWrap');
-  const cfg = SCIENCE_LIVE[currentGame];
+  const cfg = LIVE_LESSONS[currentGame];
   if (!cfg) { wrap.style.display = 'none'; return; }
   const token = ++liveToken, game = currentGame;
-  loadLiveScreens(cfg.site).then(screens => {
+  (cfg.site ? loadLiveScreens(cfg.site) : Promise.resolve({ names: {}, gates: {} })).then(screens => {
     if (token !== liveToken || game !== currentGame) return;   // another tab was opened, or newer data came in
-    const people = (data || []).filter(s => s.name !== 'Mr. O (Teacher)').map(s => liveStudent(s, screens)).filter(Boolean);
+    // every row of every game in the panel, by student (a student moves between Inference Practice's activities)
+    const rowsOf = new Map();
+    (cfg.group || [game]).forEach(g => (g === game ? data : dashData[g] || []).forEach(s => {
+      if (s.name === 'Mr. O (Teacher)' || !ROSTER.includes(s.name)) return;
+      if (!rowsOf.has(s.name)) rowsOf.set(s.name, []);
+      (s.sessions || []).forEach(x => rowsOf.get(s.name).push({ ...x, game: g }));
+    }));
+    const people = [...rowsOf].map(([name, rows]) => liveStudent(name, rows, screens, cfg)).filter(Boolean);
     const pct = x => (x.answered ? x.right / x.answered : 1);
     people.sort((a, b) => (b.waiting - a.waiting) || (a.done - b.done) || (pct(a) - pct(b)) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
     const autoOn = document.getElementById('autoRefresh').checked;
     const waiting = people.filter(x => x.waiting).length;
+    const what = cfg.group ? cfg.title : 'this lesson';
     document.getElementById('liveSubtitle').textContent = people.length
-      ? `${people.length} student${people.length > 1 ? 's' : ''} worked on this lesson today` + (waiting ? ` · ${waiting} waiting for you` : '')
-      : 'nobody has worked on this lesson today';
+      ? `${people.length} student${people.length > 1 ? 's' : ''} worked on ${what} today` + (waiting ? ` · ${waiting} waiting for you` : '')
+      : `nobody has worked on ${what} today`;
     const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.floor(m / 60)} h ${m % 60} min ago`; };
     const clock = t => new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const qText = id => plainText(cfg.questions[id]) || id;
     const markLabel = { ok: '✓', ok2: '2nd', miss: '✗' };
     const markTip = { ok: 'right on the first try', ok2: 'right on the second try', miss: 'missed' };
     const rows = people.map(x => {
+      const qText = id => (cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
       const chips = [...x.marks].map(([id, m]) =>
-        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]} · ${qText(id)}`)}">${escHtml(id)} ${markLabel[m]}</span>`).join('');
+        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(id)} ${markLabel[m]}</span>`).join('');
       const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => `${escHtml(id)} ${escHtml(qText(id))}`);
       return `<div class="live-row${x.waiting ? ' waiting' : ''}">
         <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
-        <div class="live-where">${x.done ? '' : `<small>Day ${x.day}</small>`}${escHtml(x.where)}
+        <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
           <small>${x.right} of ${x.answered} right</small></div>
         <div><div class="live-chips">${chips || '<span class="live-when">no questions answered yet</span>'}</div>
@@ -5793,7 +5819,7 @@ function renderScienceLive(data) {
     document.getElementById('liveBody').innerHTML = `
       <div class="live-head">
         <label><input type="checkbox" id="liveAuto" ${autoOn ? 'checked' : ''} onchange="setLiveAuto(this.checked)"/> Keep this up to date (every 30 s)</label>
-        <span>✓ right · 2nd = right on the second try · ✗ missed · hover a box for the question</span>
+        <span>✓ right${cfg.group ? '' : ' · 2nd = right on the second try'} · ✗ missed · hover a box for the question</span>
       </div>${rows}`;
     wrap.style.display = 'block';
   });
@@ -6307,6 +6333,10 @@ INFP_ACTIVITIES.forEach(a => {
   INFP_QUESTION_BANKS[game] = texts;
   INFP_GAMES.push(game);
 });
+// 📍 Right Now on every activity (11/9): the panel lists everyone working on Inference Practice today, whichever activity
+const INFP_LIVE = { group: INFP_ACTIVITIES.map(a => `inference-practice-${a.kind}`), title: 'Inference Practice',
+  labels: Object.fromEntries(INFP_ACTIVITIES.map(a => [`inference-practice-${a.kind}`, a.label])) };
+INFP_LIVE.group.forEach(g => { LIVE_LESSONS[g] = INFP_LIVE; });
 GAME_ORDER.unshift(...INFP_GAMES);
 
 // ═══════════════════════════════════════════════════
