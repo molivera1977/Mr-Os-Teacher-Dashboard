@@ -5873,7 +5873,7 @@ function liveStudent(name, rows, screens, cfg) {
     const on = last && last.e === 'on' ? last : null;
     const done = newest.status === 'complete';
     const where = done ? `✅ Finished · ${newest.score} of ${newest.total}`
-      : on ? `Question ${on.q} of ${on.of || total}`
+      : on ? (on.cards ? '📖 Lesson cards' : `Question ${on.q} of ${on.of || total}`)   // on the lesson cards (Inference Practice, 11/11)
       : answered ? `Question ${Math.min(answered + 1, total || answered + 1)} of ${total}`   // the old page: the one after those answered
       : 'Just started';
     return { ...base, marks: boxes, right: rowRight, answered, unboxed: Math.max(0, answered - boxes.size), where,
@@ -7933,6 +7933,7 @@ function onQuestion(student) {
   let log; try { log = JSON.parse(newest.events); } catch (e) { return ''; }
   const on = Array.isArray(log) ? log[log.length - 1] : null;
   if (!on || on.e !== 'on') return '';
+  if (on.cards) return 'on the lesson cards';   // Inference Practice: the try started, its lesson cards are showing (11/11)
   const q = Number(on.q), of = Number(on.of);
   return Number.isInteger(q) && Number.isInteger(of) && q >= 1 && q <= of ? `on ${q} of ${of}` : '';
 }
