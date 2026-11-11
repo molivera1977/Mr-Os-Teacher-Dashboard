@@ -418,7 +418,9 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .lab-ls{display:inline-flex;gap:3px;}
 .lab-l{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:6px;font-size:.78rem;font-weight:800;border:2px solid var(--notstarted-border);color:var(--notstarted-text);background:transparent;vertical-align:middle;}
 .lab-l.ok{background:var(--complete);border-color:var(--complete-border);color:var(--complete-text);}
-.lab-l.try{background:var(--inprogress);border-color:var(--inprogress-border);color:var(--inprogress-text);}
+.lab-l.retry{background:var(--retry);border-color:var(--retry-border);color:var(--retry-text);}   /* finished under the pass mark: a retry is next (orange, the leveled-dashboard standard 11/11) */
+.lab-retry{color:var(--retry-text);font-weight:800;}
+.lab-sum-chip.retry{border-color:var(--retry-border);background:var(--retry);color:var(--retry-text);}
 .lab-l.stuck{background:var(--flagged);border-color:var(--flagged-border);color:var(--flagged-text);}
 .lab-l.now{border-color:var(--blue);color:var(--blue);box-shadow:0 0 0 2px rgba(26,106,170,.25);}
 a.lab-link{color:inherit;text-decoration:none;}
@@ -437,7 +439,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
 .qps-mytest{margin-top:6px;font-size:.8rem;font-weight:700;}
 .qps-mytest.ok{color:var(--success-dark,#157a40);}
 .qps-mytest.bad{color:#c92a2a;}
-.qps-tries{margin-top:4px;font-size:.75rem;font-weight:700;color:#c92a2a;}
+.qps-tries{margin-top:4px;font-size:.75rem;font-weight:800;color:var(--retry-text);}   /* ↻ a Check under the mark: a retry is next (orange, 11/11) */
 .qps-missed summary{cursor:pointer;color:var(--muted);font-size:.8rem;font-weight:700;}
 .fact-assign-who-cell{vertical-align:top !important;border-right:1px solid var(--border);}
 .fact-assign-who-cell .btn{margin-top:6px;}
@@ -631,6 +633,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
     <div id="view-qps" style="display:none;">
       <div class="section-title">📖 QPS Literacy Hub — Practice Checks <a href="https://mroteacher.com/behind-the-qps/" target="behind-the-qps" rel="noopener" style="font-size:.8em;margin-left:8px;">📗 Behind the QPS</a></div>
       <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">A <b>Check</b> is the 10-question quiz at the end of a stop or level. Two Checks at 80% or better = a stop or level passed: the student moves on by themselves. <b>Finished — test them</b> lists what each student passed that you still need to test: ✓ Tested clears it, ↩ Back sends them back to it.</p>
+      <p class="qps-key" style="font-weight:600;margin:-6px 0 12px;"><span class="status-pill retry">↻ Retry next</span> = their newest Check was under 80% (Maze: under its goal): they practice, then take another Check.</p>
       <div id="qpsFlags"></div>
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
     </div>
@@ -642,7 +645,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
       <p class="lab-intro">One row per student. Their strands are stacked in the order they do them; each square is a lesson: <b>✓</b> = passed. Click a lesson or a strand to read what it teaches.</p>
       <div id="labSummary" class="lab-sum"></div>
       <details class="lab-key"><summary>How to read this page</summary><ul>
-        <li><span class="lab-l ok">✓</span> passed · <span class="lab-l try">2</span> tried, not passed yet · <span class="lab-l stuck">!</span> stuck: 3 or more tries, not passed · <span class="lab-l now">4</span> in the middle of it · <span class="lab-l">5</span> not tried yet. Point at a square for its name and best score.</li>
+        <li><span class="lab-l ok">✓</span> passed · <span class="lab-l retry">2</span> orange: finished under the pass mark, a retry is next · <span class="lab-l stuck">!</span> stuck: 3 or more tries, not passed · <span class="lab-l now">4</span> in the middle of it · <span class="lab-l">5</span> not tried yet. Point at a square for its name and best score.</li>
         <li>Strands are stacked in the order the Lab gives them (1st, 2nd …). Two strands marked "takes turns" (⇄) go back and forth: a math lesson, then a reading lesson, then math again — so a kid can have lesson 1 done in one and be on lesson 1 of the other.</li>
         <li>To pass: adding, subtracting and multiplying facts 90%. Place value, rounding, Big Numbers and reading 75% (8 of 10 · 15 of 20 on a Check · reading 6 of 8 points, where a Part A + Part B question is worth 2).</li>
         <li>"Tested out" = all 5 Show-what-you-know questions right, so the lesson was skipped.</li>
@@ -1968,7 +1971,7 @@ function qpsReadingPath(r, k) {
   const practicedNow = lastP > lastC;
   const at = x => String(x.form || '').startsWith(`Check · Level ${c.level}`);
   const pass1 = checks.find(x => at(x) && /pass 1 of 2/.test(x.form));
-  const sinceLastPass = checks.filter(x => at(x) && !qpsCheckPassed(x) && (!pass1 || new Date(x.timestamp) > new Date(pass1.timestamp)));
+  const sinceLastPass = qpsReadingMisses(r, k);
   const steps = [
     { t: 'Learn', done: c.learned || c.passes > 0 || practice.length > 0 },
     { t: 'Practice', done: c.passes >= 1 || practicedNow },
@@ -1979,8 +1982,37 @@ function qpsReadingPath(r, k) {
   ];
   const now = steps.findIndex(x => !x.done);
   const chips = steps.map((x, i) => `<span class="qps-step${x.done ? ' done' : ''}${i === now ? ' now' : ''}${x.end ? ' end' : ''}">${x.done ? '✅' : i === now ? '👉' : '⬜'} ${escHtml(x.t)}${x.note ? ` <small>${escHtml(x.note)}</small>` : ''}</span>`).join('<span class="qps-arrow">→</span>');
-  const tries = sinceLastPass.length ? `<div class="qps-tries">${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} not passed at this step (last ${escHtml(qpsCheckScore(sinceLastPass[0]))}${k === 'maze' ? '' : ', need 80%'})</div>` : '';
+  const tries = sinceLastPass.length ? `<div class="qps-tries">↻ ${sinceLastPass.length} Check${sinceLastPass.length > 1 ? 's' : ''} not passed at this step (last ${escHtml(qpsCheckScore(sinceLastPass[0]))}${k === 'maze' ? '' : ', need 80%'}) · a retry is next</div>` : '';
   return `<div class="qps-path">${chips}</div>${tries}`;
+}
+// One reading course's Checks at the student's level, not passed, since their last pass there (newest first). One or
+// more = a retry is next (orange ↻, 11/11): the QPS page's path, the Lab page's 📖 QPS line and the student window.
+function qpsReadingMisses(r, k) {
+  const c = (r.course || {})[k];
+  if (!c || c.finished) return [];
+  const checks = (r.checks || []).filter(x => x.game === 'qps-c-' + k && new Date(x.timestamp).getTime() >= QPS_COURSE_SINCE);
+  const at = x => String(x.form || '').startsWith(`Check · Level ${c.level}`);
+  const pass1 = checks.find(x => at(x) && /pass 1 of 2/.test(x.form));
+  return checks.filter(x => at(x) && !qpsCheckPassed(x) && (!pass1 || new Date(x.timestamp) > new Date(pass1.timestamp)));
+}
+// The student window's status for one QPS stop or reading course, in the QPS page's words (null = keep the row's own):
+// the stop they are on → its pill (passes, or ↻ Retry next); a stop before it → moved on; after it → sent back from it
+function qpsProfilePill(name, game) {
+  const r = qpsRowFor(name), pill = (cls, text) => `<span class="status-pill ${cls}">${text}</span>`;
+  if (isQpsComp(game)) {
+    const k = game.slice(6), c = (r.course || {})[k];
+    if (!c) return null;
+    return c.finished ? pill('complete', '🎉 Finished')
+      : qpsReadingMisses(r, k).length ? pill('retry', `Level ${c.level} of 4 · ↻ Retry next`)
+      : pill('inprogress', `🔄 Level ${c.level} of 4 · ${c.passes} of ${QPS_PASSES} passes`);
+  }
+  const stop = game.slice(4);
+  if (r.track === undefined) return null;
+  if (r.comp) return pill('complete', '✅ Moved on');            // on the reading course now: the phonics stops are behind them
+  if (r.track === null) return pill('complete', '✅ Passed');   // passed every stop
+  if (stop === r.track) return qpsReadyPill(r);
+  return QPS_STOP_IDS.indexOf(stop) < QPS_STOP_IDS.indexOf(r.track) ? pill('complete', '✅ Moved on')
+    : pill('notstarted', `↩ Now on ${escHtml(qpsStopName(r.track))}`);
 }
 
 // ONE student's QPS standing from the sheet (dashData): the 📖 QPS page and the 🧪 Lab page both use it, so the two
@@ -2027,7 +2059,11 @@ function qpsReadyPill(r) {
         : c.finished ? '<span class="status-pill complete">🎉 Finished</span>'
         : `<span class="status-pill ${c.passes ? 'inprogress' : 'notstarted'}">Level ${c.level} of 4 · ${'✅'.repeat(c.passes)}${'⬜'.repeat(QPS_PASSES - c.passes)} ${c.passes} of ${QPS_PASSES} passes</span>`; }).join('<br>');
   } else {
+    // ↻ the newest Check on this stop was under 80%: practice, then another Check — orange, the leveled-dashboard
+    // standard (11/11); it was "🔄 Practicing" in yellow, the color for "working now"
+    const retry = r.latest && Number(r.latest.percent) < QPS_READY;
     ready = r.passes >= QPS_PASSES ? '<span class="status-pill complete">✅✅ 2 of 2 passes</span>'
+          : retry ? `<span class="status-pill retry" title="Last Check ${Number(r.latest.percent)}%, needs ${QPS_READY}%: practice, then another Check">${r.passes ? `✅⬜ ${r.passes} of ${QPS_PASSES} passes · ` : ''}↻ Retry next</span>`
           : r.passes ? `<span class="status-pill inprogress">✅⬜ ${r.passes} of ${QPS_PASSES} passes</span>`
           : r.onTrack.length ? '<span class="status-pill inprogress">🔄 Practicing</span>'
           : r.track === null ? '' : '<span class="status-pill notstarted">⬜ No check yet</span>';
@@ -2266,19 +2302,33 @@ function labStudent(name) {
            qps: qpsRowFor(name) };
 }
 
+// One lesson for one student — [state, square label, hover]: ok ✓ passed · retry = finished under the pass mark, a
+// retry is next (orange, the leveled-dashboard standard 11/11; yellow "tried" before) · stuck 🚩 · now = in the middle of
+// it · '' not tried. The Lab page's squares and the student window's Lab rows both use it, so they say the same.
+function labLessonState(r, lid) {
+  const t = r.tried[lid], best = t && t.best ? `best ${Number(t.best.score) || 0} of ${Number(t.best.total) || 0}` : '';
+  return r.passed.includes(lid) ? ['ok', '✓', !t && LAB_PASSED_WITH[lid] ? `counts as passed: ${LAB_PASSED_WITH[lid]} (the harder lesson) is passed`
+        : `passed${/Tested out/.test(((t && t.best) || {}).form) ? ' (tested out)' : ''} · ${best}`]
+      : (r.skipVoid || []).includes(lid) ? ['retry', labSquareLabel(lid), `skipped (tested out), but ${LAB_PASSED_WITH[lid]} was not passed: the Lab teaches it next`]
+      : r.stuck.some(x => x.id === lid) ? ['stuck', '!', `🚩 stuck · ${t.tries} tries · ${best}`]
+      : lid === (r.now && r.now.lesson) ? ['now', labSquareLabel(lid), 'in the middle of it']
+      : t ? ['retry', labSquareLabel(lid), `${t.tries} ${t.tries > 1 ? 'tries' : 'try'}, not passed yet · ${best} (needs ${labPassMark(lid)}%) · a retry is next`]
+      : ['', labSquareLabel(lid), 'not tried yet'];
+}
+// The student window's status for one Lab lesson: the same state as its square on the Lab page (null = keep the row's own)
+function labProfilePill(name, game) {
+  const lid = game.slice(4).toUpperCase();
+  if (!LAB_LESSONS.includes(lid.toLowerCase())) return null;
+  const [state, , tip] = labLessonState(labStudent(name), lid);
+  const pill = { ok: ['complete', '✅ Passed'], retry: ['retry', '↻ Retry next'], stuck: ['retry', '🚩 Stuck'], now: ['inprogress', '🔄 Working'] }[state];
+  return pill ? `<span class="status-pill ${pill[0]}" title="${escHtml(tip)}">${pill[1]}</span>` : null;
+}
+
 // One strand: its name (a link to its explanation), a numbered square per lesson (✓ = passed; each a link), "n of N"
 function labStrandLine(r, id) {
   const s = LAB_STRANDS.find(x => x.id === id), ids = labStrandLessons(id);
-  const nowId = r.now && r.now.lesson;
   const squares = ids.map(lid => {
-    const t = r.tried[lid], best = t && t.best ? `best ${Number(t.best.score) || 0} of ${Number(t.best.total) || 0}` : '';
-    const st = r.passed.includes(lid) ? ['ok', '✓', !t && LAB_PASSED_WITH[lid] ? `counts as passed: ${LAB_PASSED_WITH[lid]} (the harder lesson) is passed`
-        : `passed${/Tested out/.test(((t && t.best) || {}).form) ? ' (tested out)' : ''} · ${best}`]
-      : (r.skipVoid || []).includes(lid) ? ['try', labSquareLabel(lid), `skipped (tested out), but ${LAB_PASSED_WITH[lid]} was not passed: the Lab teaches it next`]
-      : r.stuck.some(x => x.id === lid) ? ['stuck', '!', `🚩 stuck · ${t.tries} tries · ${best}`]
-      : lid === nowId ? ['now', labSquareLabel(lid), 'in the middle of it']
-      : t ? ['try', labSquareLabel(lid), `${t.tries} ${t.tries > 1 ? 'tries' : 'try'}, not passed yet · ${best} (needs ${labPassMark(lid)}%)`]
-      : ['', labSquareLabel(lid), 'not tried yet'];
+    const st = labLessonState(r, lid);
     return labLessonLink(lid, `<span class="lab-l ${st[0]}" data-id="${lid}" data-state="${st[0] || 'none'}" title="${escHtml(`${lid} · ${labLessonName(lid)} — ${st[2]}`)}">${st[1]}</span>`);
   }).join('');
   const n = ids.filter(lid => r.passed.includes(lid)).length;
@@ -2299,7 +2349,10 @@ function labLastCell(r) {
   }
   const t = r.latest;
   if (t) {
-    const out1 = /Tested out/.test(t.form) ? '✅ tested out' : Number(t.percent) >= labPassMark(t.lesson) ? '✅ passed' : `not passed yet ${muted(`(needs ${labPassMark(t.lesson)}%)`)}`;
+    // under the mark → ↻ a retry is next (orange), unless that lesson is open again now or counts as passed another way
+    const retry = !r.passed.includes(t.lesson) && !(r.now && r.now.lesson === t.lesson);
+    const out1 = /Tested out/.test(t.form) ? '✅ tested out' : Number(t.percent) >= labPassMark(t.lesson) ? '✅ passed'
+      : `${retry ? '<span class="lab-retry">↻ not passed yet · a retry is next</span>' : 'not passed yet'} ${muted(`(needs ${labPassMark(t.lesson)}%)`)}`;
     out.push(`<div class="lab-last">${r.now ? muted('Last finished: ') : ''}${name(t.lesson)}<br>${Number(t.score) || 0} of ${Number(t.total) || 0} · ${out1}<br>${muted(day(t.timestamp))}</div>`);
   }
   return out.join('') || muted('—');
@@ -2351,7 +2404,8 @@ function labQpsCell(q) {
   if (q.track === undefined) return muted('—');
   // the reading course: one short line per course, in the QPS page's words (Level n of 4 · passes; finished)
   if (q.comp) return Object.keys(QPS_COMP_SKILLS).map(k => { const c = (q.course || {})[k];
-    return `<div class="lab-qc">${QPS_COMP_SKILLS[k]}: ${!c ? muted('not started') : c.finished ? '🎉 Finished' : `Level ${c.level} of 4 · ${c.passes} of ${QPS_PASSES} passes`}</div>`; }).join('');
+    return `<div class="lab-qc">${QPS_COMP_SKILLS[k]}: ${!c ? muted('not started') : c.finished ? '🎉 Finished' : `Level ${c.level} of 4 · ${c.passes} of ${QPS_PASSES} passes` +
+      (qpsReadingMisses(q, k).length ? ' · <span class="lab-retry">↻ retry next</span>' : '')}</div>`; }).join('');
   if (q.track === null) return muted('Any stop');
   return `<b>${escHtml(qpsStopName(q.track))}</b>${q.known ? '' : ' ' + muted('(last practiced)')}` +
     (q.startedAt && q.track !== q.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(q.startedAt))}`) : '') +
@@ -2387,8 +2441,11 @@ async function renderLab() {
   const flags = rows.flatMap(r => r.stuck.map(x => ({ name: r.name, ...x })));
   const nTest = rows.reduce((n, r) => n + ((r.qps && r.qps.test) || []).length, 0);
   const chip = (cls, html) => `<span class="lab-sum-chip ${cls}">${html}</span>`;
+  // ↻ students with a lesson finished under its mark and not open again: a retry is next (orange, 11/11; 🚩 stuck counts apart)
+  const retry = started.filter(r => Object.keys(r.tried).some(lid => labLessonState(r, lid)[0] === 'retry')).length;
   document.getElementById('labSummary').innerHTML = chip('', `👥 <b>${rows.filter(r => r.onPlan).length}</b> on a plan`) +
     chip('', `▶️ <b>${started.length}</b> started`) + chip(working ? 'live' : '', `🔄 <b>${working}</b> working now`) +
+    chip(retry ? 'retry' : '', `↻ <b>${retry}</b> need${retry === 1 ? 's' : ''} a retry`) +
     chip(flags.length ? 'bad' : '', `🚩 <b>${flags.length}</b> stuck`) + chip(nTest ? 'warn' : '', `🔔 <b>${nTest}</b> QPS stop${nTest === 1 ? '' : 's'} to test`);
   el.innerHTML =
     (started.length ? `<h3 class="qps-h">▶️ Started (${started.length})</h3>
@@ -7292,12 +7349,24 @@ function openProfile(name, scope) {
         const bestSess = (student.sessions||[]).reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
         const elapsed = bestSess?.elapsed;
         const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
+        // a Lab lesson or a QPS stop / reading course: the Lab and QPS pages' own words (passed / working / ↻ a retry
+        // next), never "✓ Complete" for a try under the mark (11/11); anything else keeps its status
+        const own = isLab(game) ? labProfilePill(name, game) : (isQpsStop(game) || isQpsComp(game)) ? qpsProfilePill(name, game) : null;
+        // …and its best finished try's own numbers: a Lab lesson's total is 8, 10, 20 or 24 and a Maze Check is points,
+        // so "best / the most common total" showed a passed lesson as 22/100 · 22% · F. No letter grade: a pass mark rules.
+        const maze = /^qps-c-maze/.test(game), ownRow = isLab(game) || isQpsStop(game) || isQpsComp(game);
+        const top = !ownRow ? null : (student.sessions || []).filter(s => s.status === 'complete' && (!isQpsComp(game) || /^Check/.test(s.form || '')))   // a course: its Checks, not its Practice
+          .reduce((b, s) => (!b || Number(maze ? s.score : s.percent) > Number(maze ? b.score : b.percent) ? s : b), null);
+        const topPct = top && !maze ? Number(top.percent) || 0 : null;
+        const topColor = topPct == null ? 'var(--muted)' : topPct>=90?'var(--green)':topPct>=80?'var(--blue)':topPct>=70?'var(--yellow)':topPct>=60?'var(--orange)':'var(--red)';
         tr.innerHTML = `
           <td>${label}</td>
-          <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span></td>
-          <td>${student.bestScore}/${max}</td>
+          <td>${own || `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}</td>
+          ${top ? `<td class="own-best">${maze ? escHtml(qpsCheckScore({ ...top, game })) : `${Number(top.score) || 0}/${Number(top.total) || 0}`}</td>
+          <td style="color:${topColor};font-weight:800;">${topPct == null ? '—' : topPct + '%'}</td>
+          <td style="color:var(--muted);">—</td>` : ownRow ? '<td>—</td><td>—</td><td>—</td>' : `<td>${student.bestScore}/${max}</td>
           <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
-          <td style="color:${gradeColor};font-weight:800;">${grade}</td>
+          <td style="color:${gradeColor};font-weight:800;">${grade}</td>`}
           <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
           <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       }
