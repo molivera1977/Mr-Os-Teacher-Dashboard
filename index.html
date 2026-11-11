@@ -832,9 +832,11 @@ const ROSTER = [
 // Class counts and averages use students only — teacher test runs still show in the tables.
 const STUDENT_ROSTER = ROSTER.filter(n => n !== 'Mr. O (Teacher)');
 
-// ⚠️ ASSIGNMENT ORDER — Newest assignment first (leftmost in overview).
-// Add new game keys to the FRONT of this array when you deploy a new activity.
-// Any game key not listed here will appear after the listed ones.
+// ⚠️ ASSIGNMENT ORDER — the assignment a student saved to most recently comes first (Marcos 11/11:
+// "shouldn't assignments organize themselves based on last time they were sent data?"), see
+// byLatestWork(). This array only breaks ties: assignments no student has saved to yet come
+// after the rest, in this order. Add new game keys to the FRONT of this array when you deploy a new
+// activity (it also shows the card before the first save). Any game key not listed here comes after.
 const GAME_ORDER = [
   'ds-test-vocab', 'ds-test-comp', 'ds-test-cloze',
   'ds-review-vocab', 'ds-review-comp', 'ds-review-cloze',
@@ -3496,13 +3498,39 @@ function buildAssignmentCard(game) {
 // ═══════════════════════════════════════════════════
 //  OVERVIEW VIEW
 // ═══════════════════════════════════════════════════
+// Newest student save on an assignment (ms; 0 = none yet). Mr. O's own test runs don't count.
+function lastStudentSave(game) {
+  let last = 0;
+  (dashData[game] || []).forEach(s => {
+    if (!STUDENT_ROSTER.includes(s.name)) return;
+    (s.sessions || []).forEach(x => { const t = new Date(x.timestamp).getTime(); if (t > last) last = t; });
+  });
+  return last;
+}
+// Every assignment on the dashboard in the fixed list's order: GAME_ORDER, then the sheet's other tabs.
+function assignmentsInListOrder() {
+  const all = Object.keys(dashData).filter(g => !HIDDEN_GAMES.has(g));
+  return [...GAME_ORDER.filter(g => all.includes(g)), ...all.filter(g => !GAME_ORDER.includes(g))];
+}
+// `games` (in list order) as the dashboard shows them: the one students saved to most recently first.
+// A set (2+ forms) moves as one block, placed by its newest form's save; its forms keep their own order.
+// No student saves yet = after the rest, in list order.
+function byLatestWork(games) {
+  const fams = groupFamilies(games);
+  const blocks = new Map();   // first appearance = list order
+  games.forEach(g => {
+    const key = fams[familyOf(g)] ? 'set:' + familyOf(g) : g;
+    blocks.set(key, [...(blocks.get(key) || []), g]);
+  });
+  return [...blocks.values()]
+    .map(list => ({ list, last: Math.max(0, ...list.map(lastStudentSave)) }))
+    .sort((a, b) => b.last - a.last)
+    .flatMap(b => b.list);
+}
+
 function renderOverview() {
-  // Newest assignments on the left — ordered by GAME_ORDER config array
-  const allGames = Object.keys(dashData);
-  const games = [
-    ...GAME_ORDER.filter(g => allGames.includes(g)),
-    ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g));   // QPS has its own 📖 page, the Lab its own 🧪 page
+  // The assignment students saved to most recently on the left (Marcos 11/11)
+  const games = byLatestWork(assignmentsInListOrder().filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g)));   // QPS has its own 📖 page, the Lab its own 🧪 page
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
@@ -3678,12 +3706,9 @@ function familyLabel(fam, members) {
 }
 
 function buildAssignmentTabs() {
-  const allGames = Object.keys(dashData);
   const inGk = GK_GAMES.includes(currentGame);
-  const games = inGk ? GK_GAMES : [
-    ...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)),
-    ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))
-  ].filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g));   // QPS has its own 📖 page, the Lab its own 🧪 page
+  const games = inGk ? GK_GAMES : byLatestWork(assignmentsInListOrder()   // same order as the Overview cards (11/11)
+    .filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g)));   // QPS has its own 📖 page, the Lab its own 🧪 page
   if (!currentGame && games.length) currentGame = games[0];
   const tabsEl = document.getElementById('assignmentTabs');
   tabsEl.innerHTML = '';
@@ -7328,9 +7353,8 @@ function openProfile(name, scope) {
   try {
     currentProfileName = name;
     currentProfileScope = scope || null;
-    const allGames = Object.keys(dashData);
-    const games = scope ? scope.games : [...GAME_ORDER.filter(g => allGames.includes(g) && !HIDDEN_GAMES.has(g)), ...allGames.filter(g => !GAME_ORDER.includes(g) && !HIDDEN_GAMES.has(g))]
-      .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name)));   // only QPS / Lab work this student did
+    const games = scope ? scope.games : byLatestWork(assignmentsInListOrder()   // same order as the Overview cards (11/11)
+      .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name))));   // only QPS / Lab work this student did
 
     document.getElementById('profileName').textContent = '👤 ' + name + (scope ? ' — ' + scope.title : '');
     const infpSet = !!scope && games.length > 0 && games.every(g => INFP_GAMES.includes(g));   // levels, not % and a grade (11/11)
