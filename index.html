@@ -6302,6 +6302,8 @@ REVIEW_FILES['vocab-practice'] = {
 // (Math Module 3 and 2 after UNIT_GATES); every other site's cards and dots are as before.
 const STEP_PASS = {};   // game → the site's pass mark in % (0 = finishing it passes it)
 const isStep = g => Object.prototype.hasOwnProperty.call(STEP_PASS, g);
+// A site's own words for what comes after a miss, when it is not just "a retry" (Parts of Speech HQ: Learn again first)
+const STEP_RETRY_NEXT = {};   // game → name → null, or { tip, pill }
 // The sites' own test: best.score / best.total * 100 >= PASS_PCT (math-module-3, parts-of-speech-hq, rad-practice script.js)
 function stepPassed(s, pct) {
   if (!s || s.status !== 'complete') return false;
@@ -6325,7 +6327,8 @@ function stepWhere(game, student) {
   if (!tries.length) return { state: 'notstarted', passed, tries, best, pct };
   const newest = tries.reduce((b, s) => !b || when(s) >= when(b) ? s : b, null);   // a tie → the later row, like onQuestion
   const state = newest.status === 'inprogress' ? 'working' : passed ? 'passed' : 'retry';
-  return { state, passed, tries, best, last: newest, pct };
+  const next = state === 'retry' && STEP_RETRY_NEXT[game] ? STEP_RETRY_NEXT[game](student.name) : null;
+  return { state, passed, tries, best, last: newest, pct, next };
 }
 const stepOf = s => `${Number(s.score) || 0} of ${Number(s.total) || 0}`;
 const stepFrac = (s, game) => `${Number(s.score) || 0}/${Number(s.total) || MAX_SCORES[game] || 0}`;
@@ -6344,7 +6347,7 @@ function stepTip(w, student) {
   }
   if (w.state === 'retry') {
     const t = Number(w.last.total) || 0;
-    return `${stepOf(w.last)}, not passed yet (needs ${stepNeed(w.pct, t)} of ${t}, ${w.pct}%) · a retry is next${best} · ${stepTries(w)}`;
+    return `${stepOf(w.last)}, not passed yet (needs ${stepNeed(w.pct, t)} of ${t}, ${w.pct}%) · ${w.next ? w.next.tip : 'a retry is next'}${best} · ${stepTries(w)}`;
   }
   return `${w.pct ? 'Passed' : 'Finished'}${best}`;
 }
@@ -6412,7 +6415,7 @@ function stepLegend(members) {
 function stepPill(w, student) {
   if (w.state === 'notstarted') return '<span class="status-pill notstarted">⬜ Not Started</span>';
   const text = w.state === 'working' ? '🔄 Working' : w.state === 'retry' ? '↻ Retry next' : w.pct ? '✅ Passed' : '✅ Finished';
-  return `<span class="status-pill ${STEP_DOT[w.state][0]}" title="${escHtml(stepTip(w, student))}">${text}</span>`;
+  return `<span class="status-pill ${STEP_DOT[w.state][0]}" title="${escHtml(stepTip(w, student))}">${w.next ? w.next.pill : text}</span>`;
 }
 // passed → its best try · working → so far · a retry next → the try that was not enough
 function stepScoreText(w, game) {
@@ -6696,6 +6699,23 @@ POSHQ_PARTS.forEach(p => p.stages.forEach(st => {
   POSHQ_GAMES.push(game);
 }));
 GAME_ORDER.unshift(...POSHQ_GAMES);
+// Its stages by pass mark (11/11, see GATED STEPS): a Learn and a Practice are passed by finishing them, a Review at 75%
+// (the site's data/pos.js POS_STAGES pass; dashboard-steps-pos.spec.js compares them)
+const POSHQ_PASS = { learn: 0, practice: 0, review: 75 };
+POSHQ_PARTS.forEach(p => p.stages.forEach(st => { STEP_PASS[`pos-${p.key}-${st.key}`] = POSHQ_PASS[st.key] || 0; }));
+// The site's rule after a miss (Marcos 10/28: "send them back after 2 failed reviews"): 2 Reviews under 75% since the part's
+// last finished Learn → that part's Learn again first, then the Review opens with new sentences
+const POSHQ_RETEACH_AFTER = 2;
+POSHQ_PARTS.forEach(p => {
+  STEP_RETRY_NEXT[`pos-${p.key}-review`] = name => {
+    const finished = g => (((dashData[g] || []).find(s => s.name === name) || {}).sessions || []).filter(s => s.status === 'complete' && Number(s.total) > 0);
+    const t = s => new Date(s.timestamp).getTime() || 0;
+    const lastLearn = finished(`pos-${p.key}-learn`).reduce((m, s) => Math.max(m, t(s)), 0);
+    const missed = finished(`pos-${p.key}-review`).filter(s => t(s) > lastLearn && !stepPassed(s, POSHQ_PASS.review)).length;
+    return missed >= POSHQ_RETEACH_AFTER
+      ? { tip: `${missed} Reviews missed since its Learn: Learn again first, then a new Review`, pill: '↻ Learn again first' } : null;
+  };
+});
 
 function loadReviewForm(site, form) {
   const custom = REVIEW_FILES[site];
