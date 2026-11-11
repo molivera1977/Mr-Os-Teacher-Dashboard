@@ -3367,6 +3367,7 @@ function buildFamilyCard(fam, members) {
         ${infpPills(st)}
       </div>`;
       }
+      if (isStep(g)) return stepFamLine(g, famLabel);   // passed / working / a retry next, no average (11/11)
       const st = cardStats(g);
       return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
         <span class="fam-form">${escHtml(formShortLabel(famLabel, g))}</span>
@@ -3407,6 +3408,7 @@ function groupFamilies(games) {
 
 function buildAssignmentCard(game) {
   if (INFP_GAMES.includes(game)) return buildInfpCard(game);   // levels, not one average (11/11)
+  if (isStep(game)) return buildStepCard(game);                // gated steps: passed / working / a retry next (11/11)
   const { complete, inprog, notstart, hasAvg, avgPct } = cardStats(game);
   const scores   = hasAvg ? [1] : [];
   const label    = GAME_LABELS[game] || game.toUpperCase();
@@ -3523,6 +3525,7 @@ function buildDotGrid(games, { label, open, profiles }) {
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
       if (INFP_GAMES.includes(game)) { cells += infpDotCell(game, student); return; }   // the level, not just "finished"
+      if (isStep(game)) { cells += stepDotCell(game, student); return; }                 // passed, not just "finished"
       const status  = student ? student.status : 'notstarted';
       const max     = MAX_SCORES[game] || 100;
       const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
@@ -3716,6 +3719,7 @@ function renderFamilyChooser(fam, members) {
   grid.classList.add('wrap-heads');
   el.querySelector('#familyGrid').appendChild(grid);
   if (members.every(g => INFP_GAMES.includes(g))) el.querySelector('#familyGrid').insertAdjacentHTML('afterend', INFP_LEGEND);
+  if (members.some(isStep)) el.querySelector('#familyGrid').insertAdjacentHTML('afterend', stepLegend(members));
 }
 
 // ═══════════════════════════════════════════════════
@@ -3762,6 +3766,8 @@ function renderAssignment() {
 
   const infpPage = INFP_GAMES.includes(currentGame);   // levels, not "Complete" and an average (11/11)
   document.getElementById('sort-pct').textContent = infpPage ? 'Best per Level' : '% / Grade';
+  const stepPage = !infpPage && isStep(currentGame);   // a gated step: passed / working / a retry next (11/11)
+  if (stepPage) document.getElementById('sort-pct').textContent = 'Best Try';
   if (infpPage) {
     const st = infpStats(currentGame);
     const where = studentData.filter(s => STUDENT_ROSTER.includes(s.name)).map(infpWhere);
@@ -3774,7 +3780,8 @@ function renderAssignment() {
     <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${top ? 'L' + top : '—'}</div><div class="stat-label">Highest Passed</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
   `;
-  } else document.getElementById('assignmentStats').innerHTML = `
+  } else if (stepPage) document.getElementById('assignmentStats').innerHTML = stepStatsHtml(currentGame, flagged);
+  else document.getElementById('assignmentStats').innerHTML = `
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${complete}</div><div class="stat-label">Complete</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
@@ -3822,17 +3829,18 @@ function renderAssignment() {
       const writtenBadge = student.status === 'complete' ? getWrittenBadge(currentGame, name) : '';
       const onNow     = onQuestion(student);
       const infp      = infpPage ? infpWhere(student) : null;
+      const step      = stepPage ? stepWhere(currentGame, student) : null;
 
       tr.innerHTML = `
         <td style="font-weight:800;">${name}${flagBadge}${hintBadge}${writtenBadge}</td>
-        <td>${infp ? infpPill(infp, student) : `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}${onNow ? `<div class="on-question">${onNow}</div>` : ''}</td>
-        <td>${infp ? `<div class="score-num infp-score">${infpScoreText(infp)}</div>` : `
+        <td>${infp ? infpPill(infp, student) : step ? stepPill(step, student) : `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}${onNow ? `<div class="on-question">${onNow}</div>` : ''}</td>
+        <td>${infp ? `<div class="score-num infp-score">${infpScoreText(infp)}</div>` : step ? `<div class="score-num step-score">${stepScoreText(step, currentGame)}</div>` : `
           <div class="score-bar-wrap">
             <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
             <div class="score-num">${best}/${maxScore}</div>
           </div>`}
         </td>
-        ${infp ? `<td class="infp-bests">${infpBestByLevel(infp).join(' · ') || '—'}</td>` : `<td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>`}
+        ${infp ? `<td class="infp-bests">${infpBestByLevel(infp).join(' · ') || '—'}</td>` : step ? `<td class="infp-bests step-best">${stepBestText(step, currentGame)}</td>` : `<td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>`}
         <td style="color:var(--muted);white-space:nowrap;" title="Most recent attempt">${formatSessionDate(latestSessionDate(student))}</td>
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
@@ -6281,6 +6289,164 @@ REVIEW_FILES['vocab-practice'] = {
 };
 
 // ═══════════════════════════════════════════════════
+// ── GATED STEPS BY PASS MARK (11/11) ──
+// Marcos 11/11: "for these types of leveled sites, this needs to be the standard for the dashboard", then "i want all
+// leveled site upgrades and dashbaord upgrades to be pushed". Inference Practice's rule (passed / working / a retry
+// next; never "finished ✓" for a failed try, never a class average) for sites whose steps each have their OWN sheet tab
+// and open in order at the site's pass mark. Each tab is one step, so a dot is the step itself:
+//   ✓ green  = passed it (any finished try at the pass mark: the site counts the best try, so a low redo never undoes it)
+//   … yellow = working on it now (the newest row is still going)
+//   ↻ orange = finished it below the pass mark and never passed it: a retry is next
+// A step with pass mark 0 (a Learn, a Practice, the Pre-Warm-Up) is passed by finishing it. A one-time Test is not a
+// step: it keeps its ✓, its score and its class average. Each site registers its steps below its own section
+// (Math Module 3 and 2 after UNIT_GATES); every other site's cards and dots are as before.
+const STEP_PASS = {};   // game → the site's pass mark in % (0 = finishing it passes it)
+const isStep = g => Object.prototype.hasOwnProperty.call(STEP_PASS, g);
+// The sites' own test: best.score / best.total * 100 >= PASS_PCT (math-module-3, parts-of-speech-hq, rad-practice script.js)
+function stepPassed(s, pct) {
+  if (!s || s.status !== 'complete') return false;
+  if (!pct) return true;
+  const total = Number(s.total) || 0;
+  return total > 0 && (Number(s.score) || 0) / total * 100 >= pct;
+}
+// How many right a try of `total` questions needs: the fewest the site's test lets through (70% of 12 → 9)
+function stepNeed(pct, total) {
+  let n = Math.floor(pct * total / 100);
+  while (n < total && n / total * 100 < pct) n++;
+  return n;
+}
+function stepWhere(game, student) {
+  const pct = STEP_PASS[game] || 0;
+  const tries = (student && student.sessions) || [];
+  const when = s => new Date(s.timestamp).getTime() || 0;
+  const ratio = s => (Number(s.total) > 0 ? (Number(s.score) || 0) / Number(s.total) : 0);
+  const best = tries.filter(s => s.status === 'complete').reduce((b, s) => !b || ratio(s) > ratio(b) ? s : b, null);
+  const passed = tries.some(s => stepPassed(s, pct));
+  if (!tries.length) return { state: 'notstarted', passed, tries, best, pct };
+  const newest = tries.reduce((b, s) => !b || when(s) >= when(b) ? s : b, null);   // a tie → the later row, like onQuestion
+  const state = newest.status === 'inprogress' ? 'working' : passed ? 'passed' : 'retry';
+  return { state, passed, tries, best, last: newest, pct };
+}
+const stepOf = s => `${Number(s.score) || 0} of ${Number(s.total) || 0}`;
+const stepFrac = (s, game) => `${Number(s.score) || 0}/${Number(s.total) || MAX_SCORES[game] || 0}`;
+const stepTries = w => { const n = w.tries.filter(s => s.status === 'complete').length; return `${n} ${n === 1 ? 'try' : 'tries'}`; };
+/* The hover words: what is going on now, then the best finished try */
+function stepTip(w, student) {
+  if (w.state === 'notstarted') return 'Not Started';
+  const best = w.best ? ` · best ${stepOf(w.best)}` : '';
+  if (w.state === 'working') {
+    const on = onQuestion(student);
+    // a try left unfinished on an earlier day says so (the real sheet 11/11: tries stopped mid-way at the end of class)
+    const at = new Date(w.last.timestamp);
+    const day = isNaN(at) || at.toDateString() === new Date().toDateString() ? ''
+      : ` · last answer ${at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    return `Working on it${on ? ' · ' + on : ''}${day}${w.passed ? ` · ${w.pct ? 'passed' : 'finished'} it before` : ''}${best}`;
+  }
+  if (w.state === 'retry') {
+    const t = Number(w.last.total) || 0;
+    return `${stepOf(w.last)}, not passed yet (needs ${stepNeed(w.pct, t)} of ${t}, ${w.pct}%) · a retry is next${best} · ${stepTries(w)}`;
+  }
+  return `${w.pct ? 'Passed' : 'Finished'}${best}`;
+}
+const STEP_DOT = { passed: ['complete', '✓'], working: ['inprogress', '…'], retry: ['retry', '↻'], notstarted: ['notstarted', ''] };
+function stepDotCell(game, student) {
+  const w = stepWhere(game, student), [cls, icon] = STEP_DOT[w.state];
+  return `<td><span class="status-dot step-dot ${cls}" title="${escHtml(stepTip(w, student))}" data-game="${escHtml(game)}">${icon}</span></td>`;
+}
+/* One step, the whole class: passed / working / need a retry / not started — no average */
+function stepStats(game) {
+  const where = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name)).map(s => stepWhere(game, s));
+  const count = st => where.filter(w => w.state === st).length;
+  const passed = where.filter(w => w.passed).length, started = where.length - count('notstarted');
+  return { pct: STEP_PASS[game] || 0, passed, working: count('working'), retry: count('retry'),
+           trying: started - passed, notstart: STUDENT_ROSTER.length - started, roster: STUDENT_ROSTER.length };
+}
+// "✅ 5 passed · 🔄 1 working · ↻ 2 need a retry" (a card) · "5 passed · 1 working · 2 need a retry" (a set's line)
+function stepLine(st, icons) {
+  const i = t => (icons ? t + ' ' : '');
+  return `${i('✅')}${st.passed} ${st.pct ? 'passed' : 'finished'}${st.working ? ` · ${i('🔄')}${st.working} working` : ''}` +
+    `${st.retry ? ` · ${i('↻')}${st.retry} need${st.retry === 1 ? 's' : ''} a retry` : ''}`;
+}
+function stepPills(st) {
+  return `<span class="asgn-pill complete" title="${st.pct ? `Passed (${st.pct}%)` : 'Finished'}">✅ ${st.passed}</span>
+      <span class="asgn-pill inprogress" title="Started, not ${st.pct ? 'passed' : 'finished'} yet">🔄 ${st.trying}</span>
+      <span class="asgn-pill notstarted" title="Not started">⬜ ${st.notstart}</span>`;
+}
+function buildStepCard(game) {
+  const st = stepStats(game);
+  const card = document.createElement('div');
+  card.className = 'asgn-card step-card';
+  card.onclick = () => { currentGame = game; toggleView('assignment'); };
+  card.innerHTML = `
+    <div class="asgn-card-title">${escHtml(GAME_LABELS[game] || game)}</div>
+    <div class="asgn-card-avg">${st.passed}<span style="font-size:.9rem;color:var(--muted);"> of ${st.roster}</span></div>
+    <div class="asgn-card-avg-label">${st.pct ? `Passed · ${st.pct}%` : 'Finished'}</div>
+    <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${st.roster ? Math.round(st.passed / st.roster * 100) : 0}%"></div></div>
+    <div class="infp-levels step-lines"><div>${stepLine(st, true)}</div></div>
+    <div class="asgn-card-pills">${stepPills(st)}</div>`;
+  return card;
+}
+/* A set's line for one step (the Overview's set card) */
+function stepFamLine(g, famLabel) {
+  const st = stepStats(g);
+  return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
+        <span class="fam-form">${escHtml(formShortLabel(famLabel, g))}</span>
+        <span class="fam-infp step-line">${stepLine(st, false)}</span>
+        <span class="fam-avg" title="${st.pct ? 'Passed' : 'Finished'}">${st.passed}</span>
+        <span class="fam-bar"><span style="width:${st.roster ? Math.round(st.passed / st.roster * 100) : 0}%"></span></span>
+        ${stepPills(st)}
+      </div>`;
+}
+/* The key under a set's dots */
+function stepLegend(members) {
+  const marks = [...new Set(members.filter(isStep).map(g => STEP_PASS[g]).filter(Boolean))].map(p => p + '%');
+  const finishOnly = members.some(g => isStep(g) && !STEP_PASS[g]);
+  const why = [...marks, ...(finishOnly ? ['a step with no pass mark: finished it'] : [])].join(' · ');
+  return `<div class="infp-legend step-legend"><span><span class="status-dot complete">✓</span>passed it${why ? ` (${why})` : ''}</span>
+  <span><span class="status-dot inprogress">…</span>working on it (a try not finished yet)</span>
+  <span><span class="status-dot retry">↻</span>finished below the pass mark · a retry is next</span>
+  ${members.some(g => !isStep(g)) ? '<span>A Test keeps its ✓ (took it) and its score.</span>' : ''}
+  <span>Hover a dot for the score and the best try.</span></div>`;
+}
+/* The results page and the student window: the state, the try that matters, the best try — no grade, no average */
+function stepPill(w, student) {
+  if (w.state === 'notstarted') return '<span class="status-pill notstarted">⬜ Not Started</span>';
+  const text = w.state === 'working' ? '🔄 Working' : w.state === 'retry' ? '↻ Retry next' : w.pct ? '✅ Passed' : '✅ Finished';
+  return `<span class="status-pill ${STEP_DOT[w.state][0]}" title="${escHtml(stepTip(w, student))}">${text}</span>`;
+}
+// passed → its best try · working → so far · a retry next → the try that was not enough
+function stepScoreText(w, game) {
+  if (w.state === 'notstarted') return '—';
+  return stepFrac(w.state === 'passed' ? w.best : w.last, game) + (w.state === 'working' ? ' so far' : '');
+}
+function stepBestText(w, game) {
+  if (!w.best) return '—';
+  const t = Number(w.best.total) || 0;
+  return `best ${stepFrac(w.best, game)}${t ? ` (${Math.round((Number(w.best.score) || 0) / t * 100)}%)` : ''} · ${stepTries(w)}`;
+}
+function stepStatsHtml(game, flagged) {
+  const st = stepStats(game), t = Number(MAX_SCORES[game]) || 0;
+  return `
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${st.passed}</div><div class="stat-label">${st.pct ? 'Passed' : 'Finished'}</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${st.working}</div><div class="stat-label">Working</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${st.retry}</div><div class="stat-label">Need a Retry</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${st.notstart}</div><div class="stat-label">Not Started</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${st.pct ? (t ? `${stepNeed(st.pct, t)} of ${t}` : st.pct + '%') : '—'}</div><div class="stat-label">${st.pct ? `To Pass · ${st.pct}%` : 'To Pass: Finish'}</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
+  `;
+}
+/* The student window's line for a set with steps: steps passed, working, a retry next; a Test by its score */
+function stepProfileSummary(name, games, label) {
+  const find = g => (dashData[g] || []).find(x => x.name === name);
+  const where = games.filter(isStep).map(g => stepWhere(g, find(g)));
+  const n = st => where.filter(w => w.state === st).length;
+  const tests = games.filter(g => !isStep(g)).map(g => ({ g, s: find(g) })).filter(x => x.s && x.s.status === 'complete')
+    .map(x => ` · ${label(x.g)}: ${Math.round(x.s.bestScore / (MAX_SCORES[x.g] || 100) * 100)}%`).join('');
+  return `✅ passed ${where.filter(w => w.passed).length} of ${where.length}` + (n('working') ? ` · 🔄 working on ${n('working')}` : '') +
+    (n('retry') ? ` · ↻ a retry next on ${n('retry')}` : '') + tests;
+}
+
+// ═══════════════════════════════════════════════════
 // ── R.A.D. PRACTICE (mroteacher.com/rad-practice) ──
 // A learning site, not a test (Marcos 10/15: "build their understanding and see what good RAD
 // answers look like"). Eight activities in teaching order, each its own game: rad-practice-<kind>.
@@ -7061,9 +7227,11 @@ function openProfile(name, scope) {
 
     document.getElementById('profileName').textContent = '👤 ' + name + (scope ? ' — ' + scope.title : '');
     const infpSet = !!scope && games.length > 0 && games.every(g => INFP_GAMES.includes(g));   // levels, not % and a grade (11/11)
-    document.getElementById('profileSum').textContent = !scope ? '' : infpSet ? infpProfileSummary(name, games) : profileSetSummary(name, games);
+    const stepSet = !!scope && !infpSet && games.some(isStep);   // gated steps: passed / working / a retry next (11/11)
+    document.getElementById('profileSum').textContent = !scope ? '' : infpSet ? infpProfileSummary(name, games) : stepSet ? stepProfileSummary(name, games, scope.label) : profileSetSummary(name, games);
     document.querySelector('#studentProfile thead tr').innerHTML = infpSet
       ? '<th>Assignment</th><th>Status</th><th>Score</th><th colspan="2">Best per Level</th><th>Time</th><th>Sessions</th>'
+      : stepSet ? '<th>Assignment</th><th>Status</th><th>Score</th><th colspan="2">Best Try</th><th>Time</th><th>Sessions</th>'
       : '<th>Assignment</th><th>Status</th><th>Score</th><th>%</th><th>Grade</th><th>Time</th><th>Sessions</th>';
     const tbody = document.getElementById('profileBody');
     tbody.innerHTML = '';
@@ -7083,6 +7251,15 @@ function openProfile(name, scope) {
           <td>${infpPill(w, student)}</td>
           <td class="infp-score">${infpScoreText(w)}</td>
           <td colspan="2" class="infp-bests">${infpBestByLevel(w).join(' · ') || '—'}</td>
+          <td style="color:var(--muted);">${w.last && w.last.elapsed != null ? formatTime(w.last.elapsed) : '—'}</td>
+          <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
+      } else if (isStep(game)) {   // a gated step: passed / working / a retry next, the try that matters, the best try (11/11)
+        const w = stepWhere(game, student);
+        tr.innerHTML = `
+          <td>${label}</td>
+          <td>${stepPill(w, student)}</td>
+          <td class="step-score">${stepScoreText(w, game)}</td>
+          <td colspan="2" class="infp-bests step-best">${stepBestText(w, game)}</td>
           <td style="color:var(--muted);">${w.last && w.last.elapsed != null ? formatTime(w.last.elapsed) : '—'}</td>
           <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       } else {
@@ -7360,6 +7537,12 @@ const UNIT_GATES = [
   { preWarmUp: 'mod3z-prewarmup', warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
+// Their cards and dots by pass mark (11/11, see GATED STEPS): the gated parts are steps at the cutoff (the site's PASS_PCT),
+// the Pre-Warm-Up is passed by finishing it once; the Test and its retake keep their scores and class average.
+UNIT_GATES.forEach(u => {
+  if (u.preWarmUp) STEP_PASS[u.preWarmUp] = 0;
+  [u.warmUp, u.practiceA, u.practiceB, u.review].filter(Boolean).forEach(g => { STEP_PASS[g] = u.cutoff; });
+});
 function gatesHTML(game) {
   const unit = UNIT_GATES.find(u => [u.preWarmUp, u.warmUp, u.practiceA, u.practiceB, u.review, ...u.tests].filter(Boolean).includes(game));
   if (!unit) return '';
