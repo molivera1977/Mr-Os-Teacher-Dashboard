@@ -5812,14 +5812,19 @@ const SKILL_REPORTS = {
 // site last heard from them. Students at the end of a day wait for "Mr. O said..." — they come first.
 // Section names come from the lesson's own data files, so a renamed section needs no change here.
 // 11/9 (Marcos: "does the inference site have this" → "Yes, add it"): Inference Practice too — see INFP below.
+// 11/11 (Marcos: "will this make the dashboard show every inch of progress" → "Yes, build both"): the name page comes
+// right after the cover, a science lesson sends a row on every opening page, at every answer and every cart push, and
+// (at most every 15 s) for each part heard and each page turned. The row's log ends with ONE { e:'on' } saying where on
+// the screen: k 'read' (page, pages, heard, steps) or k 'q' (q, of). A cart push carries n and of. Shown under the
+// section: "page 2 of 3 · 4 of 9 parts heard", "Question 2 of 3", "3 of 6 pushes in the table".
 const LIVE_LESSONS = {
   'startstop-lesson':    { site: 'science-starting-and-stopping', questions: STARTSTOP_QUESTIONS },
   'energymotion-lesson': { site: 'science-energy-and-motion',     questions: ENERGYMOTION_QUESTIONS },
 };
 // Screens the data files do not name: shared ones, and Lesson 1.1's test steps (its engine, not its data, makes them).
 const LIVE_SCREEN_NAMES = {
-  start: 'Name page', cover: 'Cover', why: 'Why', care: 'Why care', summary: 'What we talked about', plan: 'The plan',
-  cart: 'Meet the cart', vocab: 'Words', vq: 'Word check', analysis: 'Analysis', claims: 'Claims', write: 'Explanation',
+  start: 'Name page', cover: 'Cover', why: 'The big question', care: 'Why should you care', summary: 'What we just talked about',
+  plan: 'Here is the plan', goals: 'By the end you can', tool: 'Meet the tool', cart: 'Meet the cart', vocab: 'Words', vq: 'Word check', analysis: 'Analysis', claims: 'Claims', write: 'Explanation',
   exit: 'Exit ticket', end: 'Done', small: 'Small push page', medium: 'Medium push page', big: 'Big push page',
   ...Object.fromEntries(['A', 'B', 'C', 'D'].flatMap((t, i) => [
     [`predict${t}`, `Test ${i + 1} · predict`], [`run${t}`, `Test ${i + 1} · pushes`],
@@ -5838,6 +5843,7 @@ function loadLiveScreens(site) {
         Object.entries(box.CHECKS || {}).forEach(([k, v]) => { names[k] = /check|\?$/i.test(v.title) ? v.title : `${v.title} · questions`; });
         Object.entries(box.LEARN || {}).forEach(([k, v]) => { names[k] = v.rail || v.title; });
         Object.entries(box.DAY_GATES || {}).forEach(([k, v]) => { gates[k] = Number(v.day) || 1; });
+        if (box.TOOL && box.TOOL.title) names.tool = plainText(box.TOOL.title);   // Lesson 1.2: "Meet the roller coaster"
         return { names, gates };
       });
   }
@@ -5892,7 +5898,19 @@ function liveStudent(name, rows, screens, cfg) {
   const gateDay = screens.gates[p] || (/^daygate(\d*)$/.test(p) ? Number(/\d+/.exec(p) || 1) : 0);
   const done = newest.status === 'complete' || p === 'end';
   const where = done ? '✅ Finished the lesson' : gateDay ? `End of Day ${gateDay}` : (screens.names[p] || LIVE_SCREEN_NAMES[p] || p || '—');
-  return { ...base, where, step: done ? '' : `Day ${gateDay || day}`, waiting: !done && !!gateDay, done };
+  return { ...base, where, detail: done || gateDay ? '' : liveDetail(events, p), step: done ? '' : `Day ${gateDay || day}`, waiting: !done && !!gateDay, done };
+}
+// Where on the screen (11/11): on a push screen, the newest push written in the table; elsewhere the newest { e:'on' },
+// only when it is about the screen the student is on now (an older one says nothing).
+function liveDetail(events, p) {
+  const runInv = (/^run([A-D])$/.exec(p) || [])[1];
+  const push = runInv && [...events].reverse().find(e => e && e.e === 'trial' && e.inv === runInv && Number(e.n) > 0);
+  if (push) return `${push.n} of ${push.of} pushes in the table`;
+  const on = [...events].reverse().find(e => e && e.e === 'on');
+  if (!on || on.p !== p) return '';
+  if (on.k === 'q') return `Question ${on.q} of ${on.of}`;
+  if (on.k === 'read' && Number(on.steps) > 0) return `${Number(on.pages) > 1 ? `page ${on.page} of ${on.pages} · ` : ''}${on.heard} of ${on.steps} parts heard`;
+  return '';
 }
 
 let liveToken = 0;
@@ -5931,6 +5949,7 @@ function renderRightNow(data) {
       return `<div class="live-row${x.waiting ? ' waiting' : ''}">
         <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
+          ${x.detail ? `<small class="live-detail">${escHtml(x.detail)}</small>` : ''}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
           <small>${x.right} of ${x.answered} right</small></div>
         <div><div class="live-chips">${chips || (x.unboxed ? '' : '<span class="live-when">no questions answered yet</span>')}${x.unboxed ? `<span class="live-when live-unboxed">+${x.unboxed} right on the older page (no box)</span>` : ''}</div>
