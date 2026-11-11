@@ -18,6 +18,7 @@
   --complete:#d4f0d4;--complete-text:#1a6a1a;--complete-border:#5aaa5a;
   --inprogress:#fff3cc;--inprogress-text:#8a5a00;--inprogress-border:#ccaa00;
   --notstarted:#f0f0f0;--notstarted-text:#888;--notstarted-border:#ccc;
+  --retry:#ffe3cc;--retry-text:#8a3a00;--retry-border:#cc6600;
   --flagged:#ffe0e0;--flagged-text:#aa2222;--flagged-border:#cc4444;
   --shadow:0 2px 12px rgba(0,0,0,.08);
 }
@@ -30,6 +31,7 @@
   --complete:#1a3a1a;--complete-text:#5ddb6f;--complete-border:#3a6a3a;
   --inprogress:#3a2a00;--inprogress-text:#ffd84f;--inprogress-border:#6a5a00;
   --notstarted:#1a1a1a;--notstarted-text:#666;--notstarted-border:#333;
+  --retry:#3a1f00;--retry-text:#ff8c2a;--retry-border:#6a3a00;
   --flagged:#3a0000;--flagged-text:#ff5252;--flagged-border:#6a2222;
   --shadow:0 2px 12px rgba(0,0,0,.4);
 }
@@ -305,6 +307,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .status-dot.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .status-dot.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .status-dot.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+.status-dot.retry{background:var(--retry);color:var(--retry-text);border-color:var(--retry-border);}
+.status-dot.infp-dot{width:26px;height:26px;font-size:.62rem;}
+.infp-legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.72rem;font-weight:700;color:var(--muted);margin:-14px 0 24px 4px;}
+.infp-legend .status-dot{cursor:default;margin-right:4px;}
+.infp-levels{font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:8px;line-height:1.5;}
+.infp-levels b{color:var(--text);}
+.fam-infp{grid-column:1/-1;font-size:.68rem;font-weight:700;color:var(--muted);}
 .mini-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:800;border:1px solid;}
 
 /* ── REFRESH / LAST UPDATED ── */
@@ -3345,6 +3354,17 @@ function buildFamilyCard(fam, members) {
   card.onclick = () => { toggleView('assignment'); familyChooserOpen = fam; renderAssignment(); };
   card.innerHTML = `<div class="asgn-card-title">${escHtml(famLabel)} · ${members.length} ${familyNoun(fam, true)} ▸</div>` +
     members.map(g => {
+      if (INFP_GAMES.includes(g)) {
+        const st = infpStats(g);
+        const top = Math.max(0, ...Object.keys(st.levels).map(Number));
+        return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
+        <span class="fam-form">${escHtml(formShortLabel(famLabel, g))}</span>
+        <span class="fam-infp">${st.passed1} passed Level 1${top > 1 ? ` · reached Level ${top}` : ''}</span>
+        <span class="fam-avg" title="Passed Level 1">${st.passed1}</span>
+        <span class="fam-bar"><span style="width:${st.roster ? Math.round(st.passed1 / st.roster * 100) : 0}%"></span></span>
+        ${infpPills(st)}
+      </div>`;
+      }
       const st = cardStats(g);
       return `<div class="fam-line" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g] || g)}">
         <span class="fam-form">${escHtml(formShortLabel(famLabel, g))}</span>
@@ -3384,6 +3404,7 @@ function groupFamilies(games) {
 }
 
 function buildAssignmentCard(game) {
+  if (INFP_GAMES.includes(game)) return buildInfpCard(game);   // levels, not one average (11/11)
   const { complete, inprog, notstart, hasAvg, avgPct } = cardStats(game);
   const scores   = hasAvg ? [1] : [];
   const label    = GAME_LABELS[game] || game.toUpperCase();
@@ -3499,6 +3520,7 @@ function buildDotGrid(games, { label, open, profiles }) {
       : `<td class="name-col">${escHtml(name)}</td>`;
     games.forEach(game => {
       const student = (dashData[game]||[]).find(s => s.name === name);
+      if (INFP_GAMES.includes(game)) { cells += infpDotCell(game, student); return; }   // the level, not just "finished"
       const status  = student ? student.status : 'notstarted';
       const max     = MAX_SCORES[game] || 100;
       const pct     = student && student.bestScore ? Math.round(student.bestScore/max*100) : 0;
@@ -3691,6 +3713,7 @@ function renderFamilyChooser(fam, members) {
     profiles: { games: members, title: famLabel, label: shortLabel } });
   grid.classList.add('wrap-heads');
   el.querySelector('#familyGrid').appendChild(grid);
+  if (members.every(g => INFP_GAMES.includes(g))) el.querySelector('#familyGrid').insertAdjacentHTML('afterend', INFP_LEGEND);
 }
 
 // ═══════════════════════════════════════════════════
@@ -6347,6 +6370,86 @@ const INFP_LIVE = { group: INFP_ACTIVITIES.map(a => `inference-practice-${a.kind
   labels: Object.fromEntries(INFP_ACTIVITIES.map(a => [`inference-practice-${a.kind}`, a.label])) };
 INFP_LIVE.group.forEach(g => { LIVE_LESSONS[g] = INFP_LIVE; });
 GAME_ORDER.unshift(...INFP_GAMES);
+
+/* WHERE EACH KID IS (Marcos 11/11: "Yes, build it"). An activity climbs Level 1 → 6, and 6 of 8 (70%) on a level opens
+   the next one. "Finished a try" and "best score at any level" stopped saying anything once kids climbed: every dot
+   stayed ✓ (a 5 of 8 too) and the averages drifted up. The Form column carries the level ("Level 2 · 2.5"), so for each
+   student: the highest level passed, and what is going on now — working on a level, or a level finished below 6 of 8
+   (a retry is next). Only Inference Practice's cards and dots use this; every other site is as before. */
+const INFP_PASS_PCT = 70;   // the site's PASS_PCT: 6 of 8
+// a row with no level in its Form (none from the site does) counts as Level 1, where everyone starts: a finished try never shows as Not Started
+function infpLevel(form) { const m = /^Level (\d+)/.exec(String(form || '')); return m ? Number(m[1]) : 1; }
+function infpPassed(s) { return s.status === 'complete' && s.total > 0 && s.score >= Math.ceil(INFP_PASS_PCT / 100 * s.total); }
+function infpWhere(student) {
+  const when = s => new Date(s.timestamp).getTime() || 0;
+  const tries = (student && student.sessions) || [];
+  if (!tries.length) return { state: 'notstarted', level: 0, top: 0, tries };
+  const top = tries.filter(infpPassed).reduce((m, s) => Math.max(m, infpLevel(s.form)), 0);
+  const last = tries.reduce((b, s) => !b || when(s) >= when(b) ? s : b, null);   // a tie → the later row, like onQuestion
+  const L = infpLevel(last.form);
+  if (last.status === 'inprogress') return { state: 'working', level: L, top, tries, last };
+  if (!infpPassed(last) && L > top) return { state: 'retry', level: L, top, tries, last };
+  return { state: 'passed', level: top, top, tries, last };
+}
+/* The dot's hover words: what is going on now, then the best finished try at each level */
+function infpTip(w, student) {
+  const best = {};
+  w.tries.filter(s => s.status === 'complete').forEach(s => { const L = infpLevel(s.form); if (!best[L] || s.score > best[L].score) best[L] = s; });
+  const bests = Object.keys(best).map(Number).sort((a, b) => a - b).map(L => `L${L} ${best[L].score} of ${best[L].total}`).join(', ');
+  const on = w.state === 'working' ? onQuestion(student) : '';
+  const now = w.state === 'working' ? `Working on Level ${w.level}${on ? ' · ' + on : ''}`
+    : w.state === 'retry' ? `Level ${w.level}: ${w.last.score} of ${w.last.total}, not passed yet · a retry is next`
+    : w.top >= 6 ? 'Passed all 6 levels' : `Passed Level ${w.top}`;
+  return now + (w.state !== 'passed' && w.top ? ` · passed Level ${w.top}` : '') + (bests ? ` · best: ${bests}` : '');
+}
+function infpDotCell(game, student) {
+  const w = infpWhere(student);
+  const cls = { passed: 'complete', working: 'inprogress', retry: 'retry', notstarted: 'notstarted' }[w.state];
+  const tip = w.state === 'notstarted' ? 'Not Started' : infpTip(w, student);
+  return `<td><span class="status-dot infp-dot ${cls}" title="${escHtml(tip)}" data-game="${escHtml(game)}">${w.level ? 'L' + w.level : ''}</span></td>`;
+}
+/* One activity, the whole class: passed Level 1, and per level reached — passed / working / need a retry */
+function infpStats(game) {
+  const where = (dashData[game] || []).filter(s => STUDENT_ROSTER.includes(s.name)).map(infpWhere);
+  const levels = {};
+  const at = L => (levels[L] = levels[L] || { passed: 0, working: 0, retry: 0 });
+  where.forEach(w => {
+    for (let L = 1; L <= w.top; L++) at(L).passed++;
+    if (w.state === 'working' || w.state === 'retry') at(w.level)[w.state]++;
+  });
+  const passed1 = where.filter(w => w.top >= 1).length;
+  const started = where.filter(w => w.state !== 'notstarted').length;
+  return { levels, passed1, trying: started - passed1, notstart: STUDENT_ROSTER.length - started, roster: STUDENT_ROSTER.length };
+}
+function infpLevelLines(st) {
+  return Object.keys(st.levels).map(Number).sort((a, b) => a - b).map(L => {
+    const c = st.levels[L];
+    return `<div><b>Level ${L}</b> ✅ ${c.passed} passed${c.working ? ` · 🔄 ${c.working} working` : ''}${c.retry ? ` · ↻ ${c.retry} need${c.retry === 1 ? 's' : ''} a retry` : ''}</div>`;
+  }).join('');
+}
+function infpPills(st) {
+  return `<span class="asgn-pill complete" title="Passed Level 1 or higher">✅ ${st.passed1}</span>
+      <span class="asgn-pill inprogress" title="Started, has not passed Level 1 yet">🔄 ${st.trying}</span>
+      <span class="asgn-pill notstarted" title="Not started">⬜ ${st.notstart}</span>`;
+}
+function buildInfpCard(game) {
+  const st = infpStats(game);
+  const card = document.createElement('div');
+  card.className = 'asgn-card infp-card';
+  card.onclick = () => { currentGame = game; toggleView('assignment'); };
+  card.innerHTML = `
+    <div class="asgn-card-title">${escHtml(GAME_LABELS[game] || game)}</div>
+    <div class="asgn-card-avg">${st.passed1}<span style="font-size:.9rem;color:var(--muted);"> of ${st.roster}</span></div>
+    <div class="asgn-card-avg-label">Passed Level 1</div>
+    <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${st.roster ? Math.round(st.passed1 / st.roster * 100) : 0}%"></div></div>
+    <div class="infp-levels">${infpLevelLines(st)}</div>
+    <div class="asgn-card-pills">${infpPills(st)}</div>`;
+  return card;
+}
+const INFP_LEGEND = `<div class="infp-legend"><span><span class="status-dot complete">L1</span>passed Level 1</span>
+  <span><span class="status-dot inprogress">L2</span>working on Level 2</span>
+  <span><span class="status-dot retry">L1</span>finished Level 1 below 6 of 8 · a retry is next</span>
+  <span>Hover a dot for the question they are on and their best score at each level.</span></div>`;
 
 // ═══════════════════════════════════════════════════
 // ── PARTS OF SPEECH HQ (mroteacher.com/parts-of-speech-hq) ──
