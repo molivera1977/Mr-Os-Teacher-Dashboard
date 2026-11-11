@@ -3398,6 +3398,26 @@ function getWrittenBadge(game, name) {
     : '<span title="Written not yet submitted" style="font-size:0.7rem;margin-left:4px;opacity:0.4;">✍️</span>';
 }
 
+// ── Class Avg on a science lesson = RIGHT SO FAR (Marcos 11/11: "this doesn't match" → "Right so far") ──
+// Science 1.1's Overview card said 93% (it counted finished students only: one student) and its results page said 37%
+// (every student out of all 28 questions, though most were partway). On a science lesson both now show ONE number:
+// each student's points so far (the row's score: first try only) out of the questions they have reached (the answers
+// in their newest row's log), averaged over the students who have answered at least one. A student whose newest row
+// logs no answers counts by a finished score out of the total, as before, or not at all.
+const SO_FAR_GAMES = ['startstop-lesson', 'energymotion-lesson'];
+function classSoFar(game, students) {
+  const max  = MAX_SCORES[game] || 100;
+  const when = x => new Date(x.timestamp).getTime() || 0;
+  const pcts = students.filter(s => STUDENT_ROSTER.includes(s.name)).map(s => {
+    const newest = (s.sessions || []).reduce((b, x) => (!b || when(x) > when(b) || (when(x) === when(b) && x.status === 'complete') ? x : b), null);
+    const reached = newest ? new Set(eventsOf(newest).filter(e => e && e.e === 'answer' && e.id).map(e => e.id)).size : 0;
+    if (reached) return Math.min(1, (Number(newest.score) || 0) / reached);
+    return s.status === 'complete' && s.bestScore > 0 ? s.bestScore / max : null;
+  }).filter(p => p !== null);
+  return { hasAvg: pcts.length > 0, avgPct: pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length * 100) : 0 };
+}
+const SO_FAR_TIP = 'Each student: points so far out of the questions they have reached. Averaged over everyone who has answered one.';
+
 // One assignment summary card (class avg, done / in progress / not started).
 // Class summary for one assignment: done / in progress / not started + class average
 function cardStats(game) {
@@ -3406,10 +3426,12 @@ function cardStats(game) {
   const inprog   = data.filter(s => s.status === 'inprogress').length;
   const scores   = data.filter(s => s.status === 'complete' && s.bestScore > 0).map(s => s.bestScore);
   const max      = MAX_SCORES[game] || 100;
+  const soFar    = SO_FAR_GAMES.includes(game) ? classSoFar(game, data) : null;   // the results page uses the same (11/11)
   return {
     complete, inprog, notstart: STUDENT_ROSTER.length - complete - inprog,
-    hasAvg: scores.length > 0,
-    avgPct: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length / max * 100) : 0,
+    soFar: !!soFar,
+    hasAvg: soFar ? soFar.hasAvg : scores.length > 0,
+    avgPct: soFar ? soFar.avgPct : scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length / max * 100) : 0,
   };
 }
 
@@ -3475,7 +3497,7 @@ function groupFamilies(games) {
 function buildAssignmentCard(game) {
   if (INFP_GAMES.includes(game)) return buildInfpCard(game);   // levels, not one average (11/11)
   if (isStep(game)) return buildStepCard(game);                // gated steps: passed / working / a retry next (11/11)
-  const { complete, inprog, notstart, hasAvg, avgPct } = cardStats(game);
+  const { complete, inprog, notstart, hasAvg, avgPct, soFar } = cardStats(game);
   const scores   = hasAvg ? [1] : [];
   const label    = GAME_LABELS[game] || game.toUpperCase();
 
@@ -3485,7 +3507,7 @@ function buildAssignmentCard(game) {
   card.innerHTML = `
     <div class="asgn-card-title">${label}</div>
     <div class="asgn-card-avg">${scores.length ? avgPct + '%' : '—'}</div>
-    <div class="asgn-card-avg-label">Class Avg</div>
+    <div class="asgn-card-avg-label"${soFar ? ` title="${SO_FAR_TIP}"` : ''}>Class Avg${soFar ? ' · so far' : ''}</div>
     <div class="asgn-card-bar"><div class="asgn-card-bar-fill" style="width:${avgPct}%"></div></div>
     <div class="asgn-card-pills">
       <span class="asgn-pill complete">✅ ${complete}</span>
@@ -3852,6 +3874,7 @@ function renderAssignment() {
   const high        = scores.length ? Math.max(...scores) : 0;
   const highPct     = scores.length ? Math.round(high/maxScore*100) : 0;
   const flagged     = studentData.filter(s => isFlagged(s)).length;
+  const soFar       = SO_FAR_GAMES.includes(currentGame) ? classSoFar(currentGame, studentData) : null;   // = the Overview card (11/11)
 
   const infpPage = INFP_GAMES.includes(currentGame);   // levels, not "Complete" and an average (11/11)
   document.getElementById('sort-pct').textContent = infpPage ? 'Best per Level' : '% / Grade';
@@ -3874,7 +3897,8 @@ function renderAssignment() {
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${complete}</div><div class="stat-label">Complete</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
-    <div class="stat-card"><div class="stat-num">${scores.length ? avgPct+'%' : '—'}</div><div class="stat-label">Class Avg</div></div>
+    ${soFar ? `<div class="stat-card" title="${SO_FAR_TIP}"><div class="stat-num">${soFar.hasAvg ? soFar.avgPct + '%' : '—'}</div><div class="stat-label">Class Avg · so far</div></div>`
+            : `<div class="stat-card"><div class="stat-num">${scores.length ? avgPct+'%' : '—'}</div><div class="stat-label">Class Avg</div></div>`}
     <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${scores.length ? highPct+'%' : '—'}</div><div class="stat-label">High Score</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
   `;
