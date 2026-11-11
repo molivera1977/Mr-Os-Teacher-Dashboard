@@ -6482,6 +6482,10 @@ RADP_ACTIVITIES.forEach(a => {
   RADP_GAMES.push(game);
 });
 GAME_ORDER.unshift(...RADP_GAMES);
+// Its activities by pass mark (11/11, see GATED STEPS): each one opens the next at 70% (the site's PASS_PCT;
+// dashboard-steps-rad.spec.js compares them). Under 70% was a ✓ dot and counted in its class average.
+const RADP_PASS_PCT = 70;
+RADP_GAMES.forEach(g => { STEP_PASS[g] = RADP_PASS_PCT; });
 // Answer choices come from the site's own data/rad.js, built the same way the site builds them:
 // Color-Check has the three part choices; every other question lists its right answer first unless
 // `answer` says otherwise. Look Back questions carry the story as their passage.
