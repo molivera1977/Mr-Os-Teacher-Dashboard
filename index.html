@@ -2036,14 +2036,18 @@ function qpsRowFor(name) {
   const track = known ? qpsTracks[name]
               : (compChecks.length || compPractice.length) ? 'comp'
               : (stopChecks[0] ? stopChecks[0].stop : undefined);
-  if (track === 'comp') {
+  // moved on by the hub (or sent back by Mr. O): the progress row's stop and passes
+  const prog = QPS_STOP_IDS.includes(track) ? qpsProgress(name) : null;
+  // Every stop passed (Marcos 11/11 "he graduated" → option 1; the hub's login.js graduated()): the last stop with 2
+  // passes = the reading course. A stop still on his test list keeps its ✓ / ↩ buttons in the reading row.
+  const graduated = !!prog && prog.stop === QPS_STOP_IDS[QPS_STOP_IDS.length - 1] && prog.passes >= QPS_PASSES;
+  if (track === 'comp' || graduated) {
     const lv = qpsLevels(name), course = qpsCourse(name), tested = qpsTestedSkills(name);
-    return { name, track, known, comp: true, levels: lv, course, checks: compChecks, practice: compPractice, test: [],
+    return { name, track: 'comp', known, comp: true, graduated, startedAt: graduated ? track : undefined,
+             levels: lv, course, checks: compChecks, practice: compPractice, test: graduated ? prog.test : [],
              readingTest: Object.keys(course).filter(k => course[k].finished && !tested.has(k)),
              latest: compChecks[0] || null, best: compChecks.reduce((m, c) => Math.max(m, Number(c.percent) || 0), -1) };
   }
-  // moved on by the hub (or sent back by Mr. O): the progress row's stop and passes
-  const prog = QPS_STOP_IDS.includes(track) ? qpsProgress(name) : null;
   const now = prog ? prog.stop : track;
   const onTrack = stopChecks.filter(c => c.stop === now);
   return { name, track: now, startedAt: track, known, comp: false, checks: stopChecks, onTrack, latest: onTrack[0] || null,
@@ -2111,9 +2115,12 @@ async function renderQps() {
         ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested" title="You tested them on this course">✓ I tested this</button></div>`
         : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>') + '</div>';
       return `<div class="qps-course">${name}${qpsReadingPath(r, k)}</div>`; };
-    return `<tr><td>${escHtml(r.name)}</td><td>${Object.keys(QPS_COMP_SKILLS).map(block).join('')}</td><td>${lastCheck(r)}</td></tr>`;
+    // every QPS stop passed on the hub (11/11): said under the name; a stop still to test keeps its buttons here
+    const grad = r.graduated ? '<br>' + muted(`🎉 passed every QPS stop (started on ${escHtml(qpsStopName(r.startedAt))})`) : '';
+    const toTest = (r.test || []).length ? `<div class="qps-grad-test">${r.test.map(id => flag(r, id)).join('')}</div>` : '';
+    return `<tr><td>${escHtml(r.name)}${grad}</td><td>${toTest}${Object.keys(QPS_COMP_SKILLS).map(block).join('')}</td><td>${lastCheck(r)}</td></tr>`;
   }).join('');
-  const nTest = phon.reduce((n, r) => n + (r.test || []).length, 0), nKids = phon.filter(r => (r.test || []).length).length;
+  const nTest = [...phon, ...read].reduce((n, r) => n + (r.test || []).length, 0), nKids = [...phon, ...read].filter(r => (r.test || []).length).length;
   const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
   const fast = [...phon, ...read].filter(r => r.latest && qpsTooFast(r.latest));
   const box = document.getElementById('qpsFlags');
