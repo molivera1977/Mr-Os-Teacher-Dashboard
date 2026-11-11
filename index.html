@@ -97,6 +97,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .status-pill.complete{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
 .status-pill.inprogress{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .status-pill.notstarted{background:var(--notstarted);color:var(--notstarted-text);border-color:var(--notstarted-border);}
+.status-pill.retry{background:var(--retry);color:var(--retry-text);border-color:var(--retry-border);}
+.infp-bests{font-size:.78rem;color:var(--muted);font-weight:700;white-space:nowrap;}
 .on-question{margin-top:3px;font-size:.72rem;font-weight:800;color:var(--inprogress-text);white-space:nowrap;}   /* "on 14 of 34" under In Progress (11/5) */
 .live-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:-4px 0 12px;font-size:.8rem;font-weight:700;color:var(--muted);}   /* 📍 Right now (11/6) */
 .live-head label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--text);}
@@ -3758,7 +3760,21 @@ function renderAssignment() {
   const highPct     = scores.length ? Math.round(high/maxScore*100) : 0;
   const flagged     = studentData.filter(s => isFlagged(s)).length;
 
-  document.getElementById('assignmentStats').innerHTML = `
+  const infpPage = INFP_GAMES.includes(currentGame);   // levels, not "Complete" and an average (11/11)
+  document.getElementById('sort-pct').textContent = infpPage ? 'Best per Level' : '% / Grade';
+  if (infpPage) {
+    const st = infpStats(currentGame);
+    const where = studentData.filter(s => STUDENT_ROSTER.includes(s.name)).map(infpWhere);
+    const top = Math.max(0, ...where.map(w => w.top));
+    document.getElementById('assignmentStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${st.passed1}</div><div class="stat-label">Passed Level 1</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${where.filter(w => w.state === 'working').length}</div><div class="stat-label">Working</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${where.filter(w => w.state === 'retry').length}</div><div class="stat-label">Need a Retry</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${st.notstart}</div><div class="stat-label">Not Started</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${top ? 'L' + top : '—'}</div><div class="stat-label">Highest Passed</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
+  `;
+  } else document.getElementById('assignmentStats').innerHTML = `
     <div class="stat-card"><div class="stat-num" style="color:var(--green)">${complete}</div><div class="stat-label">Complete</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
@@ -3805,17 +3821,18 @@ function renderAssignment() {
       const gradeColor = pct>=90?'var(--green)':pct>=80?'var(--blue)':pct>=70?'var(--yellow)':pct>=60?'var(--orange)':'var(--red)';
       const writtenBadge = student.status === 'complete' ? getWrittenBadge(currentGame, name) : '';
       const onNow     = onQuestion(student);
+      const infp      = infpPage ? infpWhere(student) : null;
 
       tr.innerHTML = `
         <td style="font-weight:800;">${name}${flagBadge}${hintBadge}${writtenBadge}</td>
-        <td><span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>${onNow ? `<div class="on-question">${onNow}</div>` : ''}</td>
-        <td>
+        <td>${infp ? infpPill(infp, student) : `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}${onNow ? `<div class="on-question">${onNow}</div>` : ''}</td>
+        <td>${infp ? `<div class="score-num infp-score">${infpScoreText(infp)}</div>` : `
           <div class="score-bar-wrap">
             <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
             <div class="score-num">${best}/${maxScore}</div>
-          </div>
+          </div>`}
         </td>
-        <td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>
+        ${infp ? `<td class="infp-bests">${infpBestByLevel(infp).join(' · ') || '—'}</td>` : `<td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>`}
         <td style="color:var(--muted);white-space:nowrap;" title="Most recent attempt">${formatSessionDate(latestSessionDate(student))}</td>
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
@@ -6391,11 +6408,15 @@ function infpWhere(student) {
   if (!infpPassed(last) && L > top) return { state: 'retry', level: L, top, tries, last };
   return { state: 'passed', level: top, top, tries, last };
 }
-/* The dot's hover words: what is going on now, then the best finished try at each level */
-function infpTip(w, student) {
+/* The best finished try at each level, lowest level first: ["L1 8 of 8", "L2 7 of 8"] */
+function infpBestByLevel(w) {
   const best = {};
   w.tries.filter(s => s.status === 'complete').forEach(s => { const L = infpLevel(s.form); if (!best[L] || s.score > best[L].score) best[L] = s; });
-  const bests = Object.keys(best).map(Number).sort((a, b) => a - b).map(L => `L${L} ${best[L].score} of ${best[L].total}`).join(', ');
+  return Object.keys(best).map(Number).sort((a, b) => a - b).map(L => `L${L} ${best[L].score} of ${best[L].total}`);
+}
+/* The dot's hover words: what is going on now, then the best finished try at each level */
+function infpTip(w, student) {
+  const bests = infpBestByLevel(w).join(', ');
   const on = w.state === 'working' ? onQuestion(student) : '';
   const now = w.state === 'working' ? `Working on Level ${w.level}${on ? ' · ' + on : ''}`
     : w.state === 'retry' ? `Level ${w.level}: ${w.last.score} of ${w.last.total}, not passed yet · a retry is next`
@@ -6445,6 +6466,33 @@ function buildInfpCard(game) {
     <div class="infp-levels">${infpLevelLines(st)}</div>
     <div class="asgn-card-pills">${infpPills(st)}</div>`;
   return card;
+}
+/* The results page and the student window (11/11, "Yes, do it"): the same rule as the dots — the level and what is
+   going on now, the try that matters, and the best per level; no "Complete", no letter grade, no average */
+function infpPill(w, student) {
+  if (w.state === 'notstarted') return '<span class="status-pill notstarted">⬜ Not Started</span>';
+  const text = w.state === 'working' ? `🔄 Working · Level ${w.level}`
+    : w.state === 'retry' ? `↻ Level ${w.level}: retry next`
+    : w.top >= 6 ? '✅ Passed all 6 levels' : `✅ Passed Level ${w.top}`;
+  const cls = { passed: 'complete', working: 'inprogress', retry: 'retry' }[w.state];
+  return `<span class="status-pill ${cls}" title="${escHtml(infpTip(w, student))}">${text}</span>`;
+}
+/* The try the status is about: passed → the best try at the top level; working → so far; a retry next → that try */
+function infpScoreText(w) {
+  if (w.state === 'notstarted') return '—';
+  const s = w.state === 'passed'
+    ? w.tries.filter(t => infpPassed(t) && infpLevel(t.form) === w.top).reduce((b, t) => !b || t.score > b.score ? t : b, null)
+    : w.last;
+  return `L${infpLevel(s.form)} · ${s.score}/${s.total || 8}${w.state === 'working' ? ' so far' : ''}`;
+}
+/* The student window's line for the Inference Practice set: levels, not an average */
+function infpProfileSummary(name, games) {
+  const where = games.map(g => infpWhere((dashData[g] || []).find(x => x.name === name)));
+  const n = st => where.filter(w => w.state === st).length;
+  const reached = Math.max(0, ...where.map(w => w.top));
+  return `✅ passed Level 1 on ${where.filter(w => w.top >= 1).length} of ${games.length}` +
+    (reached > 1 ? ` · highest: Level ${reached}` : '') + (n('working') ? ` · 🔄 working on ${n('working')}` : '') +
+    (n('retry') ? ` · ↻ a retry next on ${n('retry')}` : '');
 }
 const INFP_LEGEND = `<div class="infp-legend"><span><span class="status-dot complete">L1</span>passed Level 1</span>
   <span><span class="status-dot inprogress">L2</span>working on Level 2</span>
@@ -7012,7 +7060,11 @@ function openProfile(name, scope) {
       .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name)));   // only QPS / Lab work this student did
 
     document.getElementById('profileName').textContent = '👤 ' + name + (scope ? ' — ' + scope.title : '');
-    document.getElementById('profileSum').textContent = scope ? profileSetSummary(name, games) : '';
+    const infpSet = !!scope && games.length > 0 && games.every(g => INFP_GAMES.includes(g));   // levels, not % and a grade (11/11)
+    document.getElementById('profileSum').textContent = !scope ? '' : infpSet ? infpProfileSummary(name, games) : profileSetSummary(name, games);
+    document.querySelector('#studentProfile thead tr').innerHTML = infpSet
+      ? '<th>Assignment</th><th>Status</th><th>Score</th><th colspan="2">Best per Level</th><th>Time</th><th>Sessions</th>'
+      : '<th>Assignment</th><th>Status</th><th>Score</th><th>%</th><th>Grade</th><th>Time</th><th>Sessions</th>';
     const tbody = document.getElementById('profileBody');
     tbody.innerHTML = '';
 
@@ -7024,6 +7076,15 @@ function openProfile(name, scope) {
 
       if (!student) {
         tr.innerHTML = `<td>${label}</td><td><span class="status-pill notstarted">⬜ Not Started</span></td><td colspan="5" style="color:var(--muted);">—</td>`;
+      } else if (INFP_GAMES.includes(game)) {   // the level, the try that matters, the best per level (11/11)
+        const w = infpWhere(student);
+        tr.innerHTML = `
+          <td>${label}</td>
+          <td>${infpPill(w, student)}</td>
+          <td class="infp-score">${infpScoreText(w)}</td>
+          <td colspan="2" class="infp-bests">${infpBestByLevel(w).join(' · ') || '—'}</td>
+          <td style="color:var(--muted);">${w.last && w.last.elapsed != null ? formatTime(w.last.elapsed) : '—'}</td>
+          <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       } else {
         const pct = Math.round((student.bestScore / max) * 100);
         const grade = student.status === 'complete' ? letterGrade(pct) : '—';
