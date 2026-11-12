@@ -489,6 +489,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
     <button class="btn btn-ghost btn-sm" onclick="toggleView('qps')" id="tabQps">📖 QPS</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('lab')" id="tabLab">🧪 Lab</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleView('atq')" id="tabAtq">✨ After the QPS</button>
+    <button class="btn btn-ghost btn-sm" onclick="toggleView('home')" id="tabHome">🏡 Home Practice</button>
     <button class="btn btn-ghost btn-sm" onclick="refreshData()">🔄 Refresh</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(-1)">A−</button>
     <button class="btn btn-ghost btn-sm" onclick="changeFontSize(1)">A+</button>
@@ -692,6 +693,22 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
       <div class="section-title">📖 Finished Lessons
         <span style="font-size:.72rem;color:var(--muted);font-weight:700;">newest first · Questions = right of 3, beside the words they tapped for help on read 1</span></div>
       <div class="table-wrap" id="atqResults" style="overflow-x:auto;"></div>
+    </div>
+
+    <!-- 🏡 HOME PRACTICE (Marcos 11/11/2026). Every student site; practice outside his school day. -->
+    <div id="view-home" style="display:none;">
+      <div class="section-title">🏡 Home Practice
+        <span style="font-size:.72rem;color:var(--muted);font-weight:700;">practice outside 8:40 AM – 3:10 PM on school days (12:50 PM on early dismissal days), and on weekends and days off (the district calendar) · newest first</span></div>
+      <div class="fact-assign-form">
+        <label>Show<select id="homeRange" onchange="homeRange = this.value; renderHome()">
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="all">This school year</option>
+        </select></label>
+        <label>Student<select id="homeWho" onchange="homeWho = this.value; renderHome()"></select></label>
+      </div>
+      <p class="fact-assign-note" id="homeSummary" role="status"></p>
+      <div class="table-wrap" id="homeList" style="overflow-x:auto;"></div>
     </div>
 
     <div id="view-facts" style="display:none;">
@@ -1781,6 +1798,8 @@ function toggleView(view) {
   document.getElementById('tabLab').className = 'btn btn-sm ' + (view==='lab' ? 'btn-primary' : 'btn-ghost');
   document.getElementById('view-atq').style.display = view === 'atq' ? 'block' : 'none';
   document.getElementById('tabAtq').className = 'btn btn-sm ' + (view==='atq' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('view-home').style.display = view === 'home' ? 'block' : 'none';
+  document.getElementById('tabHome').className = 'btn btn-sm ' + (view==='home' ? 'btn-primary' : 'btn-ghost');
   renderCurrentView();
 }
 
@@ -1792,6 +1811,7 @@ function renderCurrentView() {
   if (currentView === 'qps')        renderQps();
   if (currentView === 'lab')        renderLab();
   if (currentView === 'atq')        renderAtq();
+  if (currentView === 'home')       renderHome();
 }
 // ═══════════════════════════════════════════════════
 //  QPS VIEW
@@ -3277,6 +3297,129 @@ async function clearFactAssignList(name) {
   const rows = await sendUntilSaved(sent, postFactAssignRows, loadFactAssignments, factAssignLanded, status);
   status.textContent = factAssignLanded(rows, sent).length === sent.length
     ? `✓ Cleared ${name}'s list.` : '⚠️ Not all of it saved. Press ↻ Refresh, then try again.';
+}
+
+// ── 🏡 HOME PRACTICE (Marcos 11/11/2026: "if they practice from home, I want to know what they practiced, how
+// long, at what time, and how they did"). Every student site (his pick). Home = outside his school day,
+// 8:40 AM–3:10 PM Monday–Friday (his hours), and all weekend and every day off. Each session is placed by when
+// it began. A closing (snow day) is not on the calendar, so it counts as school.
+const HOME_DAY_START = 8 * 60 + 40;    // 8:40 AM, in minutes after midnight
+const HOME_DAY_END   = 15 * 60 + 10;   // 3:10 PM
+// Bridgeport Public Schools 2026–2027 calendar (BOE approved 3/9/2026; Marcos sent it 11/11): days with no school
+// for students. Veterans Day (11/11) and the report card conference days (11/23–24, 4/21–22) are in session.
+const HOME_FIRST_DAY = '2026-08-27', HOME_LAST_DAY = '2027-06-11';   // before / after: summer
+const HOME_DAYS_OFF = new Set([
+  '2026-09-07',                                           // Labor Day
+  '2026-09-21',                                           // Yom Kippur
+  '2026-10-12',                                           // Italian Heritage Day
+  '2026-11-03',                                           // Election Day
+  '2026-11-25', '2026-11-26', '2026-11-27',               // Thanksgiving Break
+  '2026-12-24', '2026-12-25', '2026-12-28', '2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01',   // Winter Recess
+  '2027-01-06',                                           // Three Kings Day
+  '2027-01-18',                                           // Martin Luther King, Jr. Day
+  '2027-02-11', '2027-02-12', '2027-02-15',               // Presidents' Day Weekend
+  '2027-03-09',                                           // Eid al-Fitr
+  '2027-03-26',                                           // Good Friday
+  '2027-04-12', '2027-04-13', '2027-04-14', '2027-04-15', '2027-04-16',   // Spring Recess
+  '2027-05-31',                                           // Memorial Day
+]);
+// Early dismissal days on the same calendar: school ends at 12:50 PM (Marcos 11/11: "early dismissal is 12:50")
+const HOME_EARLY_END = 12 * 60 + 50;
+const HOME_EARLY_DAYS = new Set([
+  '2026-08-27', '2026-08-28', '2026-09-16', '2026-10-14', '2026-11-04', '2026-12-09', '2026-12-23',
+  '2027-01-13', '2027-02-10', '2027-03-10', '2027-04-07', '2027-05-12', '2027-06-02', '2027-06-10', '2027-06-11',
+]);
+// Tabs that are bookkeeping, not practice: assignment lists, progress copies, the Lab's setup, the tests
+// Mr. O gives in person, and written answers (their test's own row is the session)
+const HOME_SKIP = new Set(['facts-assign', 'atq-assign', 'lab-progress', 'lab-seed', 'qps-progress', 'qps-levels', 'qps-tests', 'qps-steps']);
+const homeSkipped = g => HOME_SKIP.has(g) || g.startsWith('_') || /[-_]written(_draft)?$/.test(g) || /_draft$/.test(g);
+let homeRange = '7';   // '7' | '30' days | 'all'
+let homeWho   = '';    // '' = everyone
+
+function isHomeTime(d) {
+  const day = d.getDay(), min = d.getHours() * 60 + d.getMinutes();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return day === 0 || day === 6 || date < HOME_FIRST_DAY || date > HOME_LAST_DAY || HOME_DAYS_OFF.has(date)
+    || min < HOME_DAY_START || min >= (HOME_EARLY_DAYS.has(date) ? HOME_EARLY_END : HOME_DAY_END);
+}
+
+// When a session began: its own start time, else the time in its Session ID, else when it was last saved
+function homeStarted(s) {
+  const a = new Date(s.startedAt || NaN);
+  if (!isNaN(a)) return a;
+  const m = /^[A-Z]+-(\d{13})-/.exec(s.sessionId || '');
+  return m ? new Date(Number(m[1])) : sessionDate(s);
+}
+
+const homeIsFacts = g => !!FACT_SITES[g] || g === FACT_SECOND;
+const homeSite = g => FACT_SITES[g] || (g === FACT_SECOND ? FACT_SECOND_LABEL : GAME_LABELS[g] || g);
+
+// What they practiced: the set for facts (× 7s · typed), else the part of the site the row names
+function homeWhat(g, s) {
+  const parts = String(s.form || '').split('·').map(p => p.trim()).filter(Boolean);
+  if (!homeIsFacts(g)) return parts.join(' · ');
+  const op = FACT_OPS[parts[0]];
+  const set = String(parts[1] || '').replace(/^(\d+)s$/, '$1');
+  return [op ? `${op.sym} ${set}` : set, parts.includes('Choice') ? '🔘 choice' : '⌨️ typed',
+    ...(parts.includes('Timed') ? ['⏱️ timed'] : []), ...(parts.includes('Assigned') ? ['📌 assigned'] : [])].join(' · ');
+}
+
+function homeRows() {
+  const since = homeRange === 'all' ? 0 : Date.now() - Number(homeRange) * 86400000;
+  const out = [];
+  const add = (g, name, sessions, earlier) => {
+    if (homeSkipped(g) || !STUDENT_ROSTER.includes(name)) return;
+    (sessions || []).forEach(s => {
+      const when = homeStarted(s);
+      if (!when || isNaN(when) || when.getTime() < since || !isHomeTime(when)) return;
+      out.push({ name, game: g, s, when, earlier });
+    });
+  };
+  Object.entries(dashData).forEach(([g, students]) => {
+    if (Array.isArray(students)) students.forEach(st => add(g, st.name, st.sessions, false));
+  });
+  // work on the earlier version of a rebuilt lesson is set aside on the other pages, but it is still practice
+  Object.entries(archivedAttempts).forEach(([g, byName]) => Object.entries(byName).forEach(([name, list]) => add(g, name, list, true)));
+  return out.sort((a, b) => b.when - a.when);
+}
+
+function renderHome() {
+  const rows = homeRows();
+  const who  = document.getElementById('homeWho');
+  const kids = STUDENT_ROSTER.filter(n => rows.some(r => r.name === n));
+  if (homeWho && !kids.includes(homeWho)) kids.unshift(homeWho);   // keep a pick that has nothing in this range
+  who.innerHTML = `<option value="">Everyone</option>` + kids.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+  who.value = homeWho;
+  document.getElementById('homeRange').value = homeRange;
+  const shown = homeWho ? rows.filter(r => r.name === homeWho) : rows;
+  const range = homeRange === 'all' ? 'this school year' : `the last ${homeRange} days`;
+  const secs  = shown.reduce((t, r) => t + (Number(r.s.elapsed) || 0), 0);
+  const people = new Set(shown.map(r => r.name)).size;
+  document.getElementById('homeSummary').textContent = shown.length
+    ? `${shown.length} session${shown.length > 1 ? 's' : ''}${homeWho ? '' : ` by ${people} student${people > 1 ? 's' : ''}`} in ${range} · ${formatTime(secs)} in all`
+    : `No practice from home in ${range}${homeWho ? ` for ${homeWho}` : ''}.`;
+  const el = document.getElementById('homeList');
+  if (!shown.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<table class="grid-table"><thead><tr><th>Student</th><th>When</th><th>Site</th><th>What</th><th>How long</th><th>How they did</th></tr></thead><tbody>${
+    shown.map(({ name, game, s, when, earlier }) => {
+      const total = Number(s.total) || 0;
+      const right = homeIsFacts(game) ? Number(s.correct) || 0 : Number(s.score) || 0;
+      const pct   = total ? Math.round(right / total * 100) : null;
+      const how   = total
+        ? (homeIsFacts(game) ? `✓ ${right} ✗ ${total - right}` : `${right} of ${total} right`) +
+          ` <span class="fact-pill" style="background:${factCellColor(pct)}">${pct}%</span>`
+        : '—';
+      const day = when.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      const at  = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      return `<tr data-student="${escHtml(name)}">
+        <td class="fact-nowrap">${escHtml(name)}</td>
+        <td class="fact-nowrap">${day} · ${at}</td>
+        <td>${escHtml(homeSite(game))}</td>
+        <td>${escHtml(homeWhat(game, s)) || '—'}${earlier ? ` <span class="fact-last">(${escHtml(LESSON_VERSIONS[game].was)})</span>` : ''}</td>
+        <td class="fact-nowrap">${s.elapsed != null && s.elapsed !== '' ? formatTime(Number(s.elapsed)) : '—'}${s.status === 'complete' ? '' : ' <span title="Left before finishing" style="opacity:.6">· not finished</span>'}</td>
+        <td class="fact-nowrap">${how}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
 }
 
 function renderFacts() {
