@@ -964,6 +964,7 @@ const GAME_LABELS = {
   'lab-pv2': '🧪 Lab PV2 — Expanded Form',
   'lab-pv3': '🧪 Lab PV3 — Thousands',
   'lab-pv4': '🧪 Lab PV4 — Compare Numbers',
+  'qps-steps': '📖 QPS — steps and stars (any device)',   // 11/11: the hub's own record, not a game
   'lab-pv5': '🧪 Lab PV5 — Rename Numbers',
   'lab-pv6': '🧪 Lab PV6 — Times 10',
   'lab-pv7': '🧪 Lab PV7 — Times 100',
@@ -7382,7 +7383,7 @@ function openProfile(name, scope) {
     currentProfileName = name;
     currentProfileScope = scope || null;
     const games = scope ? scope.games : byLatestWork(assignmentsInListOrder()   // same order as the Overview cards (11/11)
-      .filter(g => g !== 'qps-levels' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name))));   // only QPS / Lab work this student did
+      .filter(g => g !== 'qps-levels' && g !== 'qps-steps' && g !== 'lab-progress' && g !== 'lab-seed' && ((!isQps(g) && !isLab(g)) || (dashData[g] || []).some(s => s.name === name))));   // only QPS / Lab work this student did
 
     document.getElementById('profileName').textContent = '👤 ' + name + (scope ? ' — ' + scope.title : '');
     const infpSet = !!scope && games.length > 0 && games.every(g => INFP_GAMES.includes(g));   // levels, not % and a grade (11/11)
