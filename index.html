@@ -7943,6 +7943,7 @@ function renderChronology(student) {
     const shift = Math.abs(off) >= CLOCK_FIX_MIN_MS ? Math.round(off / 60000) * 60000 : 0;
     if (shift && list.length) fixedBy = shift;
     list.forEach(function(ev) {
+      if (ev && ev.e === 'on') return;   // a science row's "where on the screen now" (11/11): a marker, not a step
       const d = new Date(ev.at);
       events.push(shift && !isNaN(d) ? Object.assign({}, ev, { at: new Date(d.getTime() + shift).toISOString() }) : ev);
     });
@@ -7953,7 +7954,7 @@ function renderChronology(student) {
   // both carry the same event log — keep each event once.
   const seenEv = new Set();
   for (let i = events.length - 1; i >= 0; i--) {
-    const k = events[i].at + '|' + events[i].e + '|' + events[i].q;
+    const k = events[i].at + '|' + events[i].e + '|' + events[i].q + '|' + events[i].id;
     if (seenEv.has(k)) events.splice(i, 1); else seenEv.add(k);
   }
 
@@ -7964,8 +7965,15 @@ function renderChronology(student) {
     if (ev.e === 'heard' && ev.how === 'read') look.text = 'Read the correction (no sound on the device)';
     if (ev.e === 'heard' && /^W/.test(ev.id || '') && typeof MOD2_QUESTIONS !== 'undefined' && /^Watch:/.test(MOD2_QUESTIONS[ev.id] || '')) look.text = 'Heard the worked example';
     if (ev.e === 'step') look.text += ev.ok ? ' — right' : ' — missed (picked ' + escHtml(ev.pick || '?') + ')';
+    // A science lesson's answers carry a try (t), not a question number (11/11: the timeline said "Qundefined (L34)")
+    if (ev.e === 'answer' && ev.t != null) look.text = ev.ok ? (Number(ev.t) === 2 ? 'Right on the 2nd try' : 'Right')
+                                                              : (Number(ev.t) === 2 ? 'Missed' : 'Missed, one more try');
+    if (ev.e === 'trial') look.text = 'Wrote a push in the table';   // Science 1.1's cart pushes
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
-    const where  = (ev.e === 'finish' || ev.e === 'start') ? '' : ('Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : ''));
+    const where  = (ev.e === 'finish' || ev.e === 'start') ? ''
+      : ev.e === 'trial' ? 'Test ' + ('ABCD'.indexOf(ev.inv) + 1) + (ev.n ? ' · push ' + ev.n + ' of ' + ev.of : '') + ' · ' + ev.cm + ' cm'
+      : ev.q != null ? 'Q' + ev.q + (ev.id ? ' (' + ev.id + ')' : '')
+      : (ev.id || '');
     return '<tr>' +
       '<td style="padding:5px 10px;font-size:.8rem;color:var(--muted);white-space:nowrap;">' + clockOf(ev.at) + '</td>' +
       '<td style="padding:5px 8px;font-size:.9rem;">' + look.icon + '</td>' +
