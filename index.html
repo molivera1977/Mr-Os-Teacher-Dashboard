@@ -884,6 +884,7 @@ const GAME_ORDER = [
   'talent-test-vocab', 'talent-test-comp', 'talent-test-cloze',
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
+  'mod4t-test', 'mod4u-test', 'mod4b-review', 'mod4-practice', 'mod4w-warmup',
   'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup', 'mod3z-prewarmup',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
   'awoc-test-vocab', 'awoc-test-comp', 'awoc-test-cloze',
@@ -1093,6 +1094,11 @@ const GAME_LABELS = {
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'mod4w-warmup': '🔥 MM4 — Warm-Up',          // 11/13: patterns, estimates, mental math — 4 parts
+  'mod4-practice': '🌱 MM4 — Practice',
+  'mod4b-review': '📘 MM4 — Review',
+  'mod4t-test':   '📝 MM4 — Test',
+  'mod4u-test':   '📝 MM4 — Test (Retake)',
   'mod3z-prewarmup': '🧱 MM3 — Pre-Warm-Up',   // 11/6: for a Warm-Up below 9 of 12
   'mod3w-warmup': '🔥 MM3 — Warm-Up',          // 11/3: Times as Many — the Module 2 engine and part names
   'mod3-practice': '🌱 MM3 — Practice A',
@@ -1194,6 +1200,11 @@ const MAX_SCORES = {
   'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
+  'mod4t-test': 16,
+  'mod4u-test': 16,
+  'mod4b-review': 16,
+  'mod4-practice': 16,
+  'mod4w-warmup': 9,       // only its 9 questions are scored (the worked examples and the steps are not)
   'mod3t-test': 17,
   'mod3u-test': 17,
   'mod3a-review': 17,
@@ -3915,11 +3926,13 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
   'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
+  'mod4w-warmup': 'mod4', 'mod4-practice': 'mod4', 'mod4b-review': 'mod4', 'mod4t-test': 'mod4', 'mod4u-test': 'mod4',
   'mod3z-prewarmup': 'mod3', 'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2',
   // MM1's Review and Test = one section too (Marcos 10/23: "mm1 review and test card should be combined")
   'mod1a-review': 'mod1', 'mod1b-review': 'mod1', 'mod1c-review': 'mod1', 'mod1a-test': 'mod1', 'mod1b-test': 'mod1', 'mod1c-test': 'mod1' };
 const FORM_FAMILY_LABELS = {
+  'mod4':          '🧮 Math Module 4 Review and Test',
   'mod3':          '🧮 Math Module 3 Review and Test',
   'mod2':          '🧮 Math Module 2 Review and Test',
   'mod1':          '🔢 Math Module 1 Review and Test',
@@ -3933,7 +3946,7 @@ const FORM_FAMILY_LABELS = {
   'awoc':          'A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
+const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod4': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -4593,6 +4606,169 @@ const MOD2_STANDARDS = {
 const MOD2_SKILL_BANK = {};
 Object.entries(MOD2_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD2_SKILL_BANK[id] = `(${skill}) ${MOD2_QUESTIONS[id]}`; }));
+
+// ── Math Module 4 Review and Test (math-module-4, built 11/13) — patterns, estimates, mental math (4.NBT.5/6).
+// Four parts (Marcos 11/13: "I'm not sure that we need the crazy amounts of levels"): Warm-Up (mod4w-warmup, W01–W30:
+// 6 worked examples "Watch: …", 15 steps "Step: …" (not scored), 9 scored) · Practice (mod4-practice, P01–P16) ·
+// Review (mod4b-review, B01–B16) · Test (mod4t-test, T01–T16; retake = mod4u-test, U01–U16). The same 16 kinds of
+// question at the same spots on every part. X01–X16 / Y01–Y16 = "try one like it" after a miss in the Practice / the Review.
+// Four versions of W/P/B (a retry gets new numbers); these labels are version 1. Built from math-module-4/data (the
+// site's tools/gen_m4.js) — numbers and stories are our own, not HMH's.
+const MOD4_QUESTIONS = {
+  W01: "Watch: Multiply with zeros",
+  W02: "Step: 9 × 8,000. Cover the zeros. 9 × 8 = ?",
+  W03: "Step: How many zeros does 8,000 have?",
+  W04: "Step: Put back 3 zeros. 9 × 8,000 = ?",
+  W05: "Kai walks 30 steps every day. How many steps does Kai walk in 2 days?",
+  W06: "Tom sells 20 bags of popcorn for $3 each. Tom collects $60. How much would Tom collect for 200 bags of popcorn?",
+  W07: "Watch: Divide with zeros",
+  W08: "Step: 5,400 ÷ 6. Cover 2 zeros. 54 ÷ 6 = ?",
+  W09: "Step: Put back 2 zeros. 5,400 ÷ 6 = ?",
+  W10: "Divide. 80 ÷ 2 = ?",
+  W11: "Jake finds 6 ÷ 2 = 3 in a division pattern. What are the next two quotients? 60 ÷ 2 = ? and 600 ÷ 2 = ?",
+  W12: "40 people come to the fair over 4 days. The same number come each day. How many people come each day?",
+  W13: "Watch: Estimate a product",
+  W14: "Step: 464 × 6. 464 is between which two hundreds?",
+  W15: "Step: 6 × 400 = ?",
+  W16: "Step: 6 × 500 = ?",
+  W17: "Between which two numbers is the product of 21 × 2?",
+  W18: "Watch: Estimate a quotient",
+  W19: "Step: 227 ÷ 6. Which number is close to 227 and easy to divide by 6?",
+  W20: "Step: 240 ÷ 6 = ?",
+  W21: "Ana puts 46 cards into 3 piles. Which equation shows the closest estimate for the number of cards in each one?",
+  W22: "Watch: Mental math: break apart",
+  W23: "Step: 2 × 24. Break apart 24. 2 × 20 = ?",
+  W24: "Step: 2 × 4 = ?",
+  W25: "Step: 40 + 8 = ?",
+  W26: "Watch: Mental math: change the order",
+  W27: "Step: 5 × 7 × 80. Which pair is friendly?",
+  W28: "Step: 400 × 7 = ?",
+  W29: "Multiply. 2 × 12 = ?",
+  W30: "Multiply. 4 × 3 × 5 = ?",
+  P01: "Ella sells 30 cups of lemonade for $8 each. Ella collects $240. How much would Ella collect for 300 cups of lemonade?",
+  P02: "Sara puts 60 pencils into 6 cups. Each cup gets the same number. How many pencils go in each cup?",
+  P03: "450 seeds are planted in 5 rows. Each row gets the same number. How many seeds are in each row?",
+  P04: "Between which two numbers is the product of 258 × 3?",
+  P05: "Luis puts 95 pencils into 4 cups. Which equation shows the closest estimate for the number of pencils in each one?",
+  P06: "Multiply. 3 × 38 = ?",
+  P07: "Multiply. 8 × 7 × 5 = ?",
+  P08: "Divide. 200 ÷ 5 = ?",
+  P09: "Divide. 301 ÷ 7 = ?",
+  P10: "Ben finds 12 ÷ 6 = 2 in a division pattern. What are the next two quotients? 120 ÷ 6 = ? and 1,200 ÷ 6 = ?",
+  P11: "Lucy walks 60 steps every day. How many steps does Lucy walk in 9 days?",
+  P12: "102 people wait for a ride. Each car holds 3 people. How many cars are needed for all of them?",
+  P13: "Owen and Sam each make 6 cards. They use 10 stamps on each card. How many stamps do they use in all?",
+  P14: "Ana uses 600 beads to make 6 necklaces. Each necklace uses the same number. How many beads are on each necklace?",
+  P15: "The art club sold 16 pictures the first week. The art club earns $8 for each picture. Part A: How much money did the art club earn?",
+  P16: "The art club sold 16 pictures the first week. The art club earns $8 for each picture. The art club earns about the same each week as on the first week. Part B: Which equation shows about how much the art club will earn in 3 weeks?",
+  B01: "Sara sells 90 plants for $6 each. Sara collects $540. How much would Sara collect for 900 plants?",
+  B02: "Nina puts 90 crayons into 9 boxes. Each box gets the same number. How many crayons go in each box?",
+  B03: "900 seeds are planted in 9 rows. Each row gets the same number. How many seeds are in each row?",
+  B04: "Between which two numbers is the product of 238 × 7?",
+  B05: "Ana puts 118 crayons into 3 boxes. Which equation shows the closest estimate for the number of crayons in each one?",
+  B06: "Multiply. 4 × 45 = ?",
+  B07: "Multiply. 2 × 8 × 30 = ?",
+  B08: "Divide. 270 ÷ 3 = ?",
+  B09: "Divide. 918 ÷ 3 = ?",
+  B10: "Kim finds 18 ÷ 6 = 3 in a division pattern. What are the next two quotients? 180 ÷ 6 = ? and 1,800 ÷ 6 = ?",
+  B11: "Noah delivers 700 packages every week. How many packages does Noah deliver in 6 weeks?",
+  B12: "189 fans wait for the bus. Each bus holds 9 fans. How many buses are needed for all of them?",
+  B13: "Zoe and Tom each make 9 books. They use 10 pictures on each book. How many pictures do they use in all?",
+  B14: "Max uses 1,400 tiles to make 2 walls. Each wall uses the same number. How many tiles are on each wall?",
+  B15: "The soccer team sold 29 tickets the first game. The soccer team earns $9 for each ticket. Part A: How much money did the soccer team earn?",
+  B16: "The soccer team sold 29 tickets the first game. The soccer team earns $9 for each ticket. The soccer team earns about the same each game as on the first game. Part B: Which equation shows about how much the soccer team will earn in 4 games?",
+  T01: "Sam sells 500 plants for $3 each. Sam collects $1,500. How much would Sam collect for 5,000 plants?",
+  T02: "Max puts 160 beads into 4 jars. Each jar gets the same number. How many beads go in each jar?",
+  T03: "4,000 books go on 5 shelves. Each shelf gets the same number. How many books go on each shelf?",
+  T04: "Between which two numbers is the product of 485 × 5?",
+  T05: "Ruby puts 131 pencils into 3 cups. Which equation shows the closest estimate for the number of pencils in each one?",
+  T06: "Multiply. 3 × 81 = ?",
+  T07: "Multiply. 3 × 7 × 30 = ?",
+  T08: "Divide. 360 ÷ 6 = ?",
+  T09: "Divide. 2,863 ÷ 7 = ?",
+  T10: "Tom finds 27 ÷ 3 = 9 in a division pattern. What are the next two quotients? 270 ÷ 3 = ? and 2,700 ÷ 3 = ?",
+  T11: "Lucy ships 5,000 boxes every week. How many boxes does Lucy ship in 3 weeks?",
+  T12: "309 students go on a trip. Each van holds 3 students. How many vans are needed for all of them?",
+  T13: "Luis and Zoe each make 4 kites. They use 40 ribbons on each kite. How many ribbons do they use in all?",
+  T14: "Mia uses 4,200 tiles to make 7 walls. Each wall uses the same number. How many tiles are on each wall?",
+  T15: "The bake sale sold 170 muffins the first day. The bake sale earns $3 for each muffin. Part A: How much money did the bake sale earn?",
+  T16: "The bake sale sold 170 muffins the first day. The bake sale earns $3 for each muffin. The bake sale earns about the same each day as on the first day. Part B: Which equation shows about how much the bake sale will earn in 6 days?",
+  U01: "Ben sells 300 bags of popcorn for $4 each. Ben collects $1,200. How much would Ben collect for 3,000 bags of popcorn?",
+  U02: "Ana puts 180 pencils into 3 cups. Each cup gets the same number. How many pencils go in each cup?",
+  U03: "3,200 books go on 4 shelves. Each shelf gets the same number. How many books go on each shelf?",
+  U04: "Between which two numbers is the product of 808 × 3?",
+  U05: "Jake puts 131 crayons into 4 boxes. Which equation shows the closest estimate for the number of crayons in each one?",
+  U06: "Multiply. 9 × 27 = ?",
+  U07: "Multiply. 2 × 8 × 40 = ?",
+  U08: "Divide. 360 ÷ 9 = ?",
+  U09: "Divide. 3,204 ÷ 4 = ?",
+  U10: "Kai finds 27 ÷ 9 = 3 in a division pattern. What are the next two quotients? 270 ÷ 9 = ? and 2,700 ÷ 9 = ?",
+  U11: "Lucy delivers 3,000 packages every week. How many packages does Lucy deliver in 4 weeks?",
+  U12: "404 campers go canoeing. Each canoe holds 4 campers. How many canoes are needed for all of them?",
+  U13: "Zoe and Ana each make 8 kites. They use 20 ribbons on each kite. How many ribbons do they use in all?",
+  U14: "Ivy uses 3,000 beads to make 5 necklaces. Each necklace uses the same number. How many beads are on each necklace?",
+  U15: "The soccer team sold 130 tickets the first game. The soccer team earns $4 for each ticket. Part A: How much money did the soccer team earn?",
+  U16: "The soccer team sold 130 tickets the first game. The soccer team earns $4 for each ticket. The soccer team earns about the same each game as on the first game. Part B: Which equation shows about how much the soccer team will earn in 8 games?",
+  X01: "Ella sells 60 bags of popcorn for $3 each. Ella collects $180. How much would Ella collect for 600 bags of popcorn?",
+  X02: "Lucy puts 60 marbles into 3 bags. Each bag gets the same number. How many marbles go in each bag?",
+  X03: "360 people come to the fair over 4 days. The same number come each day. How many people come each day?",
+  X04: "Between which two numbers is the product of 296 × 2?",
+  X05: "Mia puts 89 marbles into 3 bags. Which equation shows the closest estimate for the number of marbles in each one?",
+  X06: "Multiply. 7 × 14 = ?",
+  X07: "Multiply. 2 × 6 × 20 = ?",
+  X08: "Divide. 180 ÷ 9 = ?",
+  X09: "Divide. 222 ÷ 3 = ?",
+  X10: "Sara finds 12 ÷ 3 = 4 in a division pattern. What are the next two quotients? 120 ÷ 3 = ? and 1,200 ÷ 3 = ?",
+  X11: "Luis prints 50 pages every day. How many pages does Luis print in 7 days?",
+  X12: "84 students go on a trip. Each van holds 6 students. How many vans are needed for all of them?",
+  X13: "Leo and Owen each make 3 books. They use 20 pictures on each book. How many pictures do they use in all?",
+  X14: "Raj uses 560 buttons to make 8 coats. Each coat uses the same number. How many buttons are on each coat?",
+  X15: "The school store sold 27 pencils the first week. The school store earns $4 for each pencil. Part A: How much money did the school store earn?",
+  X16: "The school store sold 27 pencils the first week. The school store earns $4 for each pencil. The school store earns about the same each week as on the first week. Part B: Which equation shows about how much the school store will earn in 3 weeks?",
+  Y01: "Lucy sells 90 cups of lemonade for $5 each. Lucy collects $450. How much would Lucy collect for 900 cups of lemonade?",
+  Y02: "Sam puts 90 pencils into 3 cups. Each cup gets the same number. How many pencils go in each cup?",
+  Y03: "720 pounds of corn go into 9 bins. Each bin gets the same amount. How many pounds go in each bin?",
+  Y04: "Between which two numbers is the product of 204 × 7?",
+  Y05: "Ana puts 113 pencils into 5 cups. Which equation shows the closest estimate for the number of pencils in each one?",
+  Y06: "Multiply. 3 × 55 = ?",
+  Y07: "Multiply. 3 × 7 × 20 = ?",
+  Y08: "Divide. 250 ÷ 5 = ?",
+  Y09: "Divide. 648 ÷ 9 = ?",
+  Y10: "Owen finds 18 ÷ 3 = 6 in a division pattern. What are the next two quotients? 180 ÷ 3 = ? and 1,800 ÷ 3 = ?",
+  Y11: "Mia walks 400 steps every day. How many steps does Mia walk in 8 days?",
+  Y12: "161 people wait for a ride. Each car holds 7 people. How many cars are needed for all of them?",
+  Y13: "Ella and Jake each make 3 books. They use 30 pictures on each book. How many pictures do they use in all?",
+  Y14: "Tom uses 900 tiles to make 3 walls. Each wall uses the same number. How many tiles are on each wall?",
+  Y15: "The soccer team sold 27 tickets the first game. The soccer team earns $8 for each ticket. Part A: How much money did the soccer team earn?",
+  Y16: "The soccer team sold 27 tickets the first game. The soccer team earns $8 for each ticket. The soccer team earns about the same each game as on the first game. Part B: Which equation shows about how much the soccer team will earn in 4 games?",
+};
+const MOD4_SKILLS = {
+  "Multiply with zeros": ['W05','P11','B11','T11','U11','X11','Y11'],
+  "Multiply with zeros: a pattern": ['W06','P01','B01','T01','U01','X01','Y01'],
+  "Divide with zeros": ['W10','W12','P02','P03','P08','P14','B02','B03','B08','B14','T02','T03','T08','T14','U02','U03','U08','U14','X02','X03','X08','X14','Y02','Y03','Y08','Y14'],
+  "Division patterns": ['W11','P10','B10','T10','U10','X10','Y10'],
+  "Estimate a product: two estimates": ['W17','P04','B04','T04','U04','X04','Y04'],
+  "Estimate a quotient: compatible numbers": ['W21','P05','B05','T05','U05','X05','Y05'],
+  "Mental math: break apart to multiply": ['W29','P06','P15','B06','B15','T06','T15','U06','U15','X06','X15','Y06','Y15'],
+  "Mental math: change the order": ['W30','P07','P13','B07','B13','T07','T13','U07','U13','X07','X13','Y07','Y13'],
+  "Mental math: break apart to divide": ['P09','P12','B09','B12','T09','T12','U09','U12','X09','X12','Y09','Y12'],
+  "Estimate a product: round, then multiply": ['P16','B16','T16','U16','X16','Y16'],
+};
+const MOD4_STANDARDS = {
+  "Multiply with zeros: a pattern": '4.NBT.5',
+  "Divide with zeros": '4.NBT.6',
+  "Estimate a product: two estimates": '4.NBT.5',
+  "Estimate a quotient: compatible numbers": '4.NBT.6',
+  "Mental math: break apart to multiply": '4.NBT.5',
+  "Mental math: change the order": '4.NBT.5',
+  "Mental math: break apart to divide": '4.NBT.6',
+  "Division patterns": '4.NBT.6',
+  "Multiply with zeros": '4.NBT.5',
+  "Estimate a product: round, then multiply": '4.NBT.5',
+};
+const MOD4_SKILL_BANK = {};
+Object.entries(MOD4_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD4_SKILL_BANK[id] = `(${skill}) ${MOD4_QUESTIONS[id]}`; }));
 
 // ── Math Module 3 Review and Test (math-module-3, built 11/3) — "Times as Many", the Module 2 engine and part names:
 // Pre-Warm-Up (mod3z-prewarmup, 11/6, Z01–Z23: 4 worked examples, 11 steps, 8 scored; for a Warm-Up below 9) ·
@@ -6065,6 +6241,12 @@ const SKILL_REPORTS = {
   'rounding-review': { bank: ROUNDQ_SKILL_BANK, form: 'A', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   // one site — the id letter is the part: P = Practice A, A = Practice B, B = Review, T = Test, U = its retake
+  // Module 4 (11/13): W = Warm-Up, P = Practice, B = Review, T = Test, U = its retake
+  'mod4t-test':      { bank: MOD4_SKILL_BANK,   form: 'T', standards: MOD4_STANDARDS,   site: 'math-module-4' },
+  'mod4u-test':      { bank: MOD4_SKILL_BANK,   form: 'U', standards: MOD4_STANDARDS,   site: 'math-module-4' },
+  'mod4b-review':    { bank: MOD4_SKILL_BANK,   form: 'B', standards: MOD4_STANDARDS,   site: 'math-module-4' },
+  'mod4-practice':   { bank: MOD4_SKILL_BANK,   form: 'P', standards: MOD4_STANDARDS,   site: 'math-module-4' },
+  'mod4w-warmup':    { bank: MOD4_SKILL_BANK,   form: 'W', standards: MOD4_STANDARDS,   site: 'math-module-4' },
   'mod3t-test':     { bank: MOD3_SKILL_BANK,   form: 'T', standards: MOD3_STANDARDS,   site: 'math-module-3' },
   'mod3u-test':     { bank: MOD3_SKILL_BANK,   form: 'U', standards: MOD3_STANDARDS,   site: 'math-module-3' },
   'mod3a-review':   { bank: MOD3_SKILL_BANK,   form: 'A', standards: MOD3_STANDARDS,   site: 'math-module-3' },
@@ -7871,6 +8053,11 @@ function getQuestionText(id) {
     'rounding-practice': ROUNDQ_QUESTIONS,
     'rounding-review': ROUNDQ_QUESTIONS,
     'rounding-quiz':     ROUNDQ_QUESTIONS,
+    'mod4t-test': MOD4_QUESTIONS,
+    'mod4u-test': MOD4_QUESTIONS,
+    'mod4b-review': MOD4_QUESTIONS,
+    'mod4-practice': MOD4_QUESTIONS,
+    'mod4w-warmup': MOD4_QUESTIONS,
     'mod3t-test': MOD3_QUESTIONS,
     'mod3u-test': MOD3_QUESTIONS,
     'mod3a-review': MOD3_QUESTIONS,
@@ -7937,6 +8124,7 @@ function hintOpensOf(sessions) {
 // Pre-Warm-Up is finished once (any score). Those students are listed as "Needs the Pre-Warm-Up"; a student who did it
 // shows its score beside the Warm-Up's.
 const UNIT_GATES = [
+  { warmUp: 'mod4w-warmup', practiceA: 'mod4-practice', review: 'mod4b-review', tests: ['mod4t-test', 'mod4u-test'], cutoff: 70 },   // 4 parts: no Practice B (11/13)
   { preWarmUp: 'mod3z-prewarmup', warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
 ];
@@ -7969,7 +8157,10 @@ function gatesHTML(game) {
   };
   const Z = unit.preWarmUp ? tally(unit.preWarmUp) : new Map();
   const W = unit.warmUp ? tally(unit.warmUp) : new Map();
-  const A = tally(unit.practiceA), B = tally(unit.practiceB), R = tally(unit.review);
+  // a unit with no Practice B (Module 4, 11/13): the Practice is the last step before the Review — it plays Practice B's part here
+  const noB = !unit.practiceB;
+  const A = tally(unit.practiceA), B = noB ? A : tally(unit.practiceB), R = tally(unit.review);
+  const nA = noB ? 'the Practice' : 'Practice A', nA2 = noB ? 'Practice' : 'Practice A';
   const T = new Map();
   unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
   const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
@@ -8000,17 +8191,17 @@ function gatesHTML(game) {
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
     `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
-  return `<div class="nm-head">🚦 Where each student is — ${unit.preWarmUp ? `under ${unit.cutoff}% on the Warm-Up: finish the Pre-Warm-Up once, then try the Warm-Up again · ` : ''}${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens Practice A · ` : ''}${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · ${unit.cutoff}% on the Review opens the Test</div>` +
+  return `<div class="nm-head">🚦 Where each student is — ${unit.preWarmUp ? `under ${unit.cutoff}% on the Warm-Up: finish the Pre-Warm-Up once, then try the Warm-Up again · ` : ''}${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens ${nA} · ` : ''}${noB ? `${unit.cutoff}% on the Practice opens the Review · ` : `${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · `}${unit.cutoff}% on the Review opens the Test</div>` +
     row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
-    row('Stuck at the Review gate', `Practice B under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
+    row('Stuck at the Review gate', `${noB ? 'Practice' : 'Practice B'} under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
     row('Stuck at the Practice B gate', `Practice A under ${unit.cutoff}%`, stage.stuckA, 'stuck') +
-    row('Stuck at the Practice A gate', `the Warm-Up not passed yet (under ${unit.cutoff}%, or a Practice A under ${unit.cutoff}% and no Warm-Up) — the score shown is the one that holds them`, stage.stuckW, 'stuck') +
+    row(`Stuck at the ${nA2} gate`, `the Warm-Up not passed yet (under ${unit.cutoff}%, or a ${nA2} under ${unit.cutoff}% and no Warm-Up) — the score shown is the one that holds them`, stage.stuckW, 'stuck') +
     row('Needs the Pre-Warm-Up', `Warm-Up under ${unit.cutoff}% · the next Warm-Up waits until they finish the Pre-Warm-Up once (any score), or your PIN`, stage.needZ, 'stuck') +
     row('Passed Practice B — still needs Practice A', 'let in by PIN; the Review stays closed until Practice A is finished', stage.needA, '') +
     row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
-    row('Ready for the Review', `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
+    row('Ready for the Review', noB ? `Practice ${unit.cutoff}% or better` : `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
     row('Ready for Practice B', `Practice A ${unit.cutoff}% or better`, stage.readyB, 'ok') +
-    row('Ready for Practice A', `Warm-Up ${unit.cutoff}% or better`, stage.readyA, 'ok') +
+    row(`Ready for ${nA}`, `Warm-Up ${unit.cutoff}% or better`, stage.readyA, 'ok') +
     row('Nothing finished yet', '', stage.none, '') +
     row('Took the Test', '', stage.tested, 'ok');
 }
