@@ -686,7 +686,7 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
     <!-- QPS VIEW — each student's QPS Literacy Hub track and Practice Checks -->
     <div id="view-qps" style="display:none;">
       <div class="section-title">📖 QPS Literacy Hub — Practice Checks <a href="https://mroteacher.com/behind-the-qps/" target="behind-the-qps" rel="noopener" style="font-size:.8em;margin-left:8px;">📗 Behind the QPS</a></div>
-      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">A <b>Check</b> is the 10-question quiz at the end of a stop or level. Two Checks at 80% or better = a stop or level passed: the student moves on by themselves. <b>Finished — test them</b> lists what each student passed that you still need to test: ✓ Tested clears it, ↩ Back sends them back to it.</p>
+      <p style="color:var(--muted);font-weight:600;margin:-4px 0 12px;">A <b>Check</b> is the 10-question quiz at the end of a stop or level. Two Checks at 80% or better = a stop or level passed: the student moves on by themselves. <b>Finished — test them</b> lists the phonics stops each student passed that you still need to test: ✓ Tested clears it, ↩ Back sends them back to it. A finished reading course (Maze, Words in context) just says 🎉 Finished — they keep going to the next one.</p>
       <p class="qps-key" style="font-weight:600;margin:-6px 0 12px;"><span class="status-pill retry">↻ Retry next</span> = their newest Check was under 80% (Maze: under its goal): they practice, then take another Check.</p>
       <div id="qpsFlags"></div>
       <div class="table-wrap" id="qpsGrid" style="overflow-x:auto;"></div>
@@ -2211,9 +2211,9 @@ async function renderQps() {
   const readBody = read.map(r => {
     const block = k => { const c = (r.course || {})[k], name = `<div class="qps-path-level">${escHtml(QPS_COMP_SKILLS[k])}${c ? ` · Level ${c.level} of 4` : ''}</div>`;
       if (!c) return `<div class="qps-course">${name}<span class="status-pill notstarted">⬜ Not started</span></div>`;
-      if (c.finished) return `<div class="qps-course">${name}` + (r.readingTest.includes(k)
-        ? `<div class="qps-rflag" data-name="${escHtml(r.name)}" data-skill="${escHtml(k)}"><span class="status-pill complete">🎉 Finished — test them</span> <button type="button" class="btn qps-rtested" title="You tested them on this course">✓ I tested this</button></div>`
-        : '<span class="status-pill complete">🎉 Finished · ✓ tested</span>') + '</div>';
+      // a reading course is not tested (Marcos 11/13: "I dont test the maze and words in context, they will simply get more
+      // practice and harder practice as they advance"): finished is just finished — no flag, no ✓ I tested this
+      if (c.finished) return `<div class="qps-course">${name}<span class="status-pill complete">🎉 Finished</span></div>`;
       return `<div class="qps-course">${name}${qpsReadingPath(r, k)}</div>`; };
     // every QPS stop passed on the hub (11/11): said under the name; a stop still to test keeps its buttons here
     const grad = r.graduated ? '<br>' + muted(`🎉 passed every QPS stop (started on ${escHtml(qpsStopName(r.startedAt))})`) : '';
@@ -2221,7 +2221,7 @@ async function renderQps() {
     return `<tr><td>${escHtml(r.name)}${grad}</td><td>${toTest}${Object.keys(QPS_COMP_SKILLS).map(block).join('')}</td><td>${lastCheck(r)}</td></tr>`;
   }).join('');
   const nTest = [...phon, ...read].reduce((n, r) => n + (r.test || []).length, 0), nKids = [...phon, ...read].filter(r => (r.test || []).length).length;
-  const nRead = read.reduce((n, r) => n + r.readingTest.length, 0);
+  const nRead = 0;   // reading courses are not tested (Marcos 11/13): only phonics stops go on the 🔔 To test line
   const fast = [...phon, ...read].filter(r => r.latest && qpsTooFast(r.latest));
   const box = document.getElementById('qpsFlags');
   const undo = qpsUndo ? `<div class="qps-undo" style="margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#eef3ff;font-weight:700;">You ${escHtml(qpsUndo.what)}. <button type="button" class="btn qps-undo-btn">↶ Undo</button></div>` : '';
