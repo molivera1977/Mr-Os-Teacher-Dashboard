@@ -371,6 +371,33 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .fact-map-key i.fact-map-none{border:1px dashed var(--muted);}
 .fact-map-key i.fact-map-second{box-shadow:inset 0 0 0 2px #6a3fc8;}
 .fact-map-other{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;}
+/* 📋 Who Owes What (11/13) */
+.owe-sub{font-size:.72rem;color:var(--muted);font-weight:700;}
+.owe-sub select{font:inherit;font-weight:800;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1px 4px;}
+.owe-summary{font-size:.78rem;font-weight:700;color:var(--muted);margin:0 0 8px;}
+.owe-key{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+.owe-list{display:flex;flex-direction:column;gap:6px;}
+.owe-row{display:grid;grid-template-columns:200px 64px 1fr;align-items:start;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+.owe-name{background:none;border:none;padding:0;font:inherit;font-weight:800;color:var(--accent);cursor:pointer;text-align:left;text-decoration:underline dotted;}
+.owe-count{font-size:.75rem;font-weight:800;color:var(--muted);padding-top:2px;}
+.owe-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.owe-chip,.owe-key-chip{font:inherit;font-size:.78rem;font-weight:700;border-radius:10px;padding:3px 9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);text-align:left;}
+.owe-chip{cursor:pointer;}
+.owe-chip:hover{border-color:var(--accent);}
+.owe-retry{border-color:#e67e22;background:rgba(230,126,34,.14);}
+.owe-working{border-color:#d4a017;background:rgba(212,160,23,.14);}
+.owe-none{border-style:dashed;}
+.owe-done{font-size:.8rem;font-weight:800;color:var(--green);}
+@media (max-width:700px){.owe-row{grid-template-columns:1fr;}}
+.owe-pick{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin:0 0 10px;}
+.owe-pick summary{cursor:pointer;font-size:.82rem;font-weight:800;color:var(--text);}
+#oweSaveStatus{font-weight:700;color:var(--muted);margin-left:6px;}
+.owe-pick-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:10px;}
+.owe-pick-title{font-size:.8rem;font-weight:800;color:var(--text);margin-bottom:4px;}
+.owe-pick-item{display:flex;align-items:baseline;gap:6px;font-size:.78rem;font-weight:700;color:var(--text);padding:2px 0;cursor:pointer;}
+.owe-pick-item input{accent-color:var(--accent);}
+.owe-pick-n{font-weight:600;color:var(--muted);font-size:.72rem;}
+.owe-pick-off{opacity:.5;cursor:default;}
 /* ── 📌 Assign Fact Practice (Fact Fluency view) ── */
 .fact-assign{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:24px;}
 .fact-assign-sub{font-size:.72rem;color:var(--muted);font-weight:700;font-family:'Nunito',sans-serif;}
@@ -532,6 +559,15 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
       <!-- Assignment cards -->
       <div class="section-title">📋 Assignments</div>
       <div class="assignment-cards" id="assignmentCards"></div>
+
+      <!-- 📋 Who Owes What (11/13) -->
+      <div class="section-title" style="margin-top:24px;">📋 Who Owes What
+        <span class="owe-sub">assignments the class worked on in the last
+          <select id="oweDays" onchange="setOweDays(this.value)" aria-label="How far back to count assignments">
+            <option value="7">1 week</option><option value="14">2 weeks</option><option value="28">4 weeks</option><option value="0">everything</option>
+          </select> · a part counts once a classmate has finished it · click an assignment to open it · click a name for all their scores</span>
+      </div>
+      <div class="owe-list" id="oweList"></div>
 
       <!-- Student dot grid -->
       <div class="section-title" style="margin-top:24px;">👥 Student Progress</div>
@@ -3825,9 +3861,14 @@ function byLatestWork(games) {
     .flatMap(b => b.list);
 }
 
+// The Overview's assignments, the one students saved to most recently first (its cards, checklist, 📋 Who Owes What)
+function overviewGames() {
+  return byLatestWork(assignmentsInListOrder().filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g)));   // QPS has its own 📖 page, the Lab its own 🧪 page
+}
+
 function renderOverview() {
   // The assignment students saved to most recently on the left (Marcos 11/11)
-  const games = byLatestWork(assignmentsInListOrder().filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g)));   // QPS has its own 📖 page, the Lab its own 🧪 page
+  const games = overviewGames();
 
   // ── Stats row ──
   const statsEl = document.getElementById('overviewStats');
@@ -3887,7 +3928,230 @@ function renderOverview() {
       setsEl.appendChild(b);
     });
   }
+  renderOwed();
 }
+
+// ═══════════════════════════════════════════════════
+//  📋 WHO OWES WHAT (Marcos 11/13: "can we add a section to quickly highlight what each student owes in terms of
+//  assignments so i dont have to click on each section"). His picks: the assignments the class worked on in the last
+//  2 weeks (a menu: 1 week / 4 weeks / everything); Forms A/B/C of one part = one, any form done; a Retake is never
+//  owed. Each kind by its own rules: a math unit until a Test is taken (where they are = the 🚦 box's unitStage);
+//  gated steps and levels "N to go · on the next one"; any other set its parts not done; one assignment until finished.
+// ═══════════════════════════════════════════════════
+const OWE_DAYS = [7, 14, 28, 0];   // 0 = everything
+let oweDays = 14;
+try { const v = localStorage.getItem('oweDays'); if (v !== null && OWE_DAYS.includes(Number(v))) oweDays = Number(v); } catch (e) { /* private window: 2 weeks */ }
+function setOweDays(v) {
+  oweDays = OWE_DAYS.includes(Number(v)) ? Number(v) : 14;
+  try { localStorage.setItem('oweDays', String(oweDays)); } catch (e) { /* not remembered on this computer */ }
+  renderOwed();
+}
+
+// The Overview's cards as blocks (a set of 2+ forms = one), in the cards' order, inside the menu's time
+function oweBlocks() {
+  const games = overviewGames();
+  const fams = groupFamilies(games);
+  const blocks = new Map();
+  games.forEach(g => {
+    const fam = fams[familyOf(g)] ? familyOf(g) : null;
+    const key = fam ? 'set:' + fam : g;
+    if (!blocks.has(key)) blocks.set(key, { fam, game: fam ? null : g, members: fam ? fams[fam] : [g], label: fam ? familyLabel(fam, fams[fam]) : (GAME_LABELS[g] || g) });
+  });
+  const since = Date.now() - oweDays * 864e5;
+  return [...blocks.values()].filter(b => !oweDays || Math.max(0, ...b.members.map(lastStudentSave)) >= since);
+}
+
+const oweRow = (g, name) => (dashData[g] || []).find(s => s.name === name);
+const oweDone = (g, st) => isStep(g) ? stepWhere(g, st).passed : !!st && st.status === 'complete';
+const oweStarted = (g, name) => ((oweRow(g, name) || {}).sessions || []).length > 0;
+
+// The 🚦 box's stages, said as what comes next (a stuck stage = a retry)
+const OWE_UNIT = {
+  readyTest:   [() => 'ready for the Test', 'next'],
+  stuckReview: [v => `Review ↻ (best ${v.best.pct}%)`, 'retry'],
+  readyReview: [() => 'next: the Review', 'next'],
+  needA:       [() => 'needs Practice A', 'next'],
+  stuckB:      [(v, u) => `${u.practiceB ? 'Practice B' : 'Practice'} ↻ (best ${v.best.pct}%)`, 'retry'],
+  readyB:      [() => 'next: Practice B', 'next'],
+  stuckA:      [v => `Practice A ↻ (best ${v.best.pct}%)`, 'retry'],
+  readyA:      [(v, u) => `next: ${u.practiceB ? 'Practice A' : 'the Practice'}`, 'next'],
+  stuckW:      [() => 'Warm-Up ↻', 'retry'],
+  needZ:       [() => 'needs the Pre-Warm-Up', 'retry'],
+};
+// A block's parts — each one thing a student can owe, and one line in ☑️ What counts:
+// { key (what the checklist saves), label, games, done(name), unit (a unit's Test), step / leveled (in order) }
+function oweParts(b, ctx) {
+  const short = g => formShortLabel(b.label, g);
+  const unit = UNIT_GATES.find(u => b.members.includes(u.practiceA));
+  if (unit) {
+    const steps = [unit.warmUp, unit.practiceA, unit.practiceB, unit.review].filter(Boolean);
+    return [{ key: unit.tests.join('+'), label: 'Test (or its Retake)', games: unit.tests, unit, done: name => ctx.tallyOf(unit).T.has(name) },
+      ...steps.map(g => ({ key: g, label: short(g), games: [g], step: true, done: name => stepWhere(g, oweRow(g, name)).passed }))];
+  }
+  if (!b.fam) return [{ key: b.game, label: b.label, games: [b.game], done: name => oweDone(b.game, oweRow(b.game, name)) }];
+  if (b.members.every(g => INFP_GAMES.includes(g)))
+    return b.members.map(g => ({ key: g, label: short(g), games: [g], step: true, leveled: true, done: name => infpWhere(oweRow(g, name)).top >= 1 }));
+  if (b.members.every(isStep)) return b.members.map(g => ({ key: g, label: short(g), games: [g], step: true, done: name => stepWhere(g, oweRow(g, name)).passed }));
+  // any other set: Forms A/B/C of one part are one part (any form done), a Retake inside its Test
+  const parts = new Map();
+  b.members.forEach(g => { const m = /^(.+?)[abc]-(review|test)$/.exec(g); const k = m ? `${m[1]}-${m[2]}` : g; parts.set(k, [...(parts.get(k) || []), g]); });
+  const partName = gs => gs.length > 1
+    ? (/^Form [ABC]$/.test(short(gs[0])) ? 'a Form (A, B or C)' : short(gs[0]).replace(/\s+[ABC]$/, ''))
+    : short(gs[0]).replace(/\s*\(Form [ABC]\)$/, '');
+  return [...parts].map(([key, gs]) => ({ key, label: partName(gs), games: gs, done: name => gs.some(g => oweDone(g, oweRow(g, name))) }));
+}
+// A part counts once a classmate has FINISHED it (one nobody has finished is still being taught: Rounding Mechanics'
+// Practice A/B, a Test not given on the site, Science 1.2 mid-lesson — the real sheet 11/13) and Mr. O has not left it off
+const oweCounts = (p, ctx) => p.games.some(g => ctx.given.has(g)) && !ctx.skip.has(p.key);
+
+// Parts in order, each opening the next (gated steps, Inference Practice's Level 1s, a unit's steps before its Test
+// counts): how many of the counted ones are left, and which one is next
+function oweInOrder(parts, name, ctx, level = '') {
+  const left = parts.filter(p => oweCounts(p, ctx) && !p.done(name));
+  if (!left.length) return null;
+  if (!parts.some(p => p.games.some(g => oweStarted(g, name)))) return { detail: 'not started', state: 'none' };
+  const g = left[0].games[0];
+  const w = left[0].leveled ? infpWhere(oweRow(g, name)) : stepWhere(g, oweRow(g, name));
+  const state = w.state === 'retry' ? 'retry' : w.state === 'working' ? 'working' : 'next';
+  return { detail: `${left.length} to go${level} · on ${left[0].label}${state === 'retry' ? ' ↻' : state === 'working' ? ' …' : ''}`, state };
+}
+
+function oweUnit(parts, ctx, name) {
+  const unit = parts[0].unit;
+  if (!oweCounts(parts[0], ctx)) return oweInOrder(parts.slice(1), name, ctx);   // the Test not given (or left off): its steps
+  const [stage, v] = unitStage(unit, ctx.tallyOf(unit), name);
+  if (stage === 'tested') return null;
+  if (stage === 'none') {
+    const parts = [unit.preWarmUp, unit.warmUp, unit.practiceA, unit.practiceB, unit.review, ...unit.tests].filter(Boolean);
+    return parts.some(g => oweStarted(g, name)) ? { detail: 'Test not taken · working on it', state: 'working' } : { detail: 'not started', state: 'none' };
+  }
+  const [say, state] = OWE_UNIT[stage];
+  return { detail: `Test not taken · ${say(v, unit)}`, state };
+}
+
+function oweSingle(p, name, ctx) {
+  if (!oweCounts(p, ctx) || p.done(name)) return null;
+  const g = p.games[0];
+  if (isStep(g)) {
+    const w = stepWhere(g, oweRow(g, name));
+    return w.state === 'retry' ? { detail: 'needs a retry ↻', state: 'retry' } : w.state === 'working' ? { detail: 'working on it', state: 'working' } : { detail: 'not started', state: 'none' };
+  }
+  return oweStarted(g, name) ? { detail: 'working on it', state: 'working' } : { detail: 'not started', state: 'none' };
+}
+
+// One block and one student → null (nothing owed) or { detail, state: 'retry' | 'working' | 'next' | 'none' }
+// ctx = { given, skip, tallyOf, partsOf }
+function oweOf(b, name, ctx) {
+  const parts = ctx.partsOf(b);
+  if (parts[0].unit) return oweUnit(parts, ctx, name);
+  if (!b.fam) return oweSingle(parts[0], name, ctx);
+  if (parts[0].step) return oweInOrder(parts, name, ctx, parts[0].leveled ? ' at Level 1' : '');
+  const left = parts.filter(p => oweCounts(p, ctx) && !p.done(name));
+  if (!left.length) return null;
+  if (!b.members.some(g => oweStarted(g, name))) return { detail: 'not started', state: 'none' };
+  const names = left.map(p => p.label);
+  const working = left.some(p => p.games.some(g => oweStarted(g, name)));
+  return { detail: names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3} more` : ''), state: working ? 'working' : 'next' };
+}
+
+// ☑️ WHAT COUNTS (Marcos 11/13: "certain parts I'm not concerned with due to difficulty by entire class. Create an area
+// or checklist that I can click to remove it easily from the owed list" · "this unchecking will only affect this list
+// of owed work" · "save it to a google sheet"). An unchecked part leaves 📋 Who Owes What only. Each change is one row
+// on the hidden owe-skip tab (name = the part, form = 'skip' | 'count', score = when): the newest row per part wins —
+// the sheet's leaderboard keeps it — sent, read back and sent again like 📌 assignments (sendUntilSaved).
+const OWE_SKIP_GAME = 'owe-skip';
+const OWE_SKIP_MAX  = 1e15;   // the score is the time (ms): the sheet caps a score at maxScore
+HIDDEN_GAMES.add(OWE_SKIP_GAME);
+const oweSkipLocal = new Map();   // part → { skip, at } changed on this page (kept until the page reloads; the newest wins)
+let owePickOpen = false, oweSaveMsg = '';
+function oweSkips() {
+  const newest = new Map();
+  (dashData[OWE_SKIP_GAME] || []).forEach(st => (st.sessions || []).forEach(s => {
+    const at = Number(s.score) || 0, cur = newest.get(st.name);
+    if (!cur || at > cur.at) newest.set(st.name, { skip: s.form === 'skip', at });
+  }));
+  oweSkipLocal.forEach((v, k) => { const cur = newest.get(k); if (!cur || v.at >= cur.at) newest.set(k, v); });
+  return new Set([...newest].filter(([, v]) => v.skip).map(([k]) => k));
+}
+async function postOweSkipRows(rows) {
+  await Promise.all(rows.map(r => fetch(SHEET_URL, {
+    method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'submit', game: OWE_SKIP_GAME, sessionId: r.sessionId, name: r.name, form: r.form,
+      score: r.score, maxScore: OWE_SKIP_MAX, correct: 0, total: 0, percent: 0, done: true, tabSwitches: 0, wrongQuestions: '' })
+  }).catch(() => {})));
+}
+async function loadOweSkipRows() {
+  try {
+    const rows = await (await fetch(`${SHEET_URL}?action=leaderboard&game=${OWE_SKIP_GAME}`, { cache: 'no-store' })).json();
+    return Array.isArray(rows) ? rows : null;
+  } catch (e) { return null; }
+}
+// saved once the sheet's newest row for that part is this change, or a later one
+const oweSkipLanded = (rows, sent) => sent.filter(s => (rows || []).some(r => r.name === s.name && Number(r.score) >= s.score));
+async function setOwePart(key, skip) {
+  const at = Date.now();
+  oweSkipLocal.set(key, { skip, at });
+  oweSaveMsg = '⏳ Saving…';
+  renderOwed();
+  const row = { name: key, sessionId: `OS-${at}`, form: skip ? 'skip' : 'count', score: at };
+  const status = { set textContent(t) { oweSaveMsg = t; const s = document.getElementById('oweSaveStatus'); if (s) s.textContent = t; } };
+  const read = await sendUntilSaved([row], postOweSkipRows, loadOweSkipRows, oweSkipLanded, status);
+  const saved = read !== null && oweSkipLanded(read, [row]).length > 0;
+  if (!saved && (oweSkipLocal.get(key) || {}).at === at) oweSkipLocal.delete(key);   // put the box back the way it was
+  oweSaveMsg = saved ? '✅ Saved to your sheet' : '⚠️ Not saved — check the connection, then try again';
+  renderOwed();
+}
+document.addEventListener('change', e => {
+  const box = e.target.closest('#owePick input[data-key]');
+  if (box) setOwePart(box.dataset.key, !box.checked);
+});
+document.addEventListener('toggle', e => { if (e.target.id === 'owePick') owePickOpen = e.target.open; }, true);
+
+function owePickHtml(blocks, ctx) {
+  const n = STUDENT_ROSTER.length;
+  const off = blocks.flatMap(ctx.partsOf).filter(p => ctx.skip.has(p.key)).length;
+  return `<details class="owe-pick" id="owePick"${owePickOpen ? ' open' : ''}><summary>☑️ What counts — uncheck a part to leave it off this list only (saved to your sheet)` +
+    `${off ? ` · ${off} left off` : ''} <span id="oweSaveStatus">${escHtml(oweSaveMsg)}</span></summary><div class="owe-pick-body">` +
+    blocks.map(b => `<div class="owe-pick-block"><div class="owe-pick-title">${escHtml(b.label)}</div>` + ctx.partsOf(b).map(p => {
+      const given = p.games.some(g => ctx.given.has(g));
+      const left = STUDENT_ROSTER.filter(name => !p.done(name)).length;
+      return `<label class="owe-pick-item${given ? '' : ' owe-pick-off'}"><input type="checkbox" data-key="${escHtml(p.key)}"${given && !ctx.skip.has(p.key) ? ' checked' : ''}${given ? '' : ' disabled'}> ` +
+        `${escHtml(p.label)} <span class="owe-pick-n">${given ? `${left} of ${n} haven't done it` : 'nobody has finished it yet'}</span></label>`;
+    }).join('') + '</div>').join('') + '</div></details>';
+}
+
+function renderOwed() {
+  const el = document.getElementById('oweList');
+  if (!el) return;
+  const sel = document.getElementById('oweDays');
+  if (sel) sel.value = String(oweDays);
+  const blocks = oweBlocks();
+  const tallies = new Map(), partsByBlock = new Map();
+  const ctx = {
+    tallyOf: unit => { if (!tallies.has(unit)) tallies.set(unit, unitTallies(unit)); return tallies.get(unit); },
+    given: new Set(blocks.flatMap(b => b.members).filter(g => (dashData[g] || []).some(s => STUDENT_ROSTER.includes(s.name) && (s.sessions || []).some(x => x.status === 'complete')))),
+    skip: oweSkips(),
+    partsOf: b => { if (!partsByBlock.has(b)) partsByBlock.set(b, oweParts(b, ctx)); return partsByBlock.get(b); },
+  };
+  const rows = STUDENT_ROSTER.map(name => ({ name, owed: blocks.map(b => ({ b, o: oweOf(b, name, ctx) })).filter(x => x.o) }));
+  const owing = rows.filter(r => r.owed.length).length;
+  const chip = ({ b, o }) => `<button type="button" class="owe-chip owe-${o.state}" ${b.fam ? `data-fam="${escHtml(b.fam)}"` : `data-game="${escHtml(b.game)}"`} title="Open ${escHtml(b.label)}">${escHtml(b.label)} · ${escHtml(o.detail)}</button>`;
+  el.innerHTML =
+    `<div class="owe-summary">${owing} of ${rows.length} students owe something · ${rows.length - owing} caught up · counting: ${blocks.length ? blocks.map(b => escHtml(b.label)).join(' · ') : 'nothing — no student work in this time'}</div>` +
+    `<div class="owe-key"><span class="owe-key-chip owe-retry">↻ needs a retry</span><span class="owe-key-chip owe-working">… started, not finished</span><span class="owe-key-chip owe-next">next step</span><span class="owe-key-chip owe-none">not started</span></div>` +
+    owePickHtml(blocks, ctx) +
+    rows.map(r => `<div class="owe-row"><button type="button" class="owe-name" data-profile="${escHtml(r.name)}">${escHtml(r.name)}</button>` +
+      `<span class="owe-count">${r.owed.length ? `${r.owed.length} owed` : ''}</span>` +
+      `<div class="owe-chips">${r.owed.length ? r.owed.map(chip).join('') : '<span class="owe-done">✅ caught up</span>'}</div></div>`).join('');
+}
+
+document.addEventListener('click', e => {
+  const c = e.target.closest('#oweList .owe-chip');
+  if (c && c.dataset.fam) { toggleView('assignment'); familyChooserOpen = c.dataset.fam; renderAssignment(); return; }
+  if (c && c.dataset.game) { familyChooserOpen = null; currentGame = c.dataset.game; toggleView('assignment'); return; }
+  const n = e.target.closest('#oweList .owe-name');
+  if (n) openProfile(n.dataset.profile);
+});
 
 // The ✓ / … checklist: a row per student, a column per assignment. A dot opens that
 // assignment's results; with `profiles`, a name opens the student's profile — `true` = every
@@ -8162,51 +8426,59 @@ UNIT_GATES.forEach(u => {
   if (u.preWarmUp) STEP_PASS[u.preWarmUp] = 0;
   [u.warmUp, u.practiceA, u.practiceB, u.review].filter(Boolean).forEach(g => { STEP_PASS[g] = u.cutoff; });
 });
+// name → { tries, best: { score, total, pct } } from finished attempts (Mr. O's own tries left out)
+function unitTally(g) {
+  const m = new Map();
+  (dashData[g] || []).filter(st => st.name !== 'Mr. O (Teacher)').forEach(student => {
+    let best = null, tries = 0;
+    (student.sessions || []).filter(x => x.status === 'complete').forEach(x => {
+      const total = Number(x.total) || 0, score = Number(x.score) || 0;
+      if (!total) return;
+      tries++;
+      if (!best || score / total > best.score / best.total) best = { score, total, pct: Math.round(score / total * 100) };
+    });
+    if (best) m.set(student.name, { tries, best });
+  });
+  return m;
+}
+// A unit's tallies: Pre-Warm-Up, Warm-Up, Practice A, Practice B (no Practice B: the Practice plays its part), Review,
+// the Test (either form)
+function unitTallies(unit) {
+  const Z = unit.preWarmUp ? unitTally(unit.preWarmUp) : new Map();
+  const W = unit.warmUp ? unitTally(unit.warmUp) : new Map();
+  const A = unitTally(unit.practiceA), B = unit.practiceB ? unitTally(unit.practiceB) : A, R = unitTally(unit.review);
+  const T = new Map();
+  unit.tests.forEach(g => unitTally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
+  return { Z, W, A, B, R, T, pass: v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff };
+}
+// One student's place in a unit, for 🚦 Where each student is and 📋 Who Owes What: [stage, the try that holds them]
+function unitStage(unit, t, n) {
+  const { Z, W, A, B, R, T, pass } = t;
+  if (T.has(n))            return ['tested', T.get(n)];
+  if (pass(R.get(n)))      return ['readyTest', R.get(n)];
+  if (R.has(n))            return ['stuckReview', R.get(n)];
+  if (pass(B.get(n)))      return [A.has(n) ? 'readyReview' : 'needA', B.get(n)];
+  if (B.has(n))            return ['stuckB', B.get(n)];
+  if (pass(A.get(n)))      return ['readyB', A.get(n)];
+  if (W.has(n) && !pass(W.get(n)) && unit.preWarmUp)   // the next Warm-Up waits for one finished Pre-Warm-Up
+                           return [Z.has(n) ? 'stuckW' : 'needZ', { ...W.get(n), pre: Z.get(n) }];
+  if (W.has(n))            return pass(W.get(n)) ? (A.has(n) ? ['stuckA', A.get(n)] : ['readyA', W.get(n)]) : ['stuckW', W.get(n)];
+  if (A.has(n))            return [unit.warmUp ? 'stuckW' : 'stuckA', A.get(n)];   // Practice A under 70% and no Warm-Up yet
+  return ['none', null];
+}
+
 function gatesHTML(game) {
   const unit = UNIT_GATES.find(u => [u.preWarmUp, u.warmUp, u.practiceA, u.practiceB, u.review, ...u.tests].filter(Boolean).includes(game));
   if (!unit) return '';
   const games = [unit.preWarmUp, unit.warmUp, unit.practiceA, unit.practiceB, unit.review, ...unit.tests].filter(Boolean);
   const real = st => st.name !== 'Mr. O (Teacher)';
   if (!games.some(g => (dashData[g] || []).some(st => real(st) && (st.sessions || []).length))) return '';   // nobody has started
-  // name → { tries, best: { score, total, pct } } from finished attempts
-  const tally = g => {
-    const m = new Map();
-    (dashData[g] || []).filter(real).forEach(student => {
-      let best = null, tries = 0;
-      (student.sessions || []).filter(x => x.status === 'complete').forEach(x => {
-        const total = Number(x.total) || 0, score = Number(x.score) || 0;
-        if (!total) return;
-        tries++;
-        if (!best || score / total > best.score / best.total) best = { score, total, pct: Math.round(score / total * 100) };
-      });
-      if (best) m.set(student.name, { tries, best });
-    });
-    return m;
-  };
-  const Z = unit.preWarmUp ? tally(unit.preWarmUp) : new Map();
-  const W = unit.warmUp ? tally(unit.warmUp) : new Map();
   // a unit with no Practice B (Module 4, 11/13): the Practice is the last step before the Review — it plays Practice B's part here
   const noB = !unit.practiceB;
-  const A = tally(unit.practiceA), B = noB ? A : tally(unit.practiceB), R = tally(unit.review);
   const nA = noB ? 'the Practice' : 'Practice A', nA2 = noB ? 'Practice' : 'Practice A';
-  const T = new Map();
-  unit.tests.forEach(g => tally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
-  const pass = v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff;
-
+  const t = unitTallies(unit);
   const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needZ: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
-  STUDENT_ROSTER.forEach(n => {
-    if (T.has(n))                 stage.tested.push([n, T.get(n)]);
-    else if (pass(R.get(n)))      stage.readyTest.push([n, R.get(n)]);
-    else if (R.has(n))            stage.stuckReview.push([n, R.get(n)]);
-    else if (pass(B.get(n)))      (A.has(n) ? stage.readyReview : stage.needA).push([n, B.get(n)]);
-    else if (B.has(n))            stage.stuckB.push([n, B.get(n)]);
-    else if (pass(A.get(n)))      stage.readyB.push([n, A.get(n)]);
-    else if (W.has(n) && !pass(W.get(n)) && unit.preWarmUp)   // the next Warm-Up waits for one finished Pre-Warm-Up
-                                  (Z.has(n) ? stage.stuckW : stage.needZ).push([n, { ...W.get(n), pre: Z.get(n) }]);
-    else if (W.has(n))            (pass(W.get(n)) ? (A.has(n) ? stage.stuckA.push([n, A.get(n)]) : stage.readyA.push([n, W.get(n)])) : stage.stuckW.push([n, W.get(n)]));
-    else if (A.has(n))            (unit.warmUp ? stage.stuckW : stage.stuckA).push([n, A.get(n)]);   // Practice A under 70% and no Warm-Up yet
-    else                          stage.none.push([n, null]);
-  });
+  STUDENT_ROSTER.forEach(n => { const [key, v] = unitStage(unit, t, n); stage[key].push([n, v]); });
   const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
   stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst); stage.stuckW.sort(mostTriesFirst); stage.needZ.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
