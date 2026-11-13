@@ -417,6 +417,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 /* 📖 QPS page (10/21): one line per student; finished stops are chips with their buttons */
 .qps-h{margin:18px 0 8px;font-size:1.05rem;font-weight:800;}
 .qps-flag,.qps-rflag{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:3px 0;padding:4px 8px;border:2px solid var(--amber,#e0a100);border-radius:10px;background:rgba(224,161,0,.08);}
+.qps-partrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;}                /* one open part of a stop's box (11/13) */
+.qps-partrow span{font-weight:700;min-width:12em;}
 .qps-flag .btn,.qps-rflag .btn{padding:4px 10px;font-size:.75rem;}
 .qps-tested,.qps-rtested{background:#1f9d55;color:#fff;}            /* ✓ I tested this: green */
 .qps-back{background:#fff;color:#c92a2a;border:2px solid #c92a2a;}  /* ↩ Send back: red outline — a different kind of button */
@@ -1917,7 +1919,7 @@ function qpsParseProgress(form) {
     if (k === 'stop') p.stop = v || '';
     if (k === 'passes') p.passes = Math.max(0, Math.min(QPS_PASSES, Number(v) || 0));
     if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
-    if (k === 'redo' && /^\w+:[ab]:\d$/.test(v || '')) p.redo = v;
+    if (k === 'redo' && /^\w+:[ab]:\d(\+\w+:[ab]:\d)*$/.test(v || '')) p.redo = v;   // one part, or several: "5:a:0+5:b:0"
   });
   return p;
 }
@@ -1928,13 +1930,19 @@ const qpsFormOf = p => `stop=${p.stop};passes=${p.passes};test=${p.test.join(','
 const QPS_PART_STOPS = ['2','3','4','5','6','7','8'];
 const QPS_PART_WHAT = { a: 'the made-up words', b: 'the sentences' };
 const qpsPartLabel = id => { const [s, pt] = String(id).split(':'); return `${s}(${pt}) — ${QPS_PART_WHAT[pt] || ''}`; };
-// A stop on the test list whose (a) or (b) already passed his latest test: only the other part is left to test (Marcos
-// 11/13: "shouldn't this button say I test 7B and not just 7"). → 'a' | 'b' | null
-function qpsPartLeft(name, stopId) {
-  if (!QPS_PART_STOPS.includes(stopId)) return null;
+// The parts of a stop on the test list still open (Marcos 11/13: "shouldn't this button say I test 7B and not just 7" /
+// "shouldn't this say i tested 5a or i tested 5b"): not passed on his latest test of that part, and not already sent back.
+function qpsPartsLeft(name, stopId) {
+  if (!QPS_PART_STOPS.includes(stopId)) return [];
   const mine = qpsMyTests(name).filter(x => x.stop === stopId), last = pt => mine.find(x => x.task.includes(`(${pt})`));
-  const a = last('a'), b = last('b');
-  return a && a.passed && b && !b.passed ? 'b' : b && b.passed && a && !a.passed ? 'a' : null;
+  return ['a', 'b'].filter(pt => !(last(pt) && last(pt).passed) && !qpsRedoIds(name).includes(`${stopId}:${pt}`));
+}
+const qpsRedoIds = name => { const p = qpsProgress(name); return p && p.redo ? p.redo.split('+').map(x => x.split(':').slice(0, 2).join(':')) : []; };
+// The test list after one part of a stop's box is done (tested or sent back): the stop comes off; its other part, if
+// still open, stays on the list as that part.
+function qpsListAfterPart(name, p, stopId, pt) {
+  const other = `${stopId}:${pt === 'a' ? 'b' : 'a'}`, keep = p.test.includes(stopId) && qpsPartsLeft(name, stopId).includes(other.slice(-1));
+  return [...p.test.filter(x => x !== stopId && x !== `${stopId}:${pt}` && x !== other), ...(keep || p.test.includes(other) ? [other] : [])];
 }
 // The student's progress row, if it counts (a real stop, newer than a hand move in login.js)
 function qpsProgress(name) {
@@ -1959,19 +1967,21 @@ function qpsSaveProgress(name, p) {
 // button did"): the row as it was is kept, and "↶ Undo" at the top of the page writes it back.
 let qpsUndo = null;                      // { name, prev, what }
 const qpsFirst = name => name.split(',').reverse().join(' ').trim();
-function qpsTested(name, stopId, left) {
+function qpsTested(name, stopId, part) {
   const p = qpsProgress(name); if (!p) return;
-  const what = stopId.includes(':') ? qpsPartLabel(stopId) : left ? qpsPartLabel(`${stopId}:${left}`) : `stop ${stopId}`;
+  const what = stopId.includes(':') ? qpsPartLabel(stopId) : part ? qpsPartLabel(`${stopId}:${part}`) : `stop ${stopId}`;
   if (!confirm(`You tested ${qpsFirst(name)} on ${what} yourself?\n\nOK = take ${what} off the "test them" list. ${qpsFirst(name)} stays where they are now.`)) return;
   qpsUndo = { name, prev: p, what: `marked ${what} tested for ${qpsFirst(name)}` };
-  qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== stopId), t: Date.now() });
+  qpsSaveProgress(name, { ...p, test: part ? qpsListAfterPart(name, p, stopId, part) : p.test.filter(x => x !== stopId), t: Date.now() });
 }
-function qpsBackPart(name, stopId, pt, clearStop) {
+function qpsBackPart(name, stopId, pt, fromStopBox) {
   const p = qpsProgress(name); if (!p) return;
   const what = QPS_PART_WHAT[pt], id = `${stopId}:${pt}`;
   if (!confirm(`Send ${qpsFirst(name)} back to ${stopId}(${pt}) — ${what}?\n\nThey stay on stop ${p.stop}. First they practice ${what} of stop ${stopId} (${pt === 'a' ? 'Build, Read and Spell, then the Check twice' : 'the Sentences step'}); then ${stopId}(${pt}) comes back on your "test them" list.`)) return;
   qpsUndo = { name, prev: p, what: `sent ${qpsFirst(name)} back to ${stopId}(${pt})` };
-  qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== id && !(clearStop && x === stopId)), redo: `${id}:0`, t: Date.now() });   // from the stop's box: the stop comes off too
+  // several parts can wait, one after the other ("5:a:0+5:b:0"); from the stop's box, its other open part stays on the list
+  const redo = [...(p.redo ? p.redo.split('+') : []).filter(x => !x.startsWith(id + ':')), `${id}:0`].join('+');
+  qpsSaveProgress(name, { ...p, test: fromStopBox ? qpsListAfterPart(name, p, stopId, pt) : p.test.filter(x => x !== id), redo, t: Date.now() });
 }
 function qpsBack(name, stopId) {
   const p = qpsProgress(name); if (!p) return;
@@ -2217,17 +2227,24 @@ async function renderQps() {
   const phon = rows.filter(r => !r.comp && (r.track || r.checks.length) && !/\(Teacher\)$/.test(r.name));   // not Mr. O's own tries
   const read = rows.filter(r => r.comp);
   const idle = rows.filter(r => !r.comp && !r.track && !r.checks.length);
-  const flag = (r, id) => { const left = id.includes(':') ? null : qpsPartLeft(r.name, id);   // (a) passed → only (b) left
-    return `<div class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(id)}"${left ? ` data-left="${left}"` : ''}>
-      <b>${escHtml(id.includes(':') ? qpsPartLabel(id) : left ? qpsPartLabel(`${id}:${left}`) : qpsStopName(id))}</b>
-      <button type="button" class="btn qps-tested" title="You tested them on this ${id.includes(':') || left ? 'part' : 'stop'}: take it off this list">${left ? `✓ I tested ${escHtml(id)}(${left})` : '✓ I tested this'}</button>
-      <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this ${id.includes(':') || left ? 'part' : 'stop'}">↩ Send back to ${escHtml(id.includes(':') ? id.replace(':', '(') + ')' : left ? `${id}(${left})` : id)}</button></div>`; };
+  const flag = (r, id) => {
+    const parts = id.includes(':') ? [] : qpsPartsLeft(r.name, id);
+    // a stop of 2–8: one line per open part — ✓ I tested 5(a) · ↩ Send back to 5(a) — and the whole stop once
+    if (parts.length) return `<div class="qps-flag qps-partbox" data-name="${escHtml(r.name)}" data-stop="${escHtml(id)}"><b>${escHtml(qpsStopName(id))}</b>
+      ${parts.map(pt => `<div class="qps-partrow"><span>${escHtml(qpsPartLabel(`${id}:${pt}`))}</span>
+        <button type="button" class="btn qps-tested" data-part="${pt}" title="You tested them on this part: take it off this list">✓ I tested ${escHtml(id)}(${pt})</button>
+        <button type="button" class="btn qps-back" data-part="${pt}" title="They did not pass your test on this part: they practice just this part">↩ Send back to ${escHtml(id)}(${pt})</button></div>`).join('')}
+      ${parts.length === 2 ? `<button type="button" class="btn qps-back" title="Both parts: they go back to the whole stop">↩ Send back to all of ${escHtml(id)}</button>` : ''}</div>`;
+    return `<div class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(id)}">
+      <b>${escHtml(id.includes(':') ? qpsPartLabel(id) : qpsStopName(id))}</b>
+      <button type="button" class="btn qps-tested" title="You tested them on this ${id.includes(':') ? 'part' : 'stop'}: take it off this list">✓ I tested this</button>
+      <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this ${id.includes(':') ? 'part' : 'stop'}">↩ Send back to ${escHtml(id.includes(':') ? id.replace(':', '(') + ')' : id)}</button></div>`; };
   // your last 3 tests on this student; one under mastery can send them back to that stop from here
   const myTests = r => qpsMyTests(r.name).slice(0, 3).map(t => `<div class="qps-mytest ${t.passed ? 'ok' : 'bad'}">📝 Your test: ${escHtml(t.task)} · ${escHtml(String(t.percent))}% ${t.passed ? '✅ Mastery' : '⚠️ Needs practice'} ${muted(day(t.timestamp))}` +
     (!t.passed && t.stop && r.track !== t.stop && QPS_STOP_IDS.includes(t.stop) ? (() => {
       const pt = QPS_PART_STOPS.includes(t.stop) ? (/\(([ab])\)/.exec(t.task) || [])[1] : null, id = pt ? `${t.stop}:${pt}` : t.stop;
-      const p = qpsProgress(r.name), now = pt && p && p.redo && p.redo.startsWith(id + ':');
-      if (pt && (r.test || []).includes(t.stop) && qpsPartLeft(r.name, t.stop) === pt) return '';   // the stop's box above has this part's buttons
+      const now = pt && qpsRedoIds(r.name).includes(id);
+      if ((r.test || []).includes(t.stop) || (r.test || []).includes(id)) return '';   // the box above has this stop's buttons
       const btn = (sid, label, what) => ` <span class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(sid)}"><button type="button" class="btn qps-back" title="They did not pass your test: they go back to ${what}">↩ Send back to ${escHtml(label)}</button></span>`;
       // a part of stops 2–8: just that part — and the whole stop only if its other part was not passed too (Marcos 11/13:
       // "if the kid passed 7a, why would i send them back to 7?")
@@ -2237,8 +2254,8 @@ async function renderQps() {
     })() : '') + '</div>').join('');
   const phonBody = phon.map(r => `<tr>
       <td>${escHtml(r.name)}</td>
-      <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}${(() => { const p = qpsProgress(r.name), rd = p && p.redo ? p.redo.split(':') : null;
-        return rd ? '<br>' + muted(`👉 first: ${rd[0]}(${rd[1]}) ${QPS_PART_WHAT[rd[1]] || ''}${rd[1] === 'a' ? ` · ${rd[2]} of 2 passes` : ''}`) : ''; })()}</td>
+      <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}${(() => { const p = qpsProgress(r.name);
+        return p && p.redo ? '<br>' + muted('👉 first: ' + p.redo.split('+').map(x => { const rd = x.split(':'); return `${rd[0]}(${rd[1]}) ${QPS_PART_WHAT[rd[1]] || ''}${rd[1] === 'a' ? ` · ${rd[2]} of 2 passes` : ''}`; }).join(', then ')) : ''; })()}</td>
       <td>${r.track === QPS_STOP_IDS[QPS_STOP_IDS.length - 1] && r.passes >= QPS_PASSES ? '<span class="status-pill complete">🎉 All stops passed</span>' : qpsReadyPill(r)}</td>
       <td>${(r.test || []).length ? r.test.map(id => flag(r, id)).join('') : (qpsMyTests(r.name).length ? '' : muted('—'))}${myTests(r)}</td>
       <td>${lastCheck(r)}</td></tr>`).join('');
@@ -2275,10 +2292,8 @@ async function renderQps() {
     (idle.length ? `<p style="color:var(--muted);font-weight:600;margin-top:10px;">Not on the hub yet: ${idle.map(r => escHtml(r.name)).join(' · ')}</p>` : '');
   el.querySelectorAll('.qps-flag').forEach(row => {
     const name = row.dataset.name, id = row.dataset.stop;
-    const tested = row.querySelector('.qps-tested');          // (a "Your test" line has only ↩ Send back)
-    const left = row.dataset.left;                               // a stop whose other part passed: its part left
-    if (tested) tested.onclick = () => qpsTested(name, id, left);
-    row.querySelector('.qps-back').onclick = () => (id.includes(':') ? qpsBackPart(name, ...id.split(':')) : left ? qpsBackPart(name, id, left, true) : qpsBack(name, id));
+    row.querySelectorAll('.qps-tested').forEach(b => { b.onclick = () => qpsTested(name, id, b.dataset.part); });
+    row.querySelectorAll('.qps-back').forEach(b => { b.onclick = () => (id.includes(':') ? qpsBackPart(name, ...id.split(':')) : b.dataset.part ? qpsBackPart(name, id, b.dataset.part, true) : qpsBack(name, id)); });
   });
   el.querySelectorAll('.qps-rflag').forEach(row => { row.querySelector('.qps-rtested').onclick = () => qpsReadingTested(row.dataset.name, row.dataset.skill); });
 }
@@ -2553,7 +2568,7 @@ function labQpsCell(q) {
   return `<b>${escHtml(qpsStopName(q.track))}</b>${q.known ? '' : ' ' + muted('(last practiced)')}` +
     (q.startedAt && q.track !== q.startedAt ? '<br>' + muted(`moved from ${escHtml(qpsStopName(q.startedAt))}`) : '') +
     `<br>${qpsReadyPill(q)}` + (q.latest ? ` ${muted(`last ${q.latest.percent}% · ${day(q.latest.timestamp)}`)}` : '') +
-    (q.test.length ? `<div class="lab-bell">🔔 to test: ${q.test.map(id => escHtml(qpsStopName(id))).join(', ')}</div>` : '');
+    (q.test.length ? `<div class="lab-bell">🔔 to test: ${q.test.map(id => escHtml(id.includes(':') ? qpsPartLabel(id) : qpsStopName(id))).join(', ')}</div>` : '');   // a part: 2(b) — the sentences (11/13)
 }
 
 async function renderLab() {
