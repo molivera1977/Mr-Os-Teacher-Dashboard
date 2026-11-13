@@ -235,6 +235,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .detail-panel{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:24px;display:none;}
 .detail-panel.open{display:block;}
 .detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;scroll-margin-top:80px;}
+.fact-detail-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fact-detail-nav .btn{white-space:nowrap;}
 .detail-name{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent);}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
 .detail-stat{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center;}
@@ -811,7 +813,11 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
 
       <div class="detail-panel" id="factDetail">
         <div class="detail-header">
-          <div class="detail-name" id="factDetailName"></div>
+          <div class="fact-detail-nav">
+            <button type="button" class="btn btn-ghost btn-sm" id="factPrev" onclick="factStudentStep(-1)"></button>
+            <div class="detail-name" id="factDetailName"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="factNext" onclick="factStudentStep(1)"></button>
+          </div>
           <button class="btn btn-ghost btn-sm" onclick="closeFactStudent()">✕ Close</button>
         </div>
         <div id="factDetailMissed" style="margin-bottom:14px;"></div>
@@ -3586,11 +3592,33 @@ function factMapsHtml(counts, secondNow) {
 function openFactStudent(name) { factStudent = name; renderFactStudent(); document.getElementById('factDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function closeFactStudent()    { factStudent = null; renderFactStudent(); }
 
+// ◀ ▶ (Marcos 11/13: "i would like an arrow so i can quickly go back and forth to each student"): the class in roster
+// order, around the end to the start; each arrow names the student it goes to. ← → on the keyboard do the same.
+function factStudentNeighbors() {
+  const list = STUDENT_ROSTER, n = list.length, i = list.indexOf(factStudent);   // -1: a guest → from the ends
+  return { prev: list[i < 0 ? n - 1 : (i - 1 + n) % n], next: list[i < 0 ? 0 : (i + 1) % n] };
+}
+function factStudentStep(dir) {
+  if (!factStudent) return;
+  const { prev, next } = factStudentNeighbors();
+  factStudent = dir > 0 ? next : prev;
+  renderFactStudent();
+}
+document.addEventListener('keydown', e => {
+  if (!factStudent || currentView !== 'facts' || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.target.closest('input, select, textarea, [contenteditable]')) return;
+  e.preventDefault();
+  factStudentStep(e.key === 'ArrowRight' ? 1 : -1);
+});
+
 function renderFactStudent() {
   const panel = document.getElementById('factDetail');
   if (!factStudent) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
   document.getElementById('factDetailName').textContent = factStudent;
+  const { prev, next } = factStudentNeighbors();
+  document.getElementById('factPrev').textContent = `◀ ${prev}`;
+  document.getElementById('factNext').textContent = `${next} ▶`;
 
   const sessions = [...Object.keys(FACT_SITES), FACT_SECOND]
     .flatMap(g => getFactSessions(g))
