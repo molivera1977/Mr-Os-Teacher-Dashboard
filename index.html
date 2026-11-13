@@ -3144,6 +3144,7 @@ async function loadFactAssignments() {
   factAssignLoading = false;
   renderFactAssignStudents();
   renderFactAssignTable();
+  renderOwed();   // 📋 Who Owes What lists the 📌 assignments not finished (11/13)
   return factAssignError ? null : factAssignRows;
 }
 
@@ -3981,6 +3982,7 @@ const OWE_UNIT = {
 // A block's parts — each one thing a student can owe, and one line in ☑️ What counts:
 // { key (what the checklist saves), label, games, done(name), unit (a unit's Test), step / leveled (in order) }
 function oweParts(b, ctx) {
+  if (b.facts) return [{ key: FACT_ASSIGN_GAME, label: '📌 Assigned fact practice', games: [], facts: true, done: name => !factAssignItemsOf(name).some(a => !a.done) }];
   const short = g => formShortLabel(b.label, g);
   const unit = UNIT_GATES.find(u => b.members.includes(u.practiceA));
   if (unit) {
@@ -4001,8 +4003,24 @@ function oweParts(b, ctx) {
   return [...parts].map(([key, gs]) => ({ key, label: partName(gs), games: gs, done: name => gs.some(g => oweDone(g, oweRow(g, name))) }));
 }
 // A part counts once a classmate has FINISHED it (one nobody has finished is still being taught: Rounding Mechanics'
-// Practice A/B, a Test not given on the site, Science 1.2 mid-lesson — the real sheet 11/13) and Mr. O has not left it off
-const oweCounts = (p, ctx) => p.games.some(g => ctx.given.has(g)) && !ctx.skip.has(p.key);
+// Practice A/B, a Test not given on the site, Science 1.2 mid-lesson — the real sheet 11/13) and Mr. O has not left it off.
+// 📌 fact assignments are his exception ("they are easy to forget about"): each is given to one student, so it counts.
+const oweGiven  = (p, ctx) => !!p.facts || p.games.some(g => ctx.given.has(g));
+const oweCounts = (p, ctx) => oweGiven(p, ctx) && !ctx.skip.has(p.key);
+
+// 🧮 MATH FACTS (Marcos 11/13: "i want the math fact reviews to be an exception, i want those on the owed work list. they
+// are easy to forget about"): every 📌 assignment a student has not finished, read the Assign box's own way
+// (factAssignItemsOf: the same rows, the same "done" — goal reached, try limit reached, or marked done), however long ago
+// it was assigned; a removed one is gone, as in the Assign box. First in each student's row.
+const OWE_FACT_BLOCK = { fam: null, game: null, view: 'facts', facts: true, members: [], label: '🧮 Math Facts (📌 assigned)' };
+function oweFacts(p, name, ctx) {
+  if (!oweCounts(p, ctx)) return null;
+  const open = factAssignItemsOf(name).filter(a => !a.done);
+  if (!open.length) return null;
+  const names = open.map(a => factAssignWhat(a) + (a.right ? ` (${a.right} of ${a.goal} right)` : ''));
+  return { detail: `${open.length} to do: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` +${names.length - 3} more` : ''}`,
+    state: open.some(a => a.right > 0 || a.answered > 0) ? 'working' : 'none' };
+}
 
 // Parts in order, each opening the next (gated steps, Inference Practice's Level 1s, a unit's steps before its Test
 // counts): how many of the counted ones are left, and which one is next
@@ -4043,6 +4061,7 @@ function oweSingle(p, name, ctx) {
 // ctx = { given, skip, tallyOf, partsOf }
 function oweOf(b, name, ctx) {
   const parts = ctx.partsOf(b);
+  if (parts[0].facts) return oweFacts(parts[0], name, ctx);
   if (parts[0].unit) return oweUnit(parts, ctx, name);
   if (!b.fam) return oweSingle(parts[0], name, ctx);
   if (parts[0].step) return oweInOrder(parts, name, ctx, parts[0].leveled ? ' at Level 1' : '');
@@ -4113,7 +4132,7 @@ function owePickHtml(blocks, ctx) {
   return `<details class="owe-pick" id="owePick"${owePickOpen ? ' open' : ''}><summary>☑️ What counts — uncheck a part to leave it off this list only (saved to your sheet)` +
     `${off ? ` · ${off} left off` : ''} <span id="oweSaveStatus">${escHtml(oweSaveMsg)}</span></summary><div class="owe-pick-body">` +
     blocks.map(b => `<div class="owe-pick-block"><div class="owe-pick-title">${escHtml(b.label)}</div>` + ctx.partsOf(b).map(p => {
-      const given = p.games.some(g => ctx.given.has(g));
+      const given = oweGiven(p, ctx);
       const left = STUDENT_ROSTER.filter(name => !p.done(name)).length;
       return `<label class="owe-pick-item${given ? '' : ' owe-pick-off'}"><input type="checkbox" data-key="${escHtml(p.key)}"${given && !ctx.skip.has(p.key) ? ' checked' : ''}${given ? '' : ' disabled'}> ` +
         `${escHtml(p.label)} <span class="owe-pick-n">${given ? `${left} of ${n} haven't done it` : 'nobody has finished it yet'}</span></label>`;
@@ -4125,7 +4144,8 @@ function renderOwed() {
   if (!el) return;
   const sel = document.getElementById('oweDays');
   if (sel) sel.value = String(oweDays);
-  const blocks = oweBlocks();
+  const blocks = [OWE_FACT_BLOCK, ...oweBlocks()];
+  if (factAssignRows === null && !factAssignLoading && !factAssignError) loadFactAssignments();   // 📌 rows: read once, then each refresh
   const tallies = new Map(), partsByBlock = new Map();
   const ctx = {
     tallyOf: unit => { if (!tallies.has(unit)) tallies.set(unit, unitTallies(unit)); return tallies.get(unit); },
@@ -4135,9 +4155,10 @@ function renderOwed() {
   };
   const rows = STUDENT_ROSTER.map(name => ({ name, owed: blocks.map(b => ({ b, o: oweOf(b, name, ctx) })).filter(x => x.o) }));
   const owing = rows.filter(r => r.owed.length).length;
-  const chip = ({ b, o }) => `<button type="button" class="owe-chip owe-${o.state}" ${b.fam ? `data-fam="${escHtml(b.fam)}"` : `data-game="${escHtml(b.game)}"`} title="Open ${escHtml(b.label)}">${escHtml(b.label)} · ${escHtml(o.detail)}</button>`;
+  const chip = ({ b, o }) => `<button type="button" class="owe-chip owe-${o.state}" ${b.view ? `data-view="${escHtml(b.view)}"` : b.fam ? `data-fam="${escHtml(b.fam)}"` : `data-game="${escHtml(b.game)}"`} title="Open ${escHtml(b.label)}">${escHtml(b.label)} · ${escHtml(o.detail)}</button>`;
   el.innerHTML =
-    `<div class="owe-summary">${owing} of ${rows.length} students owe something · ${rows.length - owing} caught up · counting: ${blocks.length ? blocks.map(b => escHtml(b.label)).join(' · ') : 'nothing — no student work in this time'}</div>` +
+    `<div class="owe-summary">${owing} of ${rows.length} students owe something · ${rows.length - owing} caught up · counting: ${blocks.map(b => escHtml(b.label)).join(' · ')}` +
+    `${factAssignError ? ' · ⚠️ the 📌 fact assignments could not be read' : ''}</div>` +
     `<div class="owe-key"><span class="owe-key-chip owe-retry">↻ needs a retry</span><span class="owe-key-chip owe-working">… started, not finished</span><span class="owe-key-chip owe-next">next step</span><span class="owe-key-chip owe-none">not started</span></div>` +
     owePickHtml(blocks, ctx) +
     rows.map(r => `<div class="owe-row"><button type="button" class="owe-name" data-profile="${escHtml(r.name)}">${escHtml(r.name)}</button>` +
@@ -4147,6 +4168,7 @@ function renderOwed() {
 
 document.addEventListener('click', e => {
   const c = e.target.closest('#oweList .owe-chip');
+  if (c && c.dataset.view) { toggleView(c.dataset.view); return; }
   if (c && c.dataset.fam) { toggleView('assignment'); familyChooserOpen = c.dataset.fam; renderAssignment(); return; }
   if (c && c.dataset.game) { familyChooserOpen = null; currentGame = c.dataset.game; toggleView('assignment'); return; }
   const n = e.target.closest('#oweList .owe-name');
