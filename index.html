@@ -1917,10 +1917,17 @@ function qpsParseProgress(form) {
     if (k === 'stop') p.stop = v || '';
     if (k === 'passes') p.passes = Math.max(0, Math.min(QPS_PASSES, Number(v) || 0));
     if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
+    if (k === 'redo' && /^\w+:[ab]:\d$/.test(v || '')) p.redo = v;
   });
   return p;
 }
-const qpsFormOf = p => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}|t=${p.t}`;
+const qpsFormOf = p => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}${p.redo ? `;redo=${p.redo}` : ''}|t=${p.t}`;
+// One part of a stop (Marcos 11/13: "how do i handle a kid needing to do just a part of a level like a, b, or c?" → one
+// button per part, back on his test list when done): stops 2–8, his test's (a) Nonsense = the made-up words, (b) Sentences.
+// ↩ Send back to 7(a) writes "redo=7:a:0"; the hub shows the part first and, when it is done, puts "7:a" on the test list.
+const QPS_PART_STOPS = ['2','3','4','5','6','7','8'];
+const QPS_PART_WHAT = { a: 'the made-up words', b: 'the sentences' };
+const qpsPartLabel = id => { const [s, pt] = String(id).split(':'); return `${s}(${pt}) — ${QPS_PART_WHAT[pt] || ''}`; };
 // The student's progress row, if it counts (a real stop, newer than a hand move in login.js)
 function qpsProgress(name) {
   const st = (dashData[QPS_PROGRESS] || []).find(s => s.name === name);
@@ -1946,9 +1953,17 @@ let qpsUndo = null;                      // { name, prev, what }
 const qpsFirst = name => name.split(',').reverse().join(' ').trim();
 function qpsTested(name, stopId) {
   const p = qpsProgress(name); if (!p) return;
-  if (!confirm(`You tested ${qpsFirst(name)} on stop ${stopId} yourself?\n\nOK = take stop ${stopId} off the "test them" list. ${qpsFirst(name)} stays where they are now.`)) return;
-  qpsUndo = { name, prev: p, what: `marked stop ${stopId} tested for ${qpsFirst(name)}` };
+  const what = stopId.includes(':') ? qpsPartLabel(stopId) : `stop ${stopId}`;
+  if (!confirm(`You tested ${qpsFirst(name)} on ${what} yourself?\n\nOK = take ${what} off the "test them" list. ${qpsFirst(name)} stays where they are now.`)) return;
+  qpsUndo = { name, prev: p, what: `marked ${what} tested for ${qpsFirst(name)}` };
   qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== stopId), t: Date.now() });
+}
+function qpsBackPart(name, stopId, pt) {
+  const p = qpsProgress(name); if (!p) return;
+  const what = QPS_PART_WHAT[pt], id = `${stopId}:${pt}`;
+  if (!confirm(`Send ${qpsFirst(name)} back to ${stopId}(${pt}) — ${what}?\n\nThey stay on stop ${p.stop}. First they practice ${what} of stop ${stopId} (${pt === 'a' ? 'Build, Read and Spell, then the Check twice' : 'the Sentences step'}); then ${stopId}(${pt}) comes back on your "test them" list.`)) return;
+  qpsUndo = { name, prev: p, what: `sent ${qpsFirst(name)} back to ${stopId}(${pt})` };
+  qpsSaveProgress(name, { ...p, test: p.test.filter(x => x !== id), redo: `${id}:0`, t: Date.now() });
 }
 function qpsBack(name, stopId) {
   const p = qpsProgress(name); if (!p) return;
@@ -2195,15 +2210,22 @@ async function renderQps() {
   const read = rows.filter(r => r.comp);
   const idle = rows.filter(r => !r.comp && !r.track && !r.checks.length);
   const flag = (r, id) => `<div class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(id)}">
-      <b>${escHtml(qpsStopName(id))}</b>
-      <button type="button" class="btn qps-tested" title="You tested them on this stop: take it off this list">✓ I tested this</button>
-      <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this stop">↩ Send back to ${escHtml(id)}</button></div>`;
+      <b>${escHtml(id.includes(':') ? qpsPartLabel(id) : qpsStopName(id))}</b>
+      <button type="button" class="btn qps-tested" title="You tested them on this ${id.includes(':') ? 'part' : 'stop'}: take it off this list">✓ I tested this</button>
+      <button type="button" class="btn qps-back" title="They did not pass your test: they go back to this ${id.includes(':') ? 'part' : 'stop'}">↩ Send back to ${escHtml(id.includes(':') ? id.replace(':', '(') + ')' : id)}</button></div>`;
   // your last 3 tests on this student; one under mastery can send them back to that stop from here
   const myTests = r => qpsMyTests(r.name).slice(0, 3).map(t => `<div class="qps-mytest ${t.passed ? 'ok' : 'bad'}">📝 Your test: ${escHtml(t.task)} · ${escHtml(String(t.percent))}% ${t.passed ? '✅ Mastery' : '⚠️ Needs practice'} ${muted(day(t.timestamp))}` +
-    (!t.passed && t.stop && r.track !== t.stop && QPS_STOP_IDS.includes(t.stop) ? ` <span class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(t.stop)}"><button type="button" class="btn qps-back" title="They did not pass your test: they go back to this stop">↩ Send back to ${escHtml(t.stop)}</button></span>` : '') + '</div>').join('');
+    (!t.passed && t.stop && r.track !== t.stop && QPS_STOP_IDS.includes(t.stop) ? (() => {
+      const pt = QPS_PART_STOPS.includes(t.stop) ? (/\(([ab])\)/.exec(t.task) || [])[1] : null, id = pt ? `${t.stop}:${pt}` : t.stop;
+      const p = qpsProgress(r.name), now = pt && p && p.redo && p.redo.startsWith(id + ':');
+      const btn = (sid, label, what) => ` <span class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(sid)}"><button type="button" class="btn qps-back" title="They did not pass your test: they go back to ${what}">↩ Send back to ${escHtml(label)}</button></span>`;
+      // a part of stops 2–8: just that part, or (as before) the whole stop
+      return (pt ? (now ? ` ${muted(`👉 practicing ${t.stop}(${pt}) now`)}` : btn(id, `${t.stop}(${pt})`, 'just this part')) : '') + btn(t.stop, t.stop, 'this whole stop');
+    })() : '') + '</div>').join('');
   const phonBody = phon.map(r => `<tr>
       <td>${escHtml(r.name)}</td>
-      <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}</td>
+      <td><b>${r.track === null ? 'Any stop' : escHtml(qpsStopName(r.track))}</b>${r.startedAt && r.track !== r.startedAt ? '<br>' + muted(`started on ${escHtml(qpsStopName(r.startedAt))}`) : ''}${r.known ? '' : '<br>' + muted('(last practiced)')}${(() => { const p = qpsProgress(r.name), rd = p && p.redo ? p.redo.split(':') : null;
+        return rd ? '<br>' + muted(`👉 first: ${rd[0]}(${rd[1]}) ${QPS_PART_WHAT[rd[1]] || ''}${rd[1] === 'a' ? ` · ${rd[2]} of 2 passes` : ''}`) : ''; })()}</td>
       <td>${r.track === QPS_STOP_IDS[QPS_STOP_IDS.length - 1] && r.passes >= QPS_PASSES ? '<span class="status-pill complete">🎉 All stops passed</span>' : qpsReadyPill(r)}</td>
       <td>${(r.test || []).length ? r.test.map(id => flag(r, id)).join('') : (qpsMyTests(r.name).length ? '' : muted('—'))}${myTests(r)}</td>
       <td>${lastCheck(r)}</td></tr>`).join('');
@@ -2242,7 +2264,7 @@ async function renderQps() {
     const name = row.dataset.name, id = row.dataset.stop;
     const tested = row.querySelector('.qps-tested');          // (a "Your test" line has only ↩ Send back)
     if (tested) tested.onclick = () => qpsTested(name, id);
-    row.querySelector('.qps-back').onclick = () => qpsBack(name, id);
+    row.querySelector('.qps-back').onclick = () => (id.includes(':') ? qpsBackPart(name, ...id.split(':')) : qpsBack(name, id));
   });
   el.querySelectorAll('.qps-rflag').forEach(row => { row.querySelector('.qps-rtested').onclick = () => qpsReadingTested(row.dataset.name, row.dataset.skill); });
 }
