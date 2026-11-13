@@ -2219,8 +2219,11 @@ async function renderQps() {
       const pt = QPS_PART_STOPS.includes(t.stop) ? (/\(([ab])\)/.exec(t.task) || [])[1] : null, id = pt ? `${t.stop}:${pt}` : t.stop;
       const p = qpsProgress(r.name), now = pt && p && p.redo && p.redo.startsWith(id + ':');
       const btn = (sid, label, what) => ` <span class="qps-flag" data-name="${escHtml(r.name)}" data-stop="${escHtml(sid)}"><button type="button" class="btn qps-back" title="They did not pass your test: they go back to ${what}">↩ Send back to ${escHtml(label)}</button></span>`;
-      // a part of stops 2–8: just that part, or (as before) the whole stop
-      return (pt ? (now ? ` ${muted(`👉 practicing ${t.stop}(${pt}) now`)}` : btn(id, `${t.stop}(${pt})`, 'just this part')) : '') + btn(t.stop, t.stop, 'this whole stop');
+      // a part of stops 2–8: just that part — and the whole stop only if its other part was not passed too (Marcos 11/13:
+      // "if the kid passed 7a, why would i send them back to 7?")
+      const other = pt === 'a' ? 'b' : 'a', last = qpsMyTests(r.name).find(x => x.stop === t.stop && new RegExp(`\\(${other}\\)`).test(x.task));
+      const whole = !(pt && last && last.passed);
+      return (pt ? (now ? ` ${muted(`👉 practicing ${t.stop}(${pt}) now`)}` : btn(id, `${t.stop}(${pt})`, 'just this part')) : '') + (whole ? btn(t.stop, t.stop, 'this whole stop') : '');
     })() : '') + '</div>').join('');
   const phonBody = phon.map(r => `<tr>
       <td>${escHtml(r.name)}</td>
