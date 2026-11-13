@@ -722,6 +722,15 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
           <label>Facts<select id="factAssignSite" onchange="renderFactAssignForm(); followFactAssignSet()"></select></label>
           <label>Operation<select id="factAssignOp"></select></label>
           <label>Set<select id="factAssignSet" onchange="followFactAssignSet()"></select></label>
+          <!-- 11/13 (Marcos: "assign only half of a set … 1-6 times 3 and 7-12 times 3", "maybe even thirds") -->
+          <label>Part<select id="factAssignPart">
+            <option value="">Whole set</option>
+            <option value="1-6">First half · 1–6</option>
+            <option value="7-12">Second half · 7–12</option>
+            <option value="1-4">First third · 1–4</option>
+            <option value="5-8">Middle third · 5–8</option>
+            <option value="9-12">Last third · 9–12</option>
+          </select></label>
           <label>Get … right<input id="factAssignGoal" type="number" min="1" max="100" step="1" value="20" inputmode="numeric" oninput="followFactAssignGoal()"></label>
           <label>Stop after … tries<input id="factAssignLimit" type="number" min="1" max="500" step="1" value="40" inputmode="numeric" oninput="factAssignLimitTouched = true"></label>
           <label>Add to<select id="factAssignWhere">
@@ -2572,6 +2581,7 @@ function getFactSessions(game) {
         game,
         op:      parts[0] || '?',
         set:     (parts[1] || '?').replace(/^(\d+)s$/, '$1'),
+        part:    parts.find(p => /^\d+-\d+$/.test(p)) || '',   // 📌 part of a set (11/13): 'Mult · 3s · 1-6 · Assigned'
         timed:   parts.includes('Timed'),
         choice:  parts.includes('Choice'),
         started: m ? new Date(Number(m[1])) : null,
@@ -3035,7 +3045,7 @@ function factAssignLists() {
 const factAssignItemsOf   = name => (factAssignLists().find(s => s.name === name) || { items: [] }).items;
 const factAssignOpenCount = name => factAssignItemsOf(name).filter(a => !a.done).length;
 // 🔁 a Second Chance row says how many facts ("🔁 5 facts"); the others say the set ("× 6s")
-const factAssignWhat = a => a.facts ? `🔁 ${a.facts.length} fact${a.facts.length === 1 ? '' : 's'}` : `${FACT_OPS[a.op].sym} ${a.set}`;
+const factAssignWhat = a => a.facts ? `🔁 ${a.facts.length} fact${a.facts.length === 1 ? '' : 's'}` : `${FACT_OPS[a.op].sym} ${a.set.replace(/\((\d+)-(\d+)\)$/, '($1–$2)')}`;
 const factAssignText = a => `${FACT_SITES[a.site] || FACT_SECOND_LABEL} · ${factAssignWhat(a)}${a.facts ? ` (${a.facts.join(', ')})` : ''} · Get ${a.goal} right · ${FACT_ASSIGN_HOW[a.how]}` +
   (a.limit ? ` · Stop after ${a.limit} tries` : '');
 // The same, for the Assign list: "− Mixed 1-4 · Get 25 right" on top, "➕ Add & Subtract · 🔘 Multiple Choice" under it
@@ -3129,6 +3139,9 @@ function renderFactAssignForm() {
     sel.innerHTML = values.map(v => `<option value="${escHtml(v)}">${escHtml(label(v))}</option>`).join('');
     if (values.includes(keep)) sel.value = keep;
   };
+  const part = document.getElementById('factAssignPart');
+  part.disabled = site === FACT_SECOND;   // 🔁 their own facts: no part of a set
+  if (part.disabled) part.value = '';
   if (site === FACT_SECOND) {   // 🔁 each student's own facts: Top 5 / 8 / 10 of the last two weeks, any kind
     fill('factAssignOp', ['Mix'], op => FACT_OPS[op].label);
     fill('factAssignSet', FACT_SECOND_SETS, set => `${set} (last 2 weeks)`);
@@ -3216,7 +3229,9 @@ async function sendFactAssignment() {
   const status = document.getElementById('factAssignStatus');
   const site  = document.getElementById('factAssignSite').value;
   const op    = document.getElementById('factAssignOp').value;
-  const set   = document.getElementById('factAssignSet').value;
+  const part  = document.getElementById('factAssignSite').value === FACT_SECOND ? '' : document.getElementById('factAssignPart').value;
+  // part of a set (11/13): the fact site reads '3s (1-6)' — the other number only 1 … 6
+  const set   = document.getElementById('factAssignSet').value + (part ? ` (${part})` : '');
   const how   = document.getElementById('factAssignHow').value;
   const where = document.getElementById('factAssignWhere').value;   // end | front | replace
   const goal  = Number(document.getElementById('factAssignGoal').value);
@@ -3360,7 +3375,8 @@ function homeWhat(g, s) {
   if (!homeIsFacts(g)) return parts.join(' · ');
   const op = FACT_OPS[parts[0]];
   const set = String(parts[1] || '').replace(/^(\d+)s$/, '$1');
-  return [op ? `${op.sym} ${set}` : set, parts.includes('Choice') ? '🔘 choice' : '⌨️ typed',
+  const part = parts.find(p => /^\d+-\d+$/.test(p));   // 📌 part of a set (11/13)
+  return [(op ? `${op.sym} ${set}` : set) + (part ? ` (${part.replace('-', '–')})` : ''), parts.includes('Choice') ? '🔘 choice' : '⌨️ typed',
     ...(parts.includes('Timed') ? ['⏱️ timed'] : []), ...(parts.includes('Assigned') ? ['📌 assigned'] : [])].join(' · ');
 }
 
@@ -3508,7 +3524,7 @@ function renderFactStudent() {
     return `<tr>
       <td class="fact-nowrap">${fmtWhen(s.started)}</td>
       <td class="fact-nowrap">${FACT_SITES[s.game] || FACT_SECOND_LABEL}</td>
-      <td class="fact-nowrap">${FACT_OPS[s.op]?.sym ?? '?'} ${escHtml(s.set)}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
+      <td class="fact-nowrap">${FACT_OPS[s.op]?.sym ?? '?'} ${escHtml(s.set)}${s.part ? ` <span title="Part of the set">(${escHtml(s.part.replace('-', '–'))})</span>` : ''}${s.timed ? ' <span title="Timed">⏱️</span>' : ''}${s.choice ? ' <span title="Multiple choice">🔘</span>' : ' <span title="Typed">⌨️</span>'}</td>
       <td style="color:var(--green)">${s.correct}</td>
       <td style="color:var(--red)">${s.total - s.correct}</td>
       <td><span class="fact-pill" style="background:${factCellColor(s.percent)}">${s.percent}%</span></td>
