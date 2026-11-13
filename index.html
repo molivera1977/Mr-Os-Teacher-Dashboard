@@ -354,6 +354,21 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .fact-missed{font-size:.78rem;font-weight:600;color:var(--muted);min-width:180px;}
 .fact-nowrap{white-space:nowrap;}
 .fact-miss-title{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+/* 🗺️ a student's fact heat map (11/13) */
+.fact-maps{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:10px;}
+.fact-map-title{font-size:.85rem;font-weight:800;color:var(--text);margin-bottom:4px;}
+.fact-map table{border-collapse:separate;border-spacing:2px;}
+.fact-map th{font-size:.68rem;font-weight:800;color:var(--muted);padding:0 4px;text-align:center;}
+.fact-map th.fact-map-row{text-align:right;white-space:nowrap;}
+.fact-map td{width:26px;min-width:26px;height:24px;padding:0;text-align:center;font-size:.72rem;font-weight:800;color:#8b1a1a;border-radius:5px;cursor:default;}
+.fact-map td.fact-map-none{background:transparent;border:1px dashed var(--border);}
+.fact-map td.fact-map-second{box-shadow:inset 0 0 0 2px #6a3fc8;}
+.fact-map-key{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;}
+.fact-map-key span{display:inline-flex;align-items:center;gap:5px;}
+.fact-map-key i{display:inline-block;width:14px;height:14px;border-radius:4px;}
+.fact-map-key i.fact-map-none{border:1px dashed var(--muted);}
+.fact-map-key i.fact-map-second{box-shadow:inset 0 0 0 2px #6a3fc8;}
+.fact-map-other{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:10px;}
 /* ── 📌 Assign Fact Practice (Fact Fluency view) ── */
 .fact-assign{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:24px;}
 .fact-assign-sub{font-size:.72rem;color:var(--muted);font-weight:700;font-family:'Nunito',sans-serif;}
@@ -3491,6 +3506,72 @@ function renderFacts() {
   renderFactStudent();
 }
 
+// ═══════════════════════════════════════════════════
+//  🗺️ A STUDENT'S FACT HEAT MAP (Marcos 11/13, about the "Facts to work on (times missed)" pills: "how about
+//  individual heat maps. that would be easier than this"). One times-table grid per kind they practiced.
+//  Each fact = right and wrong from every row's tally (10/28 on, every answer is saved); rows before that saved
+//  only misses, which count as wrong. × and + count both orders as one fact (factKey, like 🔥 Most Missed Facts);
+//  ÷ and − sit at their own row (÷ 6, − 6) and answer. Facts no grid holds (Multiples of 10) are listed under it.
+// ═══════════════════════════════════════════════════
+const FACT_MAP_UPTO = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const FACT_TALLY_SINCE = 'Oct 28';   // the first rows with every answer saved (live sheet, all four fact tabs)
+const FACT_MAPS = [
+  { op: '×', label: '× Multiplication', rows: FACT_MAP_UPTO, head: r => String(r), key: (r, c) => `${Math.min(r, c)} × ${Math.max(r, c)}` },
+  { op: '÷', label: '÷ Division · row = divided by, column = answer', rows: FACT_MAP_UPTO.slice(1), head: r => `÷ ${r}`, key: (r, c) => `${r * c} ÷ ${r}` },
+  { op: '+', label: '+ Addition', rows: FACT_MAP_UPTO, head: r => String(r), key: (r, c) => `${Math.min(r, c)} + ${Math.max(r, c)}` },
+  { op: '−', label: '− Subtraction · row = take away, column = answer', rows: FACT_MAP_UPTO, head: r => `− ${r}`, key: (r, c) => `${r + c} − ${r}` },
+];
+
+// One student's sessions → { '7 × 8': { right, wrong, old } } (old = misses from rows without a tally)
+function factMapCounts(sessions) {
+  const counts = {};
+  const add = (fact, right, wrong, old) => {
+    const k = factKey(fact);
+    if (!k) return;
+    const c = counts[k] || { right: 0, wrong: 0, old: 0 };
+    counts[k] = { right: c.right + right, wrong: c.wrong + wrong, old: c.old + old };
+  };
+  sessions.forEach(s => {
+    if (s.tally) Object.entries(s.tally).forEach(([f, [r, w]]) => add(f, Number(r) || 0, Number(w) || 0, 0));
+    else s.missed.forEach(m => add(m, 0, 1, 1));
+  });
+  return counts;
+}
+
+function factMapCell(key, c, second) {
+  const head = `${key} = ${factAnswer(key)}`;
+  if (!c || c.right + c.wrong === 0) return `<td class="fact-map-none" data-fact="${escHtml(key)}" title="${escHtml(head)} · not practiced yet"></td>`;
+  const pct = Math.round(c.right / (c.right + c.wrong) * 100);
+  const tip = `${head} · right ${c.right} · wrong ${c.wrong} · ${pct}%` +
+    (c.old ? ` · ${c.old} of the misses ${c.old > 1 ? 'are' : 'is'} from before ${FACT_TALLY_SINCE}, when only misses were saved` : '') +
+    (second ? ` · in ${FACT_SECOND_LABEL} now` : '');
+  return `<td class="${second ? 'fact-map-second' : ''}" data-fact="${escHtml(key)}" style="background:${factCellColor(pct)}" title="${escHtml(tip)}">${c.wrong || ''}</td>`;
+}
+
+function factMapsHtml(counts, secondNow) {
+  const second = new Set(secondNow.map(factKey));
+  const placed = new Set();
+  const maps = FACT_MAPS.map(m => {
+    const keys = m.rows.flatMap(r => FACT_MAP_UPTO.map(c => m.key(r, c)));
+    keys.forEach(k => placed.add(k));
+    if (!keys.some(k => counts[k] && counts[k].right + counts[k].wrong > 0)) return '';
+    const head = `<tr><th>${m.op}</th>${FACT_MAP_UPTO.map(c => `<th>${c}</th>`).join('')}</tr>`;
+    const body = m.rows.map(r => `<tr><th class="fact-map-row">${m.head(r)}</th>` +
+      FACT_MAP_UPTO.map(c => { const k = m.key(r, c); return factMapCell(k, counts[k], second.has(k)); }).join('') + '</tr>').join('');
+    return `<div class="fact-map" data-op="${m.op}"><div class="fact-map-title">${escHtml(m.label)}</div>` +
+      `<table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  }).join('');
+  if (!maps) return '';
+  const others = Object.entries(counts).filter(([k, c]) => !placed.has(k) && c.right + c.wrong > 0)
+    .sort((a, b) => b[1].wrong - a[1].wrong || a[0].localeCompare(b[0], undefined, { numeric: true }));
+  const swatch = (pct, words) => `<span><i style="background:${factCellColor(pct)}"></i>${words}</span>`;
+  return `<div class="fact-miss-title">Their facts — color = how often they get it right · number = times missed · hover a square for more</div>` +
+    `<div class="fact-maps">${maps}</div>` +
+    `<div class="fact-map-key">${swatch(95, '90%+ right')}${swatch(80, '75–89%')}${swatch(65, '60–74%')}${swatch(50, '40–59%')}${swatch(0, 'under 40%')}` +
+    `<span><i class="fact-map-none"></i>not practiced yet</span><span><i class="fact-map-second"></i>in ${FACT_SECOND_LABEL} now</span></div>` +
+    (others.length ? `<div class="fact-map-other"><b>Other facts:</b> ${others.map(([k, c]) => `${escHtml(k)} · ${c.right} of ${c.right + c.wrong} right`).join(' &nbsp;·&nbsp; ')}</div>` : '');
+}
+
 function openFactStudent(name) { factStudent = name; renderFactStudent(); document.getElementById('factDetail').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function closeFactStudent()    { factStudent = null; renderFactStudent(); }
 
@@ -3505,17 +3586,8 @@ function renderFactStudent() {
     .filter(s => s.name === factStudent)
     .sort((a, b) => (b.started || 0) - (a.started || 0));
 
-  const missCount = {};
-  sessions.forEach(s => s.missed.forEach(m => {
-    const fact = m.replace(/\s*\(.*\)$/, '');
-    missCount[fact] = (missCount[fact] || 0) + 1;
-  }));
-  const topMissed = Object.entries(missCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
   const secondNow = factSecondChanceFacts(factStudent, 10);
-  document.getElementById('factDetailMissed').innerHTML = (topMissed.length
-    ? `<div class="fact-miss-title">Facts to work on (times missed):</div>` +
-      topMissed.map(([f, n]) => `<span class="fact-chip">${escHtml(f)}${n > 1 ? ` <b>×${n}</b>` : ''}</span>`).join('')
-    : '') + (secondNow.length
+  document.getElementById('factDetailMissed').innerHTML = factMapsHtml(factMapCounts(sessions), secondNow) + (secondNow.length
     ? `<div class="fact-miss-title" style="margin-top:10px;">${FACT_SECOND_LABEL} now (last 2 weeks, top 10):</div><div class="fact-second-now">${secondNow.map(escHtml).join(' · ')}</div>`
     : '');
 
