@@ -8622,6 +8622,7 @@ function renderNeedsMe(cfg, data) {
     const groups = new Map();      // mistake → Map(name → ids)
     const again  = new Map();      // name → ids missed, then missed again on "try one like it"
     const words  = new Map();      // word → Set(names)
+    const videos = new Map();      // 🎬 video title → Map(name → watched it to the end), help videos only (11/13)
     let fixed = 0, missedAgain = 0;
     const add = (map, key, name, id) => {
       if (!map.has(key)) map.set(key, new Map());
@@ -8653,6 +8654,9 @@ function renderNeedsMe(cfg, data) {
           else { missedAgain++; if (!again.has(p.name)) again.set(p.name, []); again.get(p.name).push(ev.of || ev.id); }
         }
         if (ev.e === 'word' && ev.w) { if (!words.has(ev.w)) words.set(ev.w, new Set()); words.get(ev.w).add(p.name); }
+        // 🎬 a video a student opened for help (Show me / Watch how — the Warm-Up's required ones are not "help")
+        if (ev.e === 'video' && ev.why && ev.why !== 'watch' && ev.t) { if (!videos.has(ev.t)) videos.set(ev.t, new Map()); const m = videos.get(ev.t); m.set(p.name, m.get(p.name) || false); }
+        if (ev.e === 'videodone' && ev.full && ev.t && videos.has(ev.t) && videos.get(ev.t).has(p.name)) videos.get(ev.t).set(p.name, true);
       });
     });
 
@@ -8683,6 +8687,11 @@ function renderNeedsMe(cfg, data) {
         `<div class="nm-row"><div class="nm-tag">${escHtml(w)}<span class="nm-count">${names.size} student${names.size > 1 ? 's' : ''}</span></div>
         <div class="nm-names">${[...names].sort().map(n => `<span class="nm-name" style="cursor:default">${isWorking(n) ? '⏳ ' : ''}${escHtml(n)}</span>`).join('')}</div></div>`).join('');
     }
+    if (videos.size) {
+      html += `<div class="nm-head">🎬 Lesson videos opened for help · ✓ watched to the end</div>` + [...videos.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0])).map(([t, m]) =>
+        `<div class="nm-row nm-video"><div class="nm-tag">${escHtml(t)}<span class="nm-count">${m.size} student${m.size > 1 ? 's' : ''}</span></div>
+        <div class="nm-names">${[...m.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([n, full]) => `<span class="nm-name" style="cursor:default">${isWorking(n) ? '⏳ ' : ''}${escHtml(n)}${full ? ' ✓' : ''}</span>`).join('')}</div></div>`).join('');
+    }
     if (html === readiness && people.length) html += `<div class="nm-empty">No wrong answers to group yet.</div>`;
     body.innerHTML = html;
     const twinNote = fixed + missedAgain ? ` · "try one like it": ${fixed} fixed, ${missedAgain} missed again` : '';
@@ -8700,6 +8709,11 @@ const EVENT_LOOK = {
   word:   { icon:'📖', text:'Opened word help',  color:'#1f5f99' },
   heard:  { icon:'👂', text:'Heard the correction', color:'#922b21' },   // math-module-2: after a miss, Next waits for Listen
   step:   { icon:'🪜', text:'Warm-Up step',  color:'#a04000' },          // math-module-2 Warm-Up: one step of a worked problem (not scored)
+  // 🎬 lesson videos (math-module-4, 11/13): { e:'video', why:'watch'|'hint'|'miss', ch, t: title }, then
+  // { e:'videodone', full } when it reached its end (full = no part jumped over) or { e:'videoclose' }
+  video:      { icon:'🎬', text:'Opened a lesson video', color:'#0e7490' },
+  videodone:  { icon:'🎬', text:'Watched a lesson video to the end', color:'#0e7490' },
+  videoclose: { icon:'🎬', text:'Closed a lesson video', color:'var(--muted)' },
 
   start:  { icon:'▶',  text:'Started',        color:'var(--green)'  },
   resume: { icon:'↩',  text:'Resumed',        color:'var(--blue)'   },
@@ -8760,6 +8774,10 @@ function renderChronology(student) {
     if (ev.e === 'word' && ev.w) look.text += ': ' + escHtml(ev.w);
     if (ev.e === 'heard' && ev.how === 'read') look.text = 'Read the correction (no sound on the device)';
     if (ev.e === 'heard' && /^W/.test(ev.id || '') && typeof MOD2_QUESTIONS !== 'undefined' && /^Watch:/.test(MOD2_QUESTIONS[ev.id] || '')) look.text = 'Heard the worked example';
+    if (ev.e === 'heard' && ev.how === 'video') look.text = 'Watched the lesson video — Next opened';
+    if (ev.e === 'video') look.text = (ev.why === 'watch' ? 'Opened the lesson video' : ev.why === 'miss' ? 'Opened the video after a wrong answer (🎬 Watch how)' : 'Opened the video beside the hint (🎬 Show me)') + (ev.t ? ': ' + escHtml(ev.t) : '');
+    if (ev.e === 'videodone') look.text = (ev.full ? 'Watched the video to the end' : 'Reached the end of the video, but skipped part of it') + (ev.t ? ': ' + escHtml(ev.t) : '');
+    if (ev.e === 'videoclose' && ev.t) look.text += ': ' + escHtml(ev.t);
     if (ev.e === 'step') look.text += ev.ok ? ' — right' : ' — missed (picked ' + escHtml(ev.pick || '?') + ')';
     // A science lesson's answers carry a try (t), not a question number (11/11: the timeline said "Qundefined (L34)")
     if (ev.e === 'answer' && ev.t != null) look.text = ev.ok ? (Number(ev.t) === 2 ? 'Right on the 2nd try' : 'Right')
