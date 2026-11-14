@@ -928,6 +928,7 @@ const GAME_ORDER = [
   'talent-test-vocab', 'talent-test-comp', 'talent-test-cloze',
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
+  'nbta-test', 'nbtb-test', 'nbtp-practice', 'nbtw-warmup',
   'mod4t-test', 'mod4u-test', 'mod4b-review', 'mod4-practice', 'mod4w-warmup',
   'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup', 'mod3z-prewarmup',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
@@ -1138,6 +1139,10 @@ const GAME_LABELS = {
   'rounding-review': '🎯 Mechanics — Review (Form A)',
   'rounding-quiz':     '🎯 Mechanics — Quiz (Form B)',
   // same part names on every math site (Marcos 10/10): Practice A · Practice B · Review · Test
+  'nbtw-warmup':   '🔥 Base Ten IAB — Warm-Up',      // 11/14: SBAC IAB Number & Operations in Base Ten — 4 parts
+  'nbtp-practice': '🌱 Base Ten IAB — Practice',
+  'nbta-test':     '📝 Base Ten IAB — Test Form A',
+  'nbtb-test':     '📝 Base Ten IAB — Test Form B',
   'mod4w-warmup': '🔥 MM4 — Warm-Up',          // 11/13: patterns, estimates, mental math — 4 parts
   'mod4-practice': '🌱 MM4 — Practice',
   'mod4b-review': '📘 MM4 — Review',
@@ -1244,6 +1249,10 @@ const MAX_SCORES = {
   'rounding-practice': 20,
   'rounding-review': 20,
   'rounding-quiz':     20,
+  'nbta-test': 15,
+  'nbtb-test': 15,
+  'nbtp-practice': 15,
+  'nbtw-warmup': 15,       // only its 15 questions are scored (the worked examples and the steps are not)
   'mod4t-test': 16,
   'mod4u-test': 16,
   'mod4b-review': 16,
@@ -4019,7 +4028,7 @@ const oweStarted = (g, name) => ((oweRow(g, name) || {}).sessions || []).length 
 
 // The 🚦 box's stages, said as what comes next (a stuck stage = a retry)
 const OWE_UNIT = {
-  readyTest:   [() => 'ready for the Test', 'next'],
+  readyTest:   [(v, u) => u.eachTest ? 'ready for Test Form A' : 'ready for the Test', 'next'],
   stuckReview: [v => `Review ↻ (best ${v.best.pct}%)`, 'retry'],
   readyReview: [() => 'next: the Review', 'next'],
   needA:       [() => 'needs Practice A', 'next'],
@@ -4038,7 +4047,10 @@ function oweParts(b, ctx) {
   const unit = UNIT_GATES.find(u => b.members.includes(u.practiceA));
   if (unit) {
     const steps = [unit.warmUp, unit.practiceA, unit.practiceB, unit.review].filter(Boolean);
-    return [{ key: unit.tests.join('+'), label: 'Test (or its Retake)', games: unit.tests, unit, done: name => ctx.tallyOf(unit).T.has(name) },
+    const tests = unit.eachTest   // two test forms = two things owed (SBAC IAB 11/14); otherwise a Test and its Retake are one
+      ? unit.tests.map(g => ({ key: g, label: short(g), games: [g], unit, done: name => oweDone(g, oweRow(g, name)) }))
+      : [{ key: unit.tests.join('+'), label: 'Test (or its Retake)', games: unit.tests, unit, done: name => ctx.tallyOf(unit).T.has(name) }];
+    return [...tests,
       ...steps.map(g => ({ key: g, label: short(g), games: [g], step: true, done: name => stepWhere(g, oweRow(g, name)).passed }))];
   }
   if (!b.fam) return [{ key: b.game, label: b.label, games: [b.game], done: name => oweDone(b.game, oweRow(b.game, name)) }];
@@ -4087,6 +4099,7 @@ function oweInOrder(parts, name, ctx, level = '') {
 
 function oweUnit(parts, ctx, name) {
   const unit = parts[0].unit;
+  if (unit.eachTest) return oweForms(parts, ctx, name);
   if (!oweCounts(parts[0], ctx)) return oweInOrder(parts.slice(1), name, ctx);   // the Test not given (or left off): its steps
   const [stage, v] = unitStage(unit, ctx.tallyOf(unit), name);
   if (stage === 'tested') return null;
@@ -4096,6 +4109,25 @@ function oweUnit(parts, ctx, name) {
   }
   const [say, state] = OWE_UNIT[stage];
   return { detail: `Test not taken · ${say(v, unit)}`, state };
+}
+
+// Two test forms (SBAC IAB 11/14): each form given is owed until it is finished — Form B stays owed after Form A.
+// No form given yet (or each left off): the steps before them, in order.
+function oweForms(parts, ctx, name) {
+  const unit = parts[0].unit, forms = parts.filter(p => p.unit), steps = parts.filter(p => !p.unit);
+  if (!forms.some(p => oweCounts(p, ctx))) return oweInOrder(steps, name, ctx);
+  const owed = forms.filter(p => oweCounts(p, ctx) && !p.done(name));
+  if (!owed.length) return null;
+  const which = owed.map(p => p.label).join(' and ');
+  if (owed.length < forms.filter(p => oweCounts(p, ctx)).length)   // one form finished: the next one is all that is left
+    return { detail: `${which} not taken`, state: owed[0].games.some(g => oweStarted(g, name)) ? 'working' : 'next' };
+  const [stage, v] = unitStage(unit, ctx.tallyOf(unit), name);
+  if (stage === 'none' || stage === 'tested') {
+    const games = [unit.warmUp, unit.practiceA, ...unit.tests].filter(Boolean);
+    return games.some(g => oweStarted(g, name)) ? { detail: `${which} not taken · working on it`, state: 'working' } : { detail: 'not started', state: 'none' };
+  }
+  const [say, state] = OWE_UNIT[stage];
+  return { detail: `${which} not taken · ${say(v, unit)}`, state };
 }
 
 function oweSingle(p, name, ctx) {
@@ -4291,12 +4323,14 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'awoc-review-vocab': 'awoc', 'awoc-review-comp': 'awoc', 'awoc-review-cloze': 'awoc',
   'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
+  'nbtw-warmup': 'nbt', 'nbtp-practice': 'nbt', 'nbta-test': 'nbt', 'nbtb-test': 'nbt',
   'mod4w-warmup': 'mod4', 'mod4-practice': 'mod4', 'mod4b-review': 'mod4', 'mod4t-test': 'mod4', 'mod4u-test': 'mod4',
   'mod3z-prewarmup': 'mod3', 'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2',
   // MM1's Review and Test = one section too (Marcos 10/23: "mm1 review and test card should be combined")
   'mod1a-review': 'mod1', 'mod1b-review': 'mod1', 'mod1c-review': 'mod1', 'mod1a-test': 'mod1', 'mod1b-test': 'mod1', 'mod1c-test': 'mod1' };
 const FORM_FAMILY_LABELS = {
+  'nbt':           '🧮 SBAC IAB · Base Ten',
   'mod4':          '🧮 Math Module 4 Review and Test',
   'mod3':          '🧮 Math Module 3 Review and Test',
   'mod2':          '🧮 Math Module 2 Review and Test',
@@ -4311,7 +4345,7 @@ const FORM_FAMILY_LABELS = {
   'awoc':          'A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod4': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
+const FAMILY_NOUN = { 'nbt': ['part', 'parts'], 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod4': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -4972,6 +5006,164 @@ const MOD2_SKILL_BANK = {};
 Object.entries(MOD2_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { MOD2_SKILL_BANK[id] = `(${skill}) ${MOD2_QUESTIONS[id]}`; }));
 
+// ── NBT BANK START (tools/dash_bank.js) ──
+// ── SBAC IAB · Number and Operations in Base Ten (sbac-base-ten-iab-review, built 11/14) — 4.NBT.2–6.
+// Four parts (Marcos 11/14: "I want Test Form A and Test Form B but I want a Warm Up and Practice Form before them"):
+// Warm-Up (nbtw-warmup, W01–W33: 9 worked examples "Watch: …", 9 steps "Step: …" (not scored), 15 scored) ·
+// Practice (nbtp-practice, P01–P15) · Test Form A (nbta-test, A01–A15) · Test Form B (nbtb-test, B01–B15); a retake
+// is the same form. X01–X15 = "one more like it" after a Practice miss. A True/False table's rows are A12.1–A12.3.
+// Four versions of W/P (a retry gets new numbers); these labels are version 1. Built by the site's tools/dash_bank.js
+// from its data/ (tools/gen_nbt.js) — numbers are our own, never the real test's or HMH's.
+const NBT_QUESTIONS = {
+  "W01": "Watch: Add big numbers",
+  "W02": "Step: 158 + 407. Add the ones: 8 + 7 = ?",
+  "W03": "271 + 22 = □. Type the sum.",
+  "W04": "605 + 376 = □. Type the sum.",
+  "W05": "Watch: Compare numbers",
+  "W06": "Step: 2,348 and 2,319. Which place is the first one that is different?",
+  "W07": "971 > 9□0. What digit can go in the box to make this true? Type one digit.",
+  "W08": "Look at these numbers: 591, 550, 718, 748. Which statements are true? Select all that are true.",
+  "W09": "Watch: Same number, new look",
+  "W10": "Step: 7 hundreds + 5 tens = ? tens",
+  "W11": "Is each statement true or false? Pick True or False for each one.",
+  "W11.1": "27 < 2 + 70 (True or False)",
+  "W11.2": "3 hundreds + 10 tens = 30 tens + 10 ones (True or False)",
+  "W11.3": "7 tens + 1 one > 1 ten + 7 ones (True or False)",
+  "W12": "Is each statement true or false? Pick True or False for each one.",
+  "W12.1": "29 < 30 + 9 (True or False)",
+  "W12.2": "93 ones = 3 tens + 9 ones (True or False)",
+  "W12.3": "100 + 70 + 7 > 1 ten + 7 tens + 7 ones (True or False)",
+  "W13": "Watch: Round",
+  "W14": "Step: Round 422 to the nearest ten. Which digit do you look at?",
+  "W15": "Round 463 to the nearest ten. Type the number.",
+  "W16": "Round 8,229 to the nearest thousand. Type the number.",
+  "W17": "Watch: Area model",
+  "W18": "Step: 6 × 28. Write 28 in expanded form. 28 = ?",
+  "W19": "Which expression is equal to 6 × 27?",
+  "W20": "Watch: Partial products",
+  "W21": "Step: 18 × 30. Find the partial product 8 × 30 = ?",
+  "W22": "12 × 20 = □. Type the product.",
+  "W23": "Watch: Area model: two 2-digit numbers",
+  "W24": "Step: 13 × 18. The side of the area model is 10 and 3. What goes on top?",
+  "W25": "Which expression is equal to 11 × 15?",
+  "W26": "Max says, \"A 2-digit number times 5 always makes a 3-digit product.\" Max is not always right. Which change makes Max right every time?",
+  "W27": "Watch: Divide and multiply",
+  "W28": "Step: 20 ÷ 4 = □ and 4 × □ = 20. What is the box?",
+  "W29": "Which equation has the same unknown number as 12 ÷ 3 = □?",
+  "W30": "Which equation has the same unknown number as 16 ÷ 4 = □?",
+  "W31": "Watch: What can you buy?",
+  "W32": "Step: 2 folders cost 10 tickets each. How many tickets is that?",
+  "W33": "Ivy has 25 tickets to spend at the School Store. Which sets of things can Ivy buy? Select all that are true.",
+  "P01": "506 + 476 = □. Type the sum.",
+  "P02": "3,557 < 3,5□4. What digit can go in the box to make this true? Type one digit.",
+  "P03": "Which equation has the same unknown number as 36 ÷ 9 = □?",
+  "P04": "7,187 + 216 = □. Type the sum.",
+  "P05": "Round 9,021 to the nearest ten. Type the number.",
+  "P06": "Which expression is equal to 14 × 18?",
+  "P07": "38 × 20 = □. Type the product.",
+  "P08": "Look at these numbers: 3,354, 3,886, 3,318, 3,824. Which statements are true? Select all that are true.",
+  "P09": "Which equation has the same unknown number as 90 ÷ 10 = □?",
+  "P10": "Owen has 100 tickets to spend at the School Store. Which sets of things can Owen buy? Select all that are true.",
+  "P11": "Round 31,996 to the nearest thousand. Type the number.",
+  "P12": "Is each statement true or false? Pick True or False for each one.",
+  "P12.1": "786 > 7 + 80 + 600 (True or False)",
+  "P12.2": "4 hundreds + 40 tens = 79 tens + 10 ones (True or False)",
+  "P12.3": "5 tens + 1 one < 1 ten + 5 ones (True or False)",
+  "P13": "Ruth says, \"A 2-digit number times 50 always makes a 4-digit product.\" Ruth is not always right. Which change makes Ruth right every time?",
+  "P14": "Which expression is equal to 12 × 16?",
+  "P15": "Is each statement true or false? Pick True or False for each one.",
+  "P15.1": "81 > 80 + 1 (True or False)",
+  "P15.2": "852 ones = 8 hundreds + 2 tens + 5 ones (True or False)",
+  "P15.3": "500 + 20 + 4 > 5 tens + 2 tens + 4 ones (True or False)",
+  "A01": "6,286 + 192 = □. Type the sum.",
+  "A02": "74,171 < 74,1□0. What digit can go in the box to make this true? Type one digit.",
+  "A03": "Which equation has the same unknown number as 88 ÷ 2 = □?",
+  "A04": "5,878 + 4,139 = □. Type the sum.",
+  "A05": "Round 6,848 to the nearest ten. Type the number.",
+  "A06": "Which expression is equal to 11 × 23?",
+  "A07": "21 × 50 = □. Type the product.",
+  "A08": "Look at these numbers: 4,220, 4,161, 4,155, 4,282. Which statements are true? Select all that are true.",
+  "A09": "Which equation has the same unknown number as 88 ÷ 11 = □?",
+  "A10": "Ben has 190 tickets to spend at the School Store. Which sets of things can Ben buy? Select all that are true.",
+  "A11": "Round 269,798 to the nearest thousand. Type the number.",
+  "A12": "Is each statement true or false? Pick True or False for each one.",
+  "A12.1": "469 < 4 + 60 + 900 (True or False)",
+  "A12.2": "3 hundreds + 20 tens = 30 tens + 20 ones (True or False)",
+  "A12.3": "1 hundred + 7 tens + 4 ones > 1 hundred + 4 tens + 7 ones (True or False)",
+  "A13": "Jake says, \"Two 2-digit numbers always make a 3-digit product.\" Jake is not always right. Which change makes Jake right every time?",
+  "A14": "Which expression is equal to 18 × 11?",
+  "A15": "Is each statement true or false? Pick True or False for each one.",
+  "A15.1": "194 < 100 + 90 + 4 (True or False)",
+  "A15.2": "941 ones = 9 hundreds + 1 ten + 4 ones (True or False)",
+  "A15.3": "300 + 60 + 1 > 3 tens + 6 tens + 1 one (True or False)",
+  "B01": "1,832 + 765 = □. Type the sum.",
+  "B02": "44,869 < 44,8□6. What digit can go in the box to make this true? Type one digit.",
+  "B03": "Which equation has the same unknown number as 88 ÷ 8 = □?",
+  "B04": "4,067 + 6,972 = □. Type the sum.",
+  "B05": "Round 3,286 to the nearest ten. Type the number.",
+  "B06": "Which expression is equal to 11 × 26?",
+  "B07": "62 × 20 = □. Type the product.",
+  "B08": "Look at these numbers: 6,539, 6,581, 6,711, 6,779. Which statements are true? Select all that are true.",
+  "B09": "Which equation has the same unknown number as 36 ÷ 12 = □?",
+  "B10": "Kai has 230 tickets to spend at the School Store. Which sets of things can Kai buy? Select all that are true.",
+  "B11": "Round 989,865 to the nearest thousand. Type the number.",
+  "B12": "Is each statement true or false? Pick True or False for each one.",
+  "B12.1": "248 > 2 + 40 + 800 (True or False)",
+  "B12.2": "5 hundreds + 40 tens = 50 tens + 40 ones (True or False)",
+  "B12.3": "3 hundreds + 1 ten + 3 ones < 3 hundreds + 3 tens + 1 one (True or False)",
+  "B13": "Ben says, \"Two 2-digit numbers always make a 4-digit product.\" Ben is not always right. Which change makes Ben right every time?",
+  "B14": "Which expression is equal to 17 × 12?",
+  "B15": "Is each statement true or false? Pick True or False for each one.",
+  "B15.1": "679 < 600 + 70 + 9 (True or False)",
+  "B15.2": "859 ones = 8 hundreds + 5 tens + 9 ones (True or False)",
+  "B15.3": "700 + 70 + 3 > 7 tens + 7 tens + 3 ones (True or False)",
+  "X01": "838 + 28 = □. Type the sum.",
+  "X02": "323 > 3□0. What digit can go in the box to make this true? Type one digit.",
+  "X03": "Which equation has the same unknown number as 15 ÷ 3 = □?",
+  "X04": "393 + 190 = □. Type the sum.",
+  "X05": "Round 782 to the nearest ten. Type the number.",
+  "X06": "Which expression is equal to 5 × 23?",
+  "X07": "15 × 20 = □. Type the product.",
+  "X08": "Look at these numbers: 195, 583, 545, 160. Which statements are true? Select all that are true.",
+  "X09": "Which equation has the same unknown number as 14 ÷ 2 = □?",
+  "X10": "Raj has 30 tickets to spend at the School Store. Which sets of things can Raj buy? Select all that are true.",
+  "X11": "Round 4,844 to the nearest thousand. Type the number.",
+  "X12": "Is each statement true or false? Pick True or False for each one.",
+  "X12.1": "93 > 9 + 30 (True or False)",
+  "X12.2": "2 hundreds + 40 tens = 20 tens + 40 ones (True or False)",
+  "X12.3": "8 tens + 1 one < 1 ten + 8 ones (True or False)",
+  "X13": "Dan says, \"A 2-digit number times 3 always makes a 3-digit product.\" Dan is not always right. Which change makes Dan right every time?",
+  "X14": "Which expression is equal to 11 × 13?",
+  "X15": "Is each statement true or false? Pick True or False for each one.",
+  "X15.1": "71 < 60 + 1 (True or False)",
+  "X15.2": "71 ones = 1 ten + 7 ones (True or False)",
+  "X15.3": "200 + 80 + 1 > 2 tens + 8 tens + 1 one (True or False)",
+};
+const NBT_SKILLS = {
+  "Add: 4-digit + 3-digit": ["W03","P01","A01","B01","X01"],
+  "Add with regrouping": ["W04","P04","A04","B04","X04"],
+  "Compare: the missing digit": ["W07","P02","A02","B02","X02"],
+  "Compare: the place that decides": ["W08","P08","A08","B08","X08"],
+  "Place value: true or false": ["W11","W12","P12","P15","A12","A15","B12","B15","X12","X15"],
+  "Expanded form out of order": ["W11.1","P12.1","A12.1","B12.1","X12.1"],
+  "Hundreds and tens: regroup": ["W11.2","P12.2","A12.2","B12.2","X12.2"],
+  "Compare in unit form": ["W11.3","P12.3","A12.3","B12.3","X12.3"],
+  "Equal is not less": ["W12.1","P15.1","A15.1","B15.1","X15.1"],
+  "Ones as hundreds, tens and ones": ["W12.2","P15.2","A15.2","B15.2","X15.2"],
+  "Hundreds are not tens": ["W12.3","P15.3","A15.3","B15.3","X15.3"],
+  "Round to the nearest ten": ["W15","P05","A05","B05","X05"],
+  "Round to the nearest thousand": ["W16","P11","A11","B11","X11"],
+  "Area model: set up the expression": ["W19","W25","P06","P14","A06","A14","B06","B14","X06","X14"],
+  "Partial products: 2-digit × tens": ["W22","P07","A07","B07","X07"],
+  "Fix the claim: digits in a product": ["W26","P13","A13","B13","X13"],
+  "Division and multiplication: same unknown": ["W29","W30","P03","P09","A03","A09","B03","B09","X03","X09"],
+  "Two steps: what can you buy": ["W33","P10","A10","B10","X10"],
+};
+const NBT_STANDARDS = {"Add: 4-digit + 3-digit":"4.NBT.4","Add with regrouping":"4.NBT.4","Compare: the missing digit":"4.NBT.2","Compare: the place that decides":"4.NBT.2","Place value: true or false":"4.NBT.2","Expanded form out of order":"4.NBT.2","Hundreds and tens: regroup":"4.NBT.2","Compare in unit form":"4.NBT.2","Equal is not less":"4.NBT.2","Ones as hundreds, tens and ones":"4.NBT.2","Hundreds are not tens":"4.NBT.2","Round to the nearest ten":"4.NBT.3","Round to the nearest thousand":"4.NBT.3","Area model: set up the expression":"4.NBT.5","Partial products: 2-digit × tens":"4.NBT.5","Fix the claim: digits in a product":"4.NBT.5","Division and multiplication: same unknown":"4.NBT.6","Two steps: what can you buy":"4.NBT.4"};
+const NBT_SKILL_BANK = {};
+Object.entries(NBT_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { NBT_SKILL_BANK[id] = `(${skill}) ${NBT_QUESTIONS[id]}`; }));
+// ── NBT BANK END ──
 // ── Math Module 4 Review and Test (math-module-4, built 11/13) — patterns, estimates, mental math (4.NBT.5/6).
 // Four parts (Marcos 11/13: "I'm not sure that we need the crazy amounts of levels"): Warm-Up (mod4w-warmup, W01–W30:
 // 6 worked examples "Watch: …", 15 steps "Step: …" (not scored), 9 scored) · Practice (mod4-practice, P01–P16) ·
@@ -6607,6 +6799,10 @@ const SKILL_REPORTS = {
   'rounding-quiz':     { bank: ROUNDQ_SKILL_BANK, form: 'B', standards: ROUNDQ_STANDARDS, site: 'math-rounding-quiz' },
   // one site — the id letter is the part: P = Practice A, A = Practice B, B = Review, T = Test, U = its retake
   // Module 4 (11/13): W = Warm-Up, P = Practice, B = Review, T = Test, U = its retake
+  'nbtw-warmup':     { bank: NBT_SKILL_BANK,    form: 'W', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
+  'nbtp-practice':   { bank: NBT_SKILL_BANK,    form: 'P', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
+  'nbta-test':       { bank: NBT_SKILL_BANK,    form: 'A', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
+  'nbtb-test':       { bank: NBT_SKILL_BANK,    form: 'B', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
   'mod4t-test':      { bank: MOD4_SKILL_BANK,   form: 'T', standards: MOD4_STANDARDS,   site: 'math-module-4' },
   'mod4u-test':      { bank: MOD4_SKILL_BANK,   form: 'U', standards: MOD4_STANDARDS,   site: 'math-module-4' },
   'mod4b-review':    { bank: MOD4_SKILL_BANK,   form: 'B', standards: MOD4_STANDARDS,   site: 'math-module-4' },
@@ -8418,6 +8614,10 @@ function getQuestionText(id) {
     'rounding-practice': ROUNDQ_QUESTIONS,
     'rounding-review': ROUNDQ_QUESTIONS,
     'rounding-quiz':     ROUNDQ_QUESTIONS,
+    'nbta-test': NBT_QUESTIONS,
+    'nbtb-test': NBT_QUESTIONS,
+    'nbtp-practice': NBT_QUESTIONS,
+    'nbtw-warmup': NBT_QUESTIONS,
     'mod4t-test': MOD4_QUESTIONS,
     'mod4u-test': MOD4_QUESTIONS,
     'mod4b-review': MOD4_QUESTIONS,
@@ -8489,6 +8689,9 @@ function hintOpensOf(sessions) {
 // Pre-Warm-Up is finished once (any score). Those students are listed as "Needs the Pre-Warm-Up"; a student who did it
 // shows its score beside the Warm-Up's.
 const UNIT_GATES = [
+  // SBAC IAB Base Ten (11/14): no Review — 70% on the Practice opens Test Form A; Test Form B opens once Form A is finished.
+  // eachTest: the two forms are two things to take (📋 Who Owes What lists each), not a test and its retake.
+  { warmUp: 'nbtw-warmup', practiceA: 'nbtp-practice', tests: ['nbta-test', 'nbtb-test'], cutoff: 70, eachTest: true },
   { warmUp: 'mod4w-warmup', practiceA: 'mod4-practice', review: 'mod4b-review', tests: ['mod4t-test', 'mod4u-test'], cutoff: 70 },   // 4 parts: no Practice B (11/13)
   { preWarmUp: 'mod3z-prewarmup', warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
@@ -8519,7 +8722,7 @@ function unitTally(g) {
 function unitTallies(unit) {
   const Z = unit.preWarmUp ? unitTally(unit.preWarmUp) : new Map();
   const W = unit.warmUp ? unitTally(unit.warmUp) : new Map();
-  const A = unitTally(unit.practiceA), B = unit.practiceB ? unitTally(unit.practiceB) : A, R = unitTally(unit.review);
+  const A = unitTally(unit.practiceA), B = unit.practiceB ? unitTally(unit.practiceB) : A, R = unit.review ? unitTally(unit.review) : new Map();
   const T = new Map();
   unit.tests.forEach(g => unitTally(g).forEach((v, k) => { if (!T.has(k)) T.set(k, v); }));
   return { Z, W, A, B, R, T, pass: v => !!v && v.best.score / v.best.total * 100 >= unit.cutoff };
@@ -8530,7 +8733,7 @@ function unitStage(unit, t, n) {
   if (T.has(n))            return ['tested', T.get(n)];
   if (pass(R.get(n)))      return ['readyTest', R.get(n)];
   if (R.has(n))            return ['stuckReview', R.get(n)];
-  if (pass(B.get(n)))      return [A.has(n) ? 'readyReview' : 'needA', B.get(n)];
+  if (pass(B.get(n)))      return [A.has(n) ? (unit.review ? 'readyReview' : 'readyTest') : 'needA', B.get(n)];   // no Review (SBAC IAB): the Practice opens the Test
   if (B.has(n))            return ['stuckB', B.get(n)];
   if (pass(A.get(n)))      return ['readyB', A.get(n)];
   if (W.has(n) && !pass(W.get(n)) && unit.preWarmUp)   // the next Warm-Up waits for one finished Pre-Warm-Up
@@ -8552,6 +8755,10 @@ function gatesHTML(game) {
   const t = unitTallies(unit);
   const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needZ: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
   STUDENT_ROSTER.forEach(n => { const [key, v] = unitStage(unit, t, n); stage[key].push([n, v]); });
+  // two test forms (SBAC IAB): a student who finished Form A is ready for Form B; both finished = done
+  const perTest = unit.eachTest ? unit.tests.map(unitTally) : [];
+  const formB = unit.eachTest ? stage.tested.filter(([n]) => perTest[0].has(n) && !perTest[1].has(n)).map(([n]) => [n, perTest[0].get(n)]) : [];
+  if (unit.eachTest) stage.tested = stage.tested.filter(([n]) => !formB.some(([m]) => m === n));
   const mostTriesFirst = (x, y) => y[1].tries - x[1].tries || x[1].best.pct - y[1].best.pct || x[0].localeCompare(y[0]);
   stage.stuckReview.sort(mostTriesFirst); stage.stuckB.sort(mostTriesFirst); stage.stuckA.sort(mostTriesFirst); stage.stuckW.sort(mostTriesFirst); stage.needZ.sort(mostTriesFirst);
   const plural = n => `${n} student${n === 1 ? '' : 's'}`;
@@ -8564,19 +8771,21 @@ function gatesHTML(game) {
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
     `<div class="nm-names">${list.map(([n, v]) => chip(n, v, kind)).join('')}</div></div>`;
-  return `<div class="nm-head">🚦 Where each student is — ${unit.preWarmUp ? `under ${unit.cutoff}% on the Warm-Up: finish the Pre-Warm-Up once, then try the Warm-Up again · ` : ''}${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens ${nA} · ` : ''}${noB ? `${unit.cutoff}% on the Practice opens the Review · ` : `${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · `}${unit.cutoff}% on the Review opens the Test</div>` +
+  return `<div class="nm-head">🚦 Where each student is — ${unit.preWarmUp ? `under ${unit.cutoff}% on the Warm-Up: finish the Pre-Warm-Up once, then try the Warm-Up again · ` : ''}${unit.warmUp ? `${unit.cutoff}% on the Warm-Up opens ${nA} · ` : ''}${!unit.review ? `${unit.cutoff}% on the Practice opens ${unit.eachTest ? 'Test Form A · Test Form B opens once Form A is finished' : 'the Test'}` : `${noB ? `${unit.cutoff}% on the Practice opens the Review · ` : `${unit.cutoff}% on Practice A opens Practice B · ${unit.cutoff}% on Practice B opens the Review · `}${unit.cutoff}% on the Review opens the Test`}</div>` +
     row('Stuck at the Test gate', `Review under ${unit.cutoff}% · the Review allows 2 tries, then your PIN`, stage.stuckReview, 'stuck') +
-    row('Stuck at the Review gate', `${noB ? 'Practice' : 'Practice B'} under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
+    row(`Stuck at the ${unit.review ? 'Review' : 'Test'} gate`, `${noB ? 'Practice' : 'Practice B'} under ${unit.cutoff}%`, stage.stuckB, 'stuck') +
     row('Stuck at the Practice B gate', `Practice A under ${unit.cutoff}%`, stage.stuckA, 'stuck') +
     row(`Stuck at the ${nA2} gate`, `the Warm-Up not passed yet (under ${unit.cutoff}%, or a ${nA2} under ${unit.cutoff}% and no Warm-Up) — the score shown is the one that holds them`, stage.stuckW, 'stuck') +
     row('Needs the Pre-Warm-Up', `Warm-Up under ${unit.cutoff}% · the next Warm-Up waits until they finish the Pre-Warm-Up once (any score), or your PIN`, stage.needZ, 'stuck') +
     row('Passed Practice B — still needs Practice A', 'let in by PIN; the Review stays closed until Practice A is finished', stage.needA, '') +
-    row('Ready for the Test', `Review ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
+    row(unit.eachTest ? 'Ready for Test Form A' : 'Ready for the Test', `${unit.review ? 'Review' : noB ? 'Practice' : 'Practice B'} ${unit.cutoff}% or better`, stage.readyTest, 'ok') +
     row('Ready for the Review', noB ? `Practice ${unit.cutoff}% or better` : `Practice A done · Practice B ${unit.cutoff}% or better`, stage.readyReview, 'ok') +
     row('Ready for Practice B', `Practice A ${unit.cutoff}% or better`, stage.readyB, 'ok') +
     row(`Ready for ${nA}`, `Warm-Up ${unit.cutoff}% or better`, stage.readyA, 'ok') +
     row('Nothing finished yet', '', stage.none, '') +
-    row('Took the Test', '', stage.tested, 'ok');
+    row('Ready for Test Form B', 'Test Form A finished', formB, 'ok') +
+    row(unit.eachTest ? 'Took both test forms' : 'Took the Test', '', stage.tested.filter(([n]) => !unit.eachTest || perTest.every(m => m.has(n))), 'ok') +
+    row('Took Test Form B only', 'let in by PIN — Test Form A not taken', unit.eachTest ? stage.tested.filter(([n]) => !perTest[0].has(n)) : [], 'stuck');
 }
 
 let needsMeToken = 0;
