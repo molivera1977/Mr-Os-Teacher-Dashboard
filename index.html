@@ -4736,6 +4736,10 @@ function familyLabel(fam, members) {
 }
 
 function buildAssignmentTabs() {
+  // A set's pick-a-form page is never in the GK group: a GK quiz left open from the 🌟 page (a card, a heat-map square)
+  // must not take over a set's Overview card, checklist button or Who Owes What chip (Marcos 11/16: "i am clicking mm4
+  // results and it sends me to gk hub results"). GK has no sets, so an open set always means the regular tabs.
+  if (familyChooserOpen && GK_GAMES.includes(currentGame)) currentGame = null;
   const inGk = GK_GAMES.includes(currentGame);
   const games = inGk ? GK_GAMES : byLatestWork(assignmentsInListOrder()   // same order as the Overview cards (11/11)
     .filter(g => !GK_GAMES.includes(g) && !isQps(g) && !isLab(g)));   // QPS has its own 📖 page, the Lab its own 🧪 page
