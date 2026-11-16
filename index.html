@@ -678,6 +678,36 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
     <!-- FACT FLUENCY VIEW (Math Fact Review sites) -->
     <!-- GENERAL KNOWLEDGE VIEW — one card per GK Hub test -->
     <div id="view-gk" style="display:none;">
+      <!-- 📌 ASSIGN A QUIZ (Marcos 11/16/2026: "can i assign assignments from GK Hub" → "Yes, build it"). The hub's
+           assign.js reads the gk-assign tab at sign-in: the kid sees only the banner until the quiz is done. -->
+      <div class="fact-assign" id="gkAssign">
+        <div class="section-title">📌 Assign a Quiz
+          <span class="fact-assign-sub">When they sign in to the GK Hub, they see only their quiz, one at a time, until it is done.</span>
+        </div>
+        <div class="fact-assign-form">
+          <label>Quiz<select id="gkAssignQuiz"></select></label>
+          <label>Add to<select id="gkAssignWhere">
+            <option value="end">End of their list</option>
+            <option value="front">Front of their list</option>
+          </select></label>
+        </div>
+        <div class="fact-assign-who">
+          <span class="fact-assign-label">Students</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickGkAll(true)">All</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="pickGkAll(false)">None</button>
+          <span class="fact-assign-note">📌 = has a quiz open now · 📌2 = two open</span>
+        </div>
+        <div class="fact-assign-students" id="gkAssignStudents"></div>
+        <div class="fact-assign-send">
+          <button type="button" class="btn btn-primary" id="gkAssignSend" onclick="sendGkAssignment()">📌 Assign</button>
+          <span id="gkAssignStatus" class="fact-assign-status" role="status"></span>
+        </div>
+        <div class="fact-assign-now">
+          <span class="fact-assign-label">Assigned</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadGkAssignments()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap" id="gkAssignTable"></div>
+      </div>
       <div class="section-title">🌟 General Knowledge Hub — Tests</div>
       <div class="assignment-cards" id="gkCards"></div>
       <div class="section-title" style="margin-top:24px;">👥 Student Progress
@@ -1757,6 +1787,7 @@ async function refreshData() {
     buildAssignmentTabs();
     renderCurrentView();
     if (factAssignRows !== null) loadFactAssignments();   // 📌 keep the assignment progress fresh too
+    if (gkAssignRows !== null) loadGkAssignments();       // 📌 the GK quizzes too (11/16)
   } catch(e) {
     document.getElementById('lastUpdated').textContent = '⚠️ Could not load data. Check connection.';
   } finally {
@@ -2641,6 +2672,7 @@ function openAssignmentsTab() {
 //  main Overview / Assignment tabs. Clicking a card opens its results.
 // ═══════════════════════════════════════════════════
 function renderGk() {
+  renderGkAssign();
   const cardsEl = document.getElementById('gkCards');
   cardsEl.innerHTML = '';
   GK_GAMES.forEach(game => cardsEl.appendChild(buildAssignmentCard(game)));
@@ -2655,6 +2687,164 @@ function renderGk() {
   });
   grid.classList.add('wrap-heads');
   gridEl.appendChild(grid);
+}
+
+// ═══════════════════════════════════════════════════
+//  📌 ASSIGN A GK QUIZ (Marcos 11/16/2026: "can i assign assignments from GK Hub" → "Yes, build it")
+//  Like ✨ After the QPS: one row per assignment on the hidden gk-assign tab — name 'Student #<order>' (order = the ms
+//  it was assigned, minus for the front of the list) · sessionId 'GA-<ms>-<n>' · form = the quiz ('geography') or
+//  'None' = taken away · score = the ms written (the leaderboard read keeps the newest row per name) · the hub writes
+//  back done + percent (their score) when they finish it. Done = finished once, any score (Marcos 11/16: "get rid of
+//  the 80 or better").
+//  The hub (general-knowledge-review/assign.js) holds the kid on the banner until it is done.
+// ═══════════════════════════════════════════════════
+const GK_ASSIGN_GAME = 'gk-assign';
+const GK_ASSIGN_MAX_KEY = 1e15;
+HIDDEN_GAMES.add(GK_ASSIGN_GAME);
+const GK_QUIZZES = { geography: '🌍 Geography', civics: '🏛️ Civics & Gov', math: '➕ Math', ela: '📚 Language Arts' };
+let gkAssignRows = null, gkAssignLoading = false, gkAssignError = '';
+const gkPicked = new Set();
+
+// 'geography' → { subject }, or null: 'None' (taken away) or a form the hub can't read either
+function parseGkForm(form) {
+  const subject = String(form || '').trim();
+  return GK_QUIZZES[subject] ? { subject } : null;
+}
+function parseGkAssign(r) {
+  const place = /^(.*) #(-?\d+)$/.exec(String(r.name || ''));
+  if (!place || !STUDENT_ROSTER.includes(place[1])) return null;
+  const rule = parseGkForm(r.form);
+  if (!rule) return null;
+  const key = Number(r.score) || 0;
+  return { name: place[1], rowName: r.name, order: Number(place[2]), key, id: String(r.sessionId || ''), ...rule,
+    best: Math.max(0, Number(r.percent) || 0), done: r.done === true || r.done === 'true', assigned: key ? new Date(key) : null };
+}
+const gkAssignItemsOf = name => (gkAssignRows || []).map(parseGkAssign).filter(a => a && a.name === name)
+  .sort((a, b) => a.order - b.order || a.key - b.key);
+function gkAssignLists() {
+  const open = s => (s.items.some(a => !a.done) ? 0 : 1);
+  return STUDENT_ROSTER.map(name => ({ name, items: gkAssignItemsOf(name) })).filter(s => s.items.length)
+    .sort((a, b) => open(a) - open(b) || ROSTER.indexOf(a.name) - ROSTER.indexOf(b.name));
+}
+const gkOpenCount = name => gkAssignItemsOf(name).filter(a => !a.done).length;
+const gkQuizText = a => GK_QUIZZES[a.subject];
+// Taken the quiz since it was assigned, not finished yet (the hub saves a row every 5 answers): its sessionId is GK-<start ms>
+const gkStartedSince = a => (((dashData['gk-' + a.subject] || []).find(s => s.name === a.name) || {}).sessions || [])
+  .some(s => s.status === 'inprogress' && (Number((/^GK-(\d+)-/.exec(s.sessionId || '') || [])[1]) || 0) > a.key);
+function gkAssignStatus(a) {
+  if (a.done) return `<span class="fact-assign-pill done">✅ Done · ${a.best}%</span>`;
+  if (gkStartedSince(a)) return '<span class="fact-assign-pill working">✏️ Started</span>';
+  return '<span class="fact-assign-pill waiting">⏳ Not started</span>';
+}
+
+async function loadGkAssignments() {
+  gkAssignLoading = true;
+  renderGkAssignTable();
+  try {
+    const rows = await fetch(`${SHEET_URL}?action=leaderboard&game=${GK_ASSIGN_GAME}`, { cache: 'no-store' }).then(r => r.json());
+    if (!Array.isArray(rows)) throw new Error('not a list');
+    gkAssignRows = rows;
+    gkAssignError = '';
+  } catch (e) {
+    gkAssignError = '⚠️ Could not read the quizzes you assigned. Check the connection, then press ↻ Refresh.';
+  }
+  gkAssignLoading = false;
+  renderGkAssignStudents();
+  renderGkAssignTable();
+  renderOwed();   // 📋 Who Owes What lists the 📌 quizzes not done
+  return gkAssignError ? null : gkAssignRows;
+}
+// One 'submit' per row, 5 at a time; no-cors can't read the answer, so the caller reads the tab back (sendUntilSaved)
+async function postGkAssignRows(rows) {
+  for (let i = 0; i < rows.length; i += 5) {
+    await Promise.all(rows.slice(i, i + 5).map(r => fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', game: GK_ASSIGN_GAME, sessionId: r.sessionId, name: r.name, form: r.form,
+        score: r.score, maxScore: GK_ASSIGN_MAX_KEY, correct: 0, total: 0, percent: 0, done: r.done, tabSwitches: 0, wrongQuestions: '' })
+    }).catch(() => {})));
+  }
+}
+const gkLanded = (rows, sent) => sent.filter(s => (rows || []).some(r => r.name === s.name && r.sessionId === s.sessionId));
+
+function renderGkAssign() {
+  const quiz = document.getElementById('gkAssignQuiz');
+  if (!quiz.options.length) quiz.innerHTML = Object.entries(GK_QUIZZES).map(([k, label]) => `<option value="${k}">${escHtml(label)}</option>`).join('');
+  renderGkAssignStudents();
+  renderGkAssignTable();
+  if (gkAssignRows === null && !gkAssignLoading && !gkAssignError) loadGkAssignments();
+}
+function renderGkAssignStudents() {
+  document.getElementById('gkAssignStudents').innerHTML = STUDENT_ROSTER.map(name => {
+    const open = gkOpenCount(name);
+    return `<label><input type="checkbox" data-name="${escHtml(name)}"${gkPicked.has(name) ? ' checked' : ''} onchange="pickGk(this.dataset.name, this.checked)">${escHtml(name)}${open ? ` 📌${open > 1 ? open : ''}` : ''}</label>`;
+  }).join('');
+}
+function pickGk(name, on) { if (on) gkPicked.add(name); else gkPicked.delete(name); }
+function pickGkAll(on) { STUDENT_ROSTER.forEach(n => pickGk(n, on)); renderGkAssignStudents(); }
+
+function renderGkAssignTable() {
+  const el = document.getElementById('gkAssignTable');
+  if (!el) return;
+  if (gkAssignRows === null) {
+    el.innerHTML = `<p class="fact-assign-note">${gkAssignLoading ? '⏳ Reading the quizzes you assigned…' : escHtml(gkAssignError)}</p>`;
+    return;
+  }
+  const note = gkAssignError ? `<p class="fact-assign-note">${escHtml(gkAssignError)}</p>` : '';
+  const lists = gkAssignLists();
+  if (!lists.length) { el.innerHTML = note + '<p class="fact-assign-note">You have not assigned a quiz yet.</p>'; return; }
+  const rows = lists.map(({ name, items }) => {
+    const current = items.find(a => !a.done);
+    return items.map((a, i) => {
+      const who = i ? '' : `<td class="fact-nowrap fact-assign-who-cell" rowspan="${items.length}">${escHtml(name)}</td>`;
+      return `<tr data-student="${escHtml(name)}">${who}
+        <td class="fact-nowrap">${a === current ? '▶ ' : ''}${i + 1}</td>
+        <td>${escHtml(gkQuizText(a))}</td>
+        <td class="fact-last">${fmtWhen(a.assigned)}</td>
+        <td>${gkAssignStatus(a)}</td>
+        <td>${a.done ? '' : `<button type="button" class="btn btn-ghost btn-sm" data-row="${escHtml(a.rowName)}" onclick="removeGkAssignment(this.dataset.row)">✕ Remove</button>`}</td>
+      </tr>`;
+    }).join('');
+  }).join('');
+  el.innerHTML = note + `<table class="grid-table"><thead><tr><th>Student</th><th>#</th><th>Quiz</th><th>Assigned</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="fact-assign-note" style="margin-top:8px;">▶ = the one they are on now. ✏️ Started shows after their first 5 answers.</p>`;
+}
+
+async function sendGkAssignment() {
+  const status = document.getElementById('gkAssignStatus');
+  const subject = document.getElementById('gkAssignQuiz').value;
+  const where = document.getElementById('gkAssignWhere').value;   // end | front
+  const names = STUDENT_ROSTER.filter(n => gkPicked.has(n));
+  if (!GK_QUIZZES[subject]) { status.textContent = '⚠️ Pick a quiz.'; return; }
+  if (!names.length) { status.textContent = '⚠️ Pick at least one student.'; return; }
+  const form = subject;
+  const who = `${names.length} student${names.length > 1 ? 's' : ''}`;
+  if (!confirm(`${where === 'front' ? 'Put this quiz FIRST on the list' : 'Add this quiz to the end of the list'} for ${who}?\n\n${gkQuizText(parseGkForm(form))}`)) return;
+  const btn = document.getElementById('gkAssignSend');
+  btn.disabled = true;
+  status.textContent = '⏳ Sending…';
+  const at = Date.now();
+  const sent = names.map((name, i) => ({ student: name, name: `${name} #${where === 'front' ? -at : at}`, sessionId: `GA-${at}-${i + 1}`, form, score: at, done: false }));
+  const rows = await sendUntilSaved(sent, postGkAssignRows, loadGkAssignments, gkLanded, status);
+  const saved = gkLanded(rows, sent);
+  const missing = sent.filter(s => !saved.includes(s)).map(s => s.student);
+  saved.forEach(s => gkPicked.delete(s.student));
+  status.textContent = rows === null ? '⚠️ Sent, but the sheet could not be read back. Press ↻ Refresh to check.'
+    : missing.length ? `⚠️ Saved for ${saved.length} of ${sent.length}. Not saved: ${missing.join('; ')} — still picked, press 📌 Assign again.`
+    : `✓ Assigned to ${who}${where === 'front' ? ' (first on the list)' : ''}.`;
+  renderGkAssignStudents();
+  btn.disabled = false;
+}
+
+async function removeGkAssignment(rowName) {
+  const a = gkAssignLists().flatMap(s => s.items).find(x => x.rowName === rowName);
+  if (!a || a.done) return;
+  if (!confirm(`Take this quiz away from ${a.name}?\n\n${gkQuizText(a)}`)) return;
+  const status = document.getElementById('gkAssignStatus');
+  status.textContent = '⏳ Sending…';
+  const at = Date.now();
+  const row = { name: a.rowName, sessionId: `GX-${at}-0`, form: 'None', score: at, done: true };
+  const rows = await sendUntilSaved([row], postGkAssignRows, loadGkAssignments, gkLanded, status);
+  status.textContent = gkLanded(rows, [row]).length ? `✓ Taken away from ${a.name}.` : '⚠️ That did not save. Press ↻ Refresh, then try again.';
 }
 
 // ═══════════════════════════════════════════════════
@@ -4043,6 +4233,7 @@ const OWE_UNIT = {
 // { key (what the checklist saves), label, games, done(name), unit (a unit's Test), step / leveled (in order) }
 function oweParts(b, ctx) {
   if (b.facts) return [{ key: FACT_ASSIGN_GAME, label: '📌 Assigned fact practice', games: [], facts: true, done: name => !factAssignItemsOf(name).some(a => !a.done) }];
+  if (b.gk) return [{ key: GK_ASSIGN_GAME, label: '📌 Assigned GK quizzes', games: [], gk: true, done: name => !gkAssignItemsOf(name).some(a => !a.done) }];
   const short = g => formShortLabel(b.label, g);
   const unit = UNIT_GATES.find(u => b.members.includes(u.practiceA));
   if (unit) {
@@ -4068,7 +4259,7 @@ function oweParts(b, ctx) {
 // A part counts once a classmate has FINISHED it (one nobody has finished is still being taught: Rounding Mechanics'
 // Practice A/B, a Test not given on the site, Science 1.2 mid-lesson — the real sheet 11/13) and Mr. O has not left it off.
 // 📌 fact assignments are his exception ("they are easy to forget about"): each is given to one student, so it counts.
-const oweGiven  = (p, ctx) => !!p.facts || p.games.some(g => ctx.given.has(g));
+const oweGiven  = (p, ctx) => !!p.facts || !!p.gk || p.games.some(g => ctx.given.has(g));
 const oweCounts = (p, ctx) => oweGiven(p, ctx) && !ctx.skip.has(p.key);
 
 // 🧮 MATH FACTS (Marcos 11/13: "i want the math fact reviews to be an exception, i want those on the owed work list. they
@@ -4083,6 +4274,18 @@ function oweFacts(p, name, ctx) {
   const names = open.map(a => factAssignWhat(a) + (a.right ? ` (${a.right} of ${a.goal} right)` : ''));
   return { detail: `${open.length} to do: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` +${names.length - 3} more` : ''}`,
     state: open.some(a => a.right > 0 || a.answered > 0) ? 'working' : 'none' };
+}
+
+// 🌟 GK QUIZZES (11/16, with 📌 Assign a Quiz): like the fact assignments — every one a student has not finished the way
+// Mr. O asked (the Assign box's own reading, gkAssignItemsOf), however long ago; a removed one is gone. Second in each row.
+const OWE_GK_BLOCK = { fam: null, game: null, view: 'gk', gk: true, members: [], label: '🌟 GK Quizzes (📌 assigned)' };
+function oweGk(p, name, ctx) {
+  if (!oweCounts(p, ctx)) return null;
+  const open = gkAssignItemsOf(name).filter(a => !a.done);
+  if (!open.length) return null;
+  const names = open.map(a => GK_QUIZZES[a.subject]);
+  return { detail: `${open.length} to do: ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` +${names.length - 3} more` : ''}`,
+    state: open.some(gkStartedSince) ? 'working' : 'none' };
 }
 
 // Parts in order, each opening the next (gated steps, Inference Practice's Level 1s, a unit's steps before its Test
@@ -4145,6 +4348,7 @@ function oweSingle(p, name, ctx) {
 function oweOf(b, name, ctx) {
   const parts = ctx.partsOf(b);
   if (parts[0].facts) return oweFacts(parts[0], name, ctx);
+  if (parts[0].gk) return oweGk(parts[0], name, ctx);
   if (parts[0].unit) return oweUnit(parts, ctx, name);
   if (!b.fam) return oweSingle(parts[0], name, ctx);
   if (parts[0].step) return oweInOrder(parts, name, ctx, parts[0].leveled ? ' at Level 1' : '');
@@ -4227,8 +4431,9 @@ function renderOwed() {
   if (!el) return;
   const sel = document.getElementById('oweDays');
   if (sel) sel.value = String(oweDays);
-  const blocks = [OWE_FACT_BLOCK, ...oweBlocks()];
+  const blocks = [OWE_FACT_BLOCK, OWE_GK_BLOCK, ...oweBlocks()];
   if (factAssignRows === null && !factAssignLoading && !factAssignError) loadFactAssignments();   // 📌 rows: read once, then each refresh
+  if (gkAssignRows === null && !gkAssignLoading && !gkAssignError) loadGkAssignments();
   const tallies = new Map(), partsByBlock = new Map();
   const ctx = {
     tallyOf: unit => { if (!tallies.has(unit)) tallies.set(unit, unitTallies(unit)); return tallies.get(unit); },
@@ -4241,7 +4446,7 @@ function renderOwed() {
   const chip = ({ b, o }) => `<button type="button" class="owe-chip owe-${o.state}" ${b.view ? `data-view="${escHtml(b.view)}"` : b.fam ? `data-fam="${escHtml(b.fam)}"` : `data-game="${escHtml(b.game)}"`} title="Open ${escHtml(b.label)}">${escHtml(b.label)} · ${escHtml(o.detail)}</button>`;
   el.innerHTML =
     `<div class="owe-summary">${owing} of ${rows.length} students owe something · ${rows.length - owing} caught up · counting: ${blocks.map(b => escHtml(b.label)).join(' · ')}` +
-    `${factAssignError ? ' · ⚠️ the 📌 fact assignments could not be read' : ''}</div>` +
+    `${factAssignError ? ' · ⚠️ the 📌 fact assignments could not be read' : ''}${gkAssignError ? ' · ⚠️ the 📌 GK quizzes could not be read' : ''}</div>` +
     `<div class="owe-key"><span class="owe-key-chip owe-retry">↻ needs a retry</span><span class="owe-key-chip owe-working">… started, not finished</span><span class="owe-key-chip owe-next">next step</span><span class="owe-key-chip owe-none">not started</span></div>` +
     owePickHtml(blocks, ctx) +
     rows.map(r => `<div class="owe-row"><button type="button" class="owe-name" data-profile="${escHtml(r.name)}">${escHtml(r.name)}</button>` +
