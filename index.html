@@ -2734,11 +2734,50 @@ function setGkHeatAttempt(n) {
   renderGkHeat();
 }
 
+// EVERY QUESTION (Marcos 11/16: "Yes, show all"). The hub saves only the misses by question (number, text, the pick),
+// so a question the whole class got right had no square. Its own question files (data/<quiz>.js — the same site, read
+// as the review panels read theirs) give every question: the ones nobody missed show at 0%. Not read (offline) = the
+// missed ones only, as before; it is tried again at the next drawing.
+const GK_HUB_URL = 'https://mroteacher.com/Mr.Os-general-knowledge-hub/';
+const gkQuestionCache = {};   // game → the read in flight
+let gkQuestionBank = {};      // game → [{ id: 'Q1', text }] once read
+function loadGkQuestions(game) {
+  if (!gkQuestionCache[game]) {
+    const subject = game.replace(/^gk-/, '');
+    gkQuestionCache[game] = fetch(`${GK_HUB_URL}data/${subject}.js`, { cache: 'no-store' })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(src => {
+        const list = new Function(`${src}\nreturn ${subject}Data;`)();   // the file is "const mathData = [ … ];"
+        const qs = (Array.isArray(list) ? list : []).filter(q => q && q.questionNumber != null)
+          .map(q => ({ id: `Q${q.questionNumber}`, text: String(q.question || '') }));
+        if (!qs.length) throw new Error(`${subject}Data has no questions`);
+        gkQuestionBank = { ...gkQuestionBank, [game]: qs };
+        return qs;
+      })
+      .catch(err => { delete gkQuestionCache[game]; throw err; });
+  }
+  return gkQuestionCache[game];
+}
+// A GK quiz's questions now ([] until read — the read starts here, and the page is drawn again when it lands)
+function gkQuestionsFor(game) {
+  if (!GK_GAMES.includes(game)) return [];
+  if (gkQuestionBank[game]) return gkQuestionBank[game];
+  if (!gkQuestionCache[game]) loadGkQuestions(game).then(gkQuestionsLanded, () => {});
+  return [];
+}
+function gkQuestionsLanded() {
+  if (currentView === 'gk') renderGkHeat();
+  // a quiz page: drawn again unless a question is open on it (that would close it)
+  if (currentView === 'assignment' && GK_GAMES.includes(currentGame) && !document.getElementById('heatmapDetailPopup')) buildHeatmap(lastHeatmapData);
+}
+
 function gkHeatOf(game) {
   const texts = {};
   const t = heatTries((dashData[game] || []).filter(s => ROSTER.includes(s.name)));
   const first = tallyAttempt(t.firstTries, texts), second = tallyAttempt(t.secondTries, texts), before = tallyAttempt(t.firstOfRetakers, texts);
-  const ids = [...new Set([...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])]
+  const bank = gkQuestionsFor(game);
+  bank.forEach(q => { if (!texts[q.id]) texts[q.id] = q.text; });
+  const ids = [...new Set([...bank.map(q => q.id), ...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])]
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   return { first, second, before, ids, texts };
 }
@@ -2752,7 +2791,7 @@ function gkHeatCell(game, id, view, before, texts) {
   const was = gkHeatAttempt === 2 ? `<span class="q-was">was ${Math.round(((before.missedBy[id] || []).length / before.total) * 100)}%</span>` : '';
   if (was) cell.classList.add('heat-tall');
   cell.innerHTML = `<span class="q-num">${escHtml(id)}</span><span class="q-pct">${pct}%</span>${was}`;
-  cell.title = `${id}: ${texts[id] || id}\n${names.length}/${view.total} students missed this (${pct}%) · click for who`;
+  cell.title = `${id}: ${texts[id] || id}\n${names.length}/${view.total} students missed this (${pct}%)${names.length ? ' · click for who' : ''}`;
   cell.onclick = () => openGkHeatQuestion(game, id);
   return cell;
 }
@@ -8388,7 +8427,10 @@ function buildHeatmap(data) {
   const view = heatmapAttempt === 2 ? second : first;
 
   // Same question set on both tabs, so a question fixed on the retake shows 0%.
-  const keys = [...new Set([...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])];
+  // A GK quiz: every question, the ones nobody missed at 0% too (11/16, "Yes, show all"; gkQuestionsFor).
+  const bank = gkQuestionsFor(currentGame);
+  bank.forEach(q => { if (!questionTexts[q.id]) questionTexts[q.id] = q.text; });
+  const keys = [...new Set([...bank.map(q => q.id), ...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])];
 
   if (!first.total || !keys.length) {
     document.getElementById('heatmapWrap').style.display = 'none';
