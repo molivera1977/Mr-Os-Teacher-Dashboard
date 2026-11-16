@@ -144,6 +144,16 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 [data-theme="dark"] .heat-4{background:#3a0000;color:#ff5252;border-color:#6a2222;}
 .heat-cell .q-was{font-size:.55rem;font-weight:700;opacity:.75;}
 .heat-cell.heat-tall{width:56px;height:58px;}
+/* 🔥 the 🌟 GK page's four heat maps (11/16) */
+#gkHeat{margin-top:20px;}
+.gk-heat-quiz{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+.gk-heat-quiz:first-child{margin-top:6px;padding-top:0;border-top:0;}
+.gk-heat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.gk-heat-name{font-weight:800;font-size:1rem;color:var(--text);}
+.gk-heat-n{font-size:.75rem;font-weight:700;color:var(--muted);}
+.gk-heat-open{margin-left:auto;}
+.gk-heat-quiz .heatmap-grid{margin-top:8px;}
+.gk-heat-empty{margin:6px 0 0;font-size:.85rem;font-weight:700;color:var(--muted);}
 .skill-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 48px;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;cursor:pointer;}
 .skill-row:hover{background:var(--surface2);}
 .skill-row.std{font-weight:800;color:var(--text);margin-top:8px;border:1px solid var(--border);}
@@ -710,6 +720,26 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
       </div>
       <div class="section-title">🌟 General Knowledge Hub — Tests</div>
       <div class="assignment-cards" id="gkCards"></div>
+      <!-- 🔥 THE FOUR HEAT MAPS (Marcos 11/16: "heat map not there until new assignments" → "Yes, add them"): each quiz's
+           own heat map (its page's numbers, heatTries), here on one page, in question order. A square opens its page at it. -->
+      <div class="heatmap-wrap" id="gkHeat">
+        <div class="section-title">🔥 Which Questions They Miss
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="gkHeatSub">% of students who missed each question · click a square for who missed it</span>
+        </div>
+        <div class="heat-toggle" id="gkHeatToggle">
+          <button type="button" data-attempt="1" onclick="setGkHeatAttempt(1)">1st Try</button>
+          <button type="button" data-attempt="2" onclick="setGkHeatAttempt(2)">2nd Try</button>
+        </div>
+        <div id="gkHeatQuizzes"></div>
+        <div class="heatmap-legend">
+          <span style="font-size:.72rem;font-weight:700;color:var(--muted);">Wrong rate:</span>
+          <div class="legend-item"><div class="legend-dot heat-0" style="background:#d4f0d4;"></div>0–20%</div>
+          <div class="legend-item"><div class="legend-dot heat-1" style="background:#b8e8b8;"></div>21–40%</div>
+          <div class="legend-item"><div class="legend-dot heat-2" style="background:#fff3cc;"></div>41–60%</div>
+          <div class="legend-item"><div class="legend-dot heat-3" style="background:#ffe0b2;"></div>61–80%</div>
+          <div class="legend-item"><div class="legend-dot heat-4" style="background:#ffcdd2;"></div>81–100%</div>
+        </div>
+      </div>
       <div class="section-title" style="margin-top:24px;">👥 Student Progress
         <span style="font-size:.72rem;color:var(--muted);font-weight:700;">click a dot to open that test's results · click a name for all of that student's GK scores</span></div>
       <div class="dot-grid-wrap" id="gkGrid"></div>
@@ -2687,6 +2717,92 @@ function renderGk() {
   });
   grid.classList.add('wrap-heads');
   gridEl.appendChild(grid);
+  renderGkHeat();
+}
+
+// ═══════════════════════════════════════════════════
+//  🔥 THE FOUR HEAT MAPS on the 🌟 GK page (Marcos 11/16: "heat map not there until new assignments" → "Yes, add
+//  them"). Each is its quiz page's own heat map (the same tries, heatTries; the same % and colors), in question order
+//  (Q1, Q2 … Q10, not Q1, Q10 …). 1st Try = each student's first finish; 2nd Try = the newest finish of those who
+//  finished it more than once (a quiz Mr. O assigns to someone who already did it lands there), "was" = their 1st.
+//  A square opens that quiz's page with the question open: who missed it, and what they picked.
+// ═══════════════════════════════════════════════════
+let gkHeatAttempt = 1;
+
+function setGkHeatAttempt(n) {
+  gkHeatAttempt = n;
+  renderGkHeat();
+}
+
+function gkHeatOf(game) {
+  const texts = {};
+  const t = heatTries((dashData[game] || []).filter(s => ROSTER.includes(s.name)));
+  const first = tallyAttempt(t.firstTries, texts), second = tallyAttempt(t.secondTries, texts), before = tallyAttempt(t.firstOfRetakers, texts);
+  const ids = [...new Set([...Object.keys(first.missedBy), ...Object.keys(second.missedBy)])]
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return { first, second, before, ids, texts };
+}
+
+function gkHeatCell(game, id, view, before, texts) {
+  const names = view.missedBy[id] || [];
+  const pct   = Math.round((names.length / view.total) * 100);
+  const cell  = document.createElement('div');
+  cell.className = `heat-cell heat-${pct<=20?0:pct<=40?1:pct<=60?2:pct<=80?3:4}`;
+  cell.dataset.qid = id;
+  const was = gkHeatAttempt === 2 ? `<span class="q-was">was ${Math.round(((before.missedBy[id] || []).length / before.total) * 100)}%</span>` : '';
+  if (was) cell.classList.add('heat-tall');
+  cell.innerHTML = `<span class="q-num">${escHtml(id)}</span><span class="q-pct">${pct}%</span>${was}`;
+  cell.title = `${id}: ${texts[id] || id}\n${names.length}/${view.total} students missed this (${pct}%) · click for who`;
+  cell.onclick = () => openGkHeatQuestion(game, id);
+  return cell;
+}
+
+function renderGkHeat() {
+  const box = document.getElementById('gkHeatQuizzes');
+  if (!box) return;
+  const maps = GK_GAMES.map(game => ({ game, ...gkHeatOf(game) }));
+  if (!maps.some(m => m.second.total)) gkHeatAttempt = 1;   // nobody has finished one twice: 2nd Try has nothing
+  document.querySelectorAll('#gkHeatToggle button').forEach(btn => {
+    const n = Number(btn.dataset.attempt);
+    btn.disabled = n === 2 && !maps.some(m => m.second.total);
+    btn.classList.toggle('active', n === gkHeatAttempt);
+  });
+  box.innerHTML = '';
+  maps.forEach(({ game, first, second, before, ids, texts }) => {
+    const view = gkHeatAttempt === 2 ? second : first;
+    const name = GK_QUIZZES[game.replace(/^gk-/, '')] || GAME_LABELS[game] || game;
+    const wrap = document.createElement('div');
+    wrap.className = 'gk-heat-quiz';
+    wrap.dataset.game = game;
+    const count = !view.total ? ''
+      : gkHeatAttempt === 2 ? `${view.total} finished it again · their newest try (was = their 1st)`
+      : `${view.total} finished · their 1st try`;
+    wrap.innerHTML = `<div class="gk-heat-head"><span class="gk-heat-name">${escHtml(name)}</span>` +
+      `<span class="gk-heat-n">${escHtml(count)}</span>` +
+      `<button type="button" class="btn btn-ghost btn-sm gk-heat-open">Open ${escHtml(name)} ›</button></div>`;
+    wrap.querySelector('.gk-heat-open').onclick = () => openGkHeatQuestion(game, null);
+    if (!view.total) {
+      wrap.insertAdjacentHTML('beforeend', `<p class="gk-heat-empty">${gkHeatAttempt === 2 ? 'No one has finished it twice yet.' : 'No one has finished it yet.'}</p>`);
+    } else if (!ids.length) {
+      wrap.insertAdjacentHTML('beforeend', '<p class="gk-heat-empty">No one missed a question.</p>');
+    } else {
+      const grid = document.createElement('div');
+      grid.className = 'heatmap-grid';
+      ids.forEach(id => grid.appendChild(gkHeatCell(game, id, view, before, texts)));
+      wrap.appendChild(grid);
+    }
+    box.appendChild(wrap);
+  });
+}
+
+// The quiz's own page, at the same try; with a question: its square clicked there (who missed it, what they picked).
+function openGkHeatQuestion(game, id) {
+  heatmapAttempt = gkHeatAttempt;
+  currentGame = game;
+  toggleView('assignment');
+  if (!id) return;
+  const cell = [...document.querySelectorAll('#heatmapGrid .heat-cell')].find(c => c.querySelector('.q-num')?.textContent === id);
+  if (cell) cell.click();
 }
 
 // ═══════════════════════════════════════════════════
@@ -8241,12 +8357,10 @@ function tallyAttempt(attempts, questionTexts) {
   return { total: attempts.length, missedBy, picksBy };
 }
 
-function buildHeatmap(data) {
-  lastHeatmapData = data;
-  const questionTexts = {};
-
-  // Only finished attempts count; leftover in-progress rows and teacher test runs are ignored.
-  // Finished rows are appended to the sheet when submitted, so session order is chronological.
+// The tries a heat map counts — this page's and the 🌟 GK page's four (11/16), so the two always agree.
+// Only finished attempts count; leftover in-progress rows and teacher test runs are ignored.
+// Finished rows are appended to the sheet when submitted, so session order is chronological.
+function heatTries(data) {
   const firstTries = [], secondTries = [], firstOfRetakers = [];
   data.forEach(student => {
     if (student.name === 'Mr. O (Teacher)') return;
@@ -8258,6 +8372,13 @@ function buildHeatmap(data) {
       firstOfRetakers.push({ name: student.name, sess: done[0] });
     }
   });
+  return { firstTries, secondTries, firstOfRetakers };
+}
+
+function buildHeatmap(data) {
+  lastHeatmapData = data;
+  const questionTexts = {};
+  const { firstTries, secondTries, firstOfRetakers } = heatTries(data);
 
   const first  = tallyAttempt(firstTries, questionTexts);
   const second = tallyAttempt(secondTries, questionTexts);
