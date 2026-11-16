@@ -195,6 +195,14 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .qbq-pick{font-weight:800;}
 .qbq-skilltag{font-size:.66rem;font-weight:700;opacity:.7;white-space:nowrap;flex-shrink:0;padding-top:1px;}
 @media (max-width:640px){.qbq-skilltag{display:none;}}
+/* 🧒 a GK student's question-by-question grid (11/16) */
+.gk-qgrid{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 8px;}
+.gk-qsq{width:30px;height:30px;border-radius:7px;border:1px solid;display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;padding:0;}
+.gk-qsq.ok{background:var(--complete);border-color:var(--complete-border);color:var(--complete-text);}
+.gk-qsq.miss{background:var(--flagged);border-color:var(--flagged-border);color:var(--flagged-text);}
+.gk-qsq:hover{filter:brightness(.95);}
+.qbq-row.gk-row{cursor:default;}
+.qbq-answer{font-weight:700;opacity:.85;}
 .qx{margin-top:4px;}
 .qx-note{font-size:.78rem;color:var(--muted);font-style:italic;}
 .qx-choices{margin:4px 0 0 20px;padding:0;font-size:.84rem;color:var(--text);line-height:1.45;}
@@ -2749,7 +2757,8 @@ function loadGkQuestions(game) {
       .then(src => {
         const list = new Function(`${src}\nreturn ${subject}Data;`)();   // the file is "const mathData = [ … ];"
         const qs = (Array.isArray(list) ? list : []).filter(q => q && q.questionNumber != null)
-          .map(q => ({ id: `Q${q.questionNumber}`, text: String(q.question || '') }));
+          .map(q => ({ id: `Q${q.questionNumber}`, text: String(q.question || ''),
+            answer: String(((q.answerOptions || []).find(o => o && o.isCorrect) || {}).text || '') }));
         if (!qs.length) throw new Error(`${subject}Data has no questions`);
         gkQuestionBank = { ...gkQuestionBank, [game]: qs };
         return qs;
@@ -2769,6 +2778,62 @@ function gkQuestionsLanded() {
   if (currentView === 'gk') renderGkHeat();
   // a quiz page: drawn again unless a question is open on it (that would close it)
   if (currentView === 'assignment' && GK_GAMES.includes(currentGame) && !document.getElementById('heatmapDetailPopup')) buildHeatmap(lastHeatmapData);
+  // a student's window that opened before they were read: their question-by-question grid in place of the misses
+  const wrongEl = document.getElementById('detailWrongQs'), waiting = wrongEl && wrongEl.dataset.gkWait;
+  if (waiting && GK_GAMES.includes(currentGame) && document.getElementById('detailPanel').classList.contains('open')) {
+    const student = (dashData[currentGame] || []).find(s => s.name === waiting);
+    const html = student ? gkQuestionByQuestion(student, currentGame) : '';
+    if (html) { wrongEl.innerHTML = html; wrongEl.dataset.gkWait = ''; }
+  }
+}
+
+// 🧒 ONE STUDENT, QUESTION BY QUESTION (Marcos 11/16: "do i have heat maps for each kid?" → "Yes, build it"). In their
+// window, like the reviews' 📝 Question by Question: each finished try (newest first) = a square for every question in
+// order (green right, red missed; hover = the question and their pick), then every question written out — a miss with
+// their pick and the right answer. A square opens the list at its question. Right = every question not on the try's
+// miss list (the hub saves only the misses). Unfinished tries are left out (as on the heat maps).
+function gkQuestionByQuestion(student, game) {
+  const bank = gkQuestionsFor(game);
+  const finished = (student.sessions || []).filter(s => s.status === 'complete');
+  if (!bank.length || !finished.length) return '';
+  const N = bank.length;
+  const blocks = finished.map((sess, i) => {
+    const missed = new Set(parseWrongQuestions(sess.wrongQuestions, {}));
+    const picks  = parsePicks(sess.wrongQuestions);
+    const right  = bank.filter(q => !missed.has(q.id)).length;
+    const pickOf = q => picks[q.id] != null ? picks[q.id] : '(not saved)';
+    const squares = bank.map(q => {
+      const ok = !missed.has(q.id);
+      const tip = `${q.id}: ${q.text}\n${ok ? '✅ right' : `❌ picked: ${pickOf(q)}`}`;
+      return `<button type="button" class="gk-qsq ${ok ? 'ok' : 'miss'}" data-qid="${escHtml(q.id)}" title="${escHtml(tip)}" onclick="gkJumpToRow(this)">${escHtml(q.id.slice(1))}</button>`;
+    }).join('');
+    const rows = bank.map(q => {
+      const ok = !missed.has(q.id);
+      const more = ok ? '' : ` <span class="qbq-pick">— picked: ${escHtml(pickOf(q))}</span>${q.answer ? ` <span class="qbq-answer">· answer: ${escHtml(q.answer)}</span>` : ''}`;
+      return `<div class="qbq-row gk-row ${ok ? 'ok' : 'miss'}" data-qid="${escHtml(q.id)}">
+        <span class="qbq-mark">${ok ? '✅' : '❌'}</span><span class="qbq-id">${escHtml(q.id)}</span>
+        <span class="qbq-text">${escHtml(q.text)}${more}</span></div>`;
+    }).join('');
+    const when = sessionDate(sess), latest = finished.length > 1 && i === finished.length - 1;
+    return `<div class="qbq-attempt" data-try="${i + 1}">
+      <div class="qbq-head">Attempt ${i + 1}${latest ? ' (latest)' : ''} · <b>${right} of ${N} right</b>${when ? ` <span class="qbq-when">${formatSessionDate(when)}</span>` : ''}</div>
+      <div class="gk-qgrid">${squares}</div>
+      <details class="qbq-list" ${i === finished.length - 1 ? 'open' : ''}><summary>Every question (${right} ✅ · ${N - right} ❌)</summary>${rows}</details>
+    </div>`;
+  }).reverse().join('');
+  return `<div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">📝 Question by Question</div>${blocks}`;
+}
+
+// A square → its try's list, opened at that question
+function gkJumpToRow(sq) {
+  const block = sq.closest('.qbq-attempt');
+  const list = block && block.querySelector('details.qbq-list');
+  if (list) list.open = true;
+  const row = block && block.querySelector(`.qbq-row[data-qid="${CSS.escape(sq.dataset.qid)}"]`);
+  if (!row) return;
+  row.classList.add('qbq-flash');
+  setTimeout(() => row.classList.remove('qbq-flash'), 2200);
+  row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function gkHeatOf(game) {
@@ -8665,7 +8730,10 @@ function openDetail(name) {
   // Wrong questions
   const wrongEl = document.getElementById('detailWrongQs');
   // Reviews with a full question list get every question, right and wrong, per finished attempt
-  const byQuestion = renderQuestionByQuestion(student);
+  // (a GK quiz too, once its questions are read — 11/16, gkQuestionByQuestion; until then its misses, and the grid
+  // takes their place when the questions land)
+  const byQuestion = renderQuestionByQuestion(student) || gkQuestionByQuestion(student, currentGame);
+  wrongEl.dataset.gkWait = GK_GAMES.includes(currentGame) && !byQuestion ? student.name : '';
   const allWrong = new Set();
   if (!byQuestion) student.sessions.forEach(s => {
     if (!s.wrongQuestions) return;
