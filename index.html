@@ -9234,7 +9234,8 @@ function openProfile(name, scope) {
           <td style="color:var(--muted);">${w.last && w.last.elapsed != null ? formatTime(w.last.elapsed) : '—'}</td>
           <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       } else {
-        const pct = Math.round((student.bestScore / max) * 100);
+        const sfPop = soFarOf(student, max);   // still working: right so far out of the questions answered (11/18)
+        const pct = sfPop ? sfPop.pct : Math.round((student.bestScore / max) * 100);
         const grade = student.status === 'complete' ? letterGrade(pct) : '—';
         const bestSess = (student.sessions||[]).reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
         const elapsed = bestSess?.elapsed;
@@ -9254,8 +9255,8 @@ function openProfile(name, scope) {
           <td>${own || `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}</td>
           ${top ? `<td class="own-best">${maze ? escHtml(qpsCheckScore({ ...top, game })) : `${Number(top.score) || 0}/${Number(top.total) || 0}`}</td>
           <td style="color:${topColor};font-weight:800;">${topPct == null ? '—' : topPct + '%'}</td>
-          <td style="color:var(--muted);">—</td>` : ownRow ? '<td>—</td><td>—</td><td>—</td>' : `<td>${student.bestScore}/${max}</td>
-          <td style="color:${gradeColor};font-weight:800;">${pct}%</td>
+          <td style="color:var(--muted);">—</td>` : ownRow ? '<td>—</td><td>—</td><td>—</td>' : `<td>${sfPop ? `${sfPop.right}/${sfPop.answered} so far` : `${student.bestScore}/${max}`}</td>
+          <td style="color:${gradeColor};font-weight:800;">${pct}%${sfPop ? ' so far' : ''}</td>
           <td style="color:${gradeColor};font-weight:800;">${grade}</td>`}
           <td style="color:var(--muted);">${elapsed != null ? formatTime(elapsed) : '—'}</td>
           <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
