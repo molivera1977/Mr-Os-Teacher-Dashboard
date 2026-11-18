@@ -9235,6 +9235,7 @@ function openProfile(name, scope) {
           <td style="color:var(--muted);">${(student.sessions||[]).length}</td>`;
       } else {
         const sfPop = soFarOf(student, max);   // still working: right so far out of the questions answered (11/18)
+        const popOn = onQuestion(student);   // "on 20 of 29" under In Progress, as on the results table (11/18)
         const pct = sfPop ? sfPop.pct : Math.round((student.bestScore / max) * 100);
         const grade = student.status === 'complete' ? letterGrade(pct) : '—';
         const bestSess = (student.sessions||[]).reduce((b, s) => s.score > (b?.score || 0) ? s : b, null);
@@ -9252,7 +9253,7 @@ function openProfile(name, scope) {
         const topColor = topPct == null ? 'var(--muted)' : topPct>=90?'var(--green)':topPct>=80?'var(--blue)':topPct>=70?'var(--yellow)':topPct>=60?'var(--orange)':'var(--red)';
         tr.innerHTML = `
           <td>${label}</td>
-          <td>${own || `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}</td>
+          <td>${own || `<span class="status-pill ${student.status}">${statusIcon(student.status)} ${statusLabel(student.status)}</span>`}${popOn ? `<div class="on-question">${popOn}</div>` : ''}</td>
           ${top ? `<td class="own-best">${maze ? escHtml(qpsCheckScore({ ...top, game })) : `${Number(top.score) || 0}/${Number(top.total) || 0}`}</td>
           <td style="color:${topColor};font-weight:800;">${topPct == null ? '—' : topPct + '%'}</td>
           <td style="color:var(--muted);">—</td>` : ownRow ? '<td>—</td><td>—</td><td>—</td>' : `<td>${sfPop ? `${sfPop.right}/${sfPop.answered} so far` : `${student.bestScore}/${max}`}</td>
