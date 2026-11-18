@@ -4975,7 +4975,10 @@ function renderAssignment() {
   const notstarted  = STUDENT_ROSTER.length - complete - inprogress;
   const scores      = studentData.filter(s => s.bestScore > 0).map(s => s.bestScore);
   const avgRaw      = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
-  const avgPct      = scores.length ? Math.round(avgRaw/maxScore*100) : 0;
+  // Class Avg (11/18): each student as their row shows it, so someone partway counts by right so far, not by a part
+  // they haven't finished out of the whole part
+  const shownPcts   = studentData.filter(s => s.bestScore > 0 || soFarOf(s, maxScore)).map(s => shownPct(s, maxScore));
+  const avgPct      = shownPcts.length ? Math.round(shownPcts.reduce((a, b) => a + b, 0) / shownPcts.length) : 0;
   const high        = scores.length ? Math.max(...scores) : 0;
   const highPct     = scores.length ? Math.round(high/maxScore*100) : 0;
   const flagged     = studentData.filter(s => isFlagged(s)).length;
@@ -5003,7 +5006,7 @@ function renderAssignment() {
     <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${inprogress}</div><div class="stat-label">In Progress</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${notstarted}</div><div class="stat-label">Not Started</div></div>
     ${soFar ? `<div class="stat-card" title="${SO_FAR_TIP}"><div class="stat-num">${soFar.hasAvg ? soFar.avgPct + '%' : '—'}</div><div class="stat-label">Class Avg · so far</div></div>`
-            : `<div class="stat-card"><div class="stat-num">${scores.length ? avgPct+'%' : '—'}</div><div class="stat-label">Class Avg</div></div>`}
+            : `<div class="stat-card"><div class="stat-num">${shownPcts.length ? avgPct+'%' : '—'}</div><div class="stat-label">Class Avg</div></div>`}
     <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${scores.length ? highPct+'%' : '—'}</div><div class="stat-label">High Score</div></div>
     <div class="stat-card"><div class="stat-num" style="color:var(--red)">${flagged}</div><div class="stat-label">⚑ Flagged</div></div>
   `;
@@ -5034,7 +5037,8 @@ function renderAssignment() {
         <td colspan="6" style="color:var(--muted);font-size:.8rem;">${earlier ? `<span class="version-earlier">${escHtml(version.was)}: ${escHtml(earlier)}</span>` : '—'}</td>`;
     } else {
       const best     = student.bestScore;
-      const pct      = Math.round((best/maxScore)*100);
+      const sfRow    = soFarOf(student, maxScore);   // still working: right so far out of the questions answered (11/18)
+      const pct      = sfRow ? sfRow.pct : Math.round((best/maxScore)*100);
       const grade    = student.status === 'complete' ? letterGrade(pct) : '—';
       const sessions = student.sessions.length;
       const tabSw    = student.sessions.reduce((t,s) => t + (s.tabSwitches||0), 0);
@@ -5055,10 +5059,10 @@ function renderAssignment() {
         <td>${infp ? `<div class="score-num infp-score">${infpScoreText(infp)}</div>` : step ? `<div class="score-num step-score">${stepScoreText(step, currentGame)}</div>` : `
           <div class="score-bar-wrap">
             <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%"></div></div>
-            <div class="score-num">${best}/${maxScore}</div>
+            <div class="score-num">${sfRow ? `${sfRow.right}/${sfRow.answered} so far` : `${best}/${maxScore}`}</div>
           </div>`}
         </td>
-        ${infp ? `<td class="infp-bests">${infpBestByLevel(infp).join(' · ') || '—'}</td>` : step ? `<td class="infp-bests step-best">${stepBestText(step, currentGame)}</td>` : `<td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${grade}</span></td>`}
+        ${infp ? `<td class="infp-bests">${infpBestByLevel(infp).join(' · ') || '—'}</td>` : step ? `<td class="infp-bests step-best">${stepBestText(step, currentGame)}</td>` : `<td style="font-weight:800;color:${gradeColor};">${pct}% <span style="color:var(--muted);font-size:.75rem;">${sfRow ? 'so far' : grade}</span></td>`}
         <td style="color:var(--muted);white-space:nowrap;" title="Most recent attempt">${formatSessionDate(latestSessionDate(student))}</td>
         <td style="color:var(--muted);">${elapsed!=null?formatTime(elapsed):'—'}</td>
         <td style="color:var(--muted);">${sessions}</td>
@@ -9003,6 +9007,7 @@ function openDetail(name) {
   const maxScore = MAX_SCORES[currentGame] || 100;
   const bestSess = student.sessions.reduce((b,s) => s.score > (b?.score||0) ? s : b, null);
 
+  const sfDetail = soFarOf(student, maxScore);   // still working: right so far (11/18)
   document.getElementById('detailName').textContent = `👤 ${name}`;
 
   // Stats grid
@@ -9010,7 +9015,7 @@ function openDetail(name) {
   document.getElementById('detailGrid').innerHTML = `
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--accent)">${student.bestScore}</div><div class="detail-stat-label">Best Score</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${maxScore}</div><div class="detail-stat-label">Max Possible</div></div>
-    <div class="detail-stat"><div class="detail-stat-num">${Math.round((student.bestScore/maxScore)*100)}%</div><div class="detail-stat-label">Score %</div></div>
+    <div class="detail-stat"><div class="detail-stat-num">${sfDetail ? sfDetail.pct : Math.round((student.bestScore/maxScore)*100)}%</div><div class="detail-stat-label">${sfDetail ? `Right so far (${sfDetail.right} of ${sfDetail.answered})` : 'Score %'}</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Time on Task</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
@@ -9061,7 +9066,8 @@ function openDetail(name) {
   if (student.sessions.length > 1) {
     const rows = student.sessions.map((s, i) => {
       const label   = s.form ? s.form : (i === 0 ? 'Original' : `Attempt ${i + 1}`);
-      const pct     = maxScore > 0 ? Math.round((s.score / maxScore) * 100) : 0;
+      const sfTry   = soFarOfSession(s, maxScore);   // a try still going: right so far (11/18)
+      const pct     = sfTry ? sfTry.pct : maxScore > 0 ? Math.round((s.score / maxScore) * 100) : 0;
       const timeStr = s.elapsed != null ? formatTime(s.elapsed) : '—';
       const dateStr = formatSessionDate(sessionDate(s));
       const done    = s.status === 'complete'
@@ -9071,7 +9077,7 @@ function openDetail(name) {
       return `<tr style="${isRetake ? 'background:var(--inprogress-bg,#fff8e1);' : ''}">
         <td style="padding:7px 10px;font-size:.82rem;font-weight:700;color:var(--text);">${label}</td>
         <td style="padding:7px 10px;font-size:.88rem;font-weight:800;color:var(--accent);">${s.score}/${maxScore}</td>
-        <td style="padding:7px 10px;font-size:.82rem;font-weight:700;">${pct}%</td>
+        <td style="padding:7px 10px;font-size:.82rem;font-weight:700;">${pct}%${sfTry ? ` so far (${sfTry.right} of ${sfTry.answered})` : ''}</td>
         <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);white-space:nowrap;">${dateStr}</td>
         <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);">${timeStr}</td>
         <td style="padding:7px 10px;">${done}</td>
@@ -9383,7 +9389,9 @@ function getSortedRoster(data, maxScore) {
     else if (sortCol === 'status') {
       va = statusOrder[sa?.status ?? 'notstarted'] ?? 2;
       vb = statusOrder[sb?.status ?? 'notstarted'] ?? 2;
-    } else if (sortCol === 'score' || sortCol === 'pct') {
+    } else if (sortCol === 'pct') {   // what the row shows (right so far while working, 11/18)
+      va = sa ? shownPct(sa, maxScore) : -1; vb = sb ? shownPct(sb, maxScore) : -1;
+    } else if (sortCol === 'score') {
       va = sa?.bestScore ?? -1; vb = sb?.bestScore ?? -1;
     } else if (sortCol === 'date') {
       va = latestSessionDate(sa)?.getTime() ?? 0; vb = latestSessionDate(sb)?.getTime() ?? 0;
@@ -9883,6 +9891,27 @@ function onQuestion(student) {
   const q = Number(on.q), of = Number(on.of);
   return Number.isInteger(q) && Number.isInteger(of) && q >= 1 && q <= of ? `on ${q} of ${of}` : '';
 }
+// ── RIGHT SO FAR while a student is still working (Marcos 11/18: "i want my dashboard percentage to be the percent correct
+//    currently not out of the total number of test questions. i want to have an idea how well they are doing on what has already
+//    been answered"). A site sends its In Progress row as each question appears, its log ending "on q of N": q − 1 questions are
+//    answered and the row's score counts just those. Only where every screen is a scored question ("of N" = the part's points):
+//    a Warm-Up's worked examples are screens with no points (live data 11/18: "on 21 of 30" on a 9-point Warm-Up).
+//    null when a row can't say (no "on", nothing answered yet, an odd score, other screens): that student keeps the old
+//    score out of the whole part. A finished student keeps their best out of the whole part.
+function soFarOfSession(s, max) {
+  if (!s || s.status !== 'inprogress') return null;
+  const log = eventsOf(s), on = log[log.length - 1];
+  if (!on || on.e !== 'on' || on.cards || Number(on.of) !== Number(max)) return null;
+  const answered = Number(on.q) - 1, right = Number(s.score) || 0;
+  if (!Number.isInteger(answered) || answered < 1 || right > answered) return null;
+  return { right, answered, pct: Math.round(right / answered * 100) };
+}
+function soFarOf(student, max) {   // the student's newest row, only while they have no finished try (status In Progress)
+  if (!student || student.status !== 'inprogress') return null;
+  const when = s => new Date(s.timestamp).getTime() || 0;
+  return soFarOfSession((student.sessions || []).reduce((b, s) => !b || when(s) >= when(b) ? s : b, null), max);
+}
+const shownPct = (student, max) => { const sf = soFarOf(student, max); return sf ? sf.pct : Math.round(((student && student.bestScore) || 0) / (max || 100) * 100); };
 function statusLabel(s) { return s==='complete'?'Complete':s==='inprogress'?'In Progress':'Not Started'; }
 
 function formatTime(s) {
