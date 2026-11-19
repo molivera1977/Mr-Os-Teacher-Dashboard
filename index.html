@@ -3919,12 +3919,49 @@ function isHomeTime(d) {
     || min < HOME_DAY_START || min >= (HOME_EARLY_DAYS.has(date) ? HOME_EARLY_END : HOME_DAY_END);
 }
 
-// When a session began: its own start time, else the time in its Session ID, else when it was last saved
-function homeStarted(s) {
+// ── A CHROMEBOOK CLOCK HOURS OFF (Marcos 11/18: Thiara's Animal Adaptations Review showed "8:21 AM" here; she worked
+//    9:21–9:47 in class. That day her Chromebook was exactly one hour behind on all three parts; every other row since 11/10
+//    was within 2 minutes). A finished row is sent the moment the student finishes, so the sheet's own time − the device's
+//    finish = the device's error (deviceClockOffset, as the student timeline uses). Home Practice moves a session's start by
+//    that error only when it is a whole number of hours, ± 2 minutes (a wrong time zone): a row that reached the sheet late
+//    for any other reason never moves. A row with no finish yet borrows the same student's nearest finished row within
+//    12 hours (most likely the same Chromebook).
+const CLOCK_HOUR_MS = 3600000, CLOCK_SLACK_MS = 2 * 60000, CLOCK_BORROW_MS = 12 * 3600000;
+function wholeHourClockError(s) {   // null = the row can't say; 0 = the clock was right
+  const off = s ? deviceClockOffset(s) : null;
+  if (off == null) return null;
+  const h = Math.round(off / CLOCK_HOUR_MS);
+  return h !== 0 && Math.abs(h) <= 14 && Math.abs(off - h * CLOCK_HOUR_MS) <= CLOCK_SLACK_MS ? h * CLOCK_HOUR_MS : 0;
+}
+function finishedClockErrors() {   // student → [{ t: the sheet's time, err }] from every finished row
+  const by = new Map();
+  const put = (name, list) => (list || []).forEach(x => {
+    const err = wholeHourClockError(x), t = new Date(x && x.timestamp).getTime();
+    if (err == null || isNaN(t)) return;
+    if (!by.has(name)) by.set(name, []);
+    by.get(name).push({ t, err });
+  });
+  Object.values(dashData).forEach(list => { if (Array.isArray(list)) list.forEach(st => put(st.name, st.sessions)); });
+  Object.values(archivedAttempts).forEach(byName => Object.entries(byName).forEach(([name, list]) => put(name, list)));
+  return by;
+}
+function clockErrorOf(s, name, errors) {
+  const own = wholeHourClockError(s);
+  if (own != null) return own;
+  const t = new Date(s && s.timestamp).getTime();
+  if (isNaN(t)) return 0;
+  let best = null;
+  ((errors && errors.get(name)) || []).forEach(x => { const d = Math.abs(x.t - t); if (d <= CLOCK_BORROW_MS && (!best || d < best.d)) best = { d, err: x.err }; });
+  return best ? best.err : 0;
+}
+
+// When a session began: its own start time, else the time in its Session ID, else when it was last saved. The first two
+// are the Chromebook's clock, so they move by its whole-hour error (err, above); the last is the sheet's own clock.
+function homeStarted(s, err = 0) {
   const a = new Date(s.startedAt || NaN);
-  if (!isNaN(a)) return a;
+  if (!isNaN(a)) return new Date(a.getTime() + err);
   const m = /^[A-Z]+-(\d{13})-/.exec(s.sessionId || '');
-  return m ? new Date(Number(m[1])) : sessionDate(s);
+  return m ? new Date(Number(m[1]) + err) : sessionDate(s);
 }
 
 const homeIsFacts = g => !!FACT_SITES[g] || g === FACT_SECOND;
@@ -3944,10 +3981,11 @@ function homeWhat(g, s) {
 function homeRows() {
   const since = homeRange === 'all' ? 0 : Date.now() - Number(homeRange) * 86400000;
   const out = [];
+  const clockErrs = finishedClockErrors();   // a Chromebook clock hours off (11/18)
   const add = (g, name, sessions, earlier) => {
     if (homeSkipped(g) || !STUDENT_ROSTER.includes(name)) return;
     (sessions || []).forEach(s => {
-      const when = homeStarted(s);
+      const when = homeStarted(s, clockErrorOf(s, name, clockErrs));
       if (!when || isNaN(when) || when.getTime() < since || !isHomeTime(when)) return;
       out.push({ name, game: g, s, when, earlier });
     });
