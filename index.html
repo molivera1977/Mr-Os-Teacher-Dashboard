@@ -3666,16 +3666,25 @@ const factAssignLanded = (rows, sent) => sent.filter(s => (rows || []).some(r =>
 // time ("the one at a time sounds really slow"). A send again keeps its Session ID, so it can't make a second
 // assignment. Returns the last read (null = the tab could not be read).
 const ASSIGN_RESENDS = 3;
+// 11/18 (Marcos: "the assigning was slower today than usual" — at fact time each group of 5 waited 12–34 s on the busy
+// sheet; his "yes" to a count): the same groups of 5, one after another, with how far it is, so a slow sheet never looks
+// stuck. "sent" while sending (no-cors can't see the answer); "saved" only after the tab is read back.
 async function sendUntilSaved(rows, post, load, landed, status) {
-  await post(rows);
-  status.textContent = '⏳ Checking that it saved…';
+  const many = rows.length > 1, total = rows.length;
+  for (let i = 0; i < total; i += 5) {
+    if (many) status.textContent = `⏳ Sending… ${i} of ${total} sent`;
+    await post(rows.slice(i, i + 5));
+  }
+  status.textContent = many ? `⏳ All ${total} sent — checking that they saved…` : '⏳ Checking that it saved…';
   let read = await load();
   for (let n = 1; n <= ASSIGN_RESENDS && read !== null; n++) {
     const missing = rows.filter(r => !landed(read, [r]).length);
     if (!missing.length) break;
-    status.textContent = `⏳ ${missing.length} did not save — sending ${missing.length > 1 ? 'them' : 'it'} again…`;
+    status.textContent = many ? `⏳ ${total - missing.length} of ${total} saved — sending the other ${missing.length} again…`
+      : '⏳ It did not save — sending it again…';
     await new Promise(done => setTimeout(done, 1500 * n));
     await post(missing);
+    status.textContent = many ? `⏳ Checking that they saved…` : '⏳ Checking that it saved…';
     read = await load();
   }
   return read;
