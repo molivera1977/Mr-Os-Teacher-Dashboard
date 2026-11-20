@@ -7739,7 +7739,9 @@ function liveStudent(name, rows, screens, cfg) {
     // A page opened before the 11/9 update logs no answers and sends its first row after question 5; one reloaded since
     // logs only the answers after the reload. The row's own score and misses always count every question, and a miss
     // from before the logging keeps its box, first (it was answered first).
-    const oldMisses = Object.keys(missText).filter(id => !marks.has(id));
+    // a True/False table's miss names each wrong row ("A03.2", Base Ten): its box is the question's ("A03")
+    const ofQ = id => (marks.has(id) ? id : id.replace(/\.\d+$/, ''));
+    const oldMisses = [...new Set(Object.keys(missText).map(ofQ))].filter(id => !marks.has(id));
     const boxes = new Map([...oldMisses.map(id => [id, 'miss']), ...marks]);
     const rowRight = Number(newest.score) || 0;
     const answered = rowRight + [...boxes.values()].filter(m => m === 'miss').length;
@@ -7804,7 +7806,7 @@ function renderRightNow(data) {
     const markLabel = { ok: '✓', ok2: '2nd', miss: '✗' };
     const markTip = { ok: 'right on the first try', ok2: 'right on the second try', miss: 'missed' };
     const rows = people.map(x => {
-      const qText = id => (cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
+      const qText = id => (cfg.textOf ? plainText(cfg.textOf(id, x.missText)) : cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
       const chips = [...x.marks].map(([id, m]) =>
         `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(id)} ${markLabel[m]}</span>`).join('');
       const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => `${escHtml(id)} ${escHtml(qText(id))}`);
@@ -8527,6 +8529,23 @@ SBAC4_LIVE.forEach(cfg => {
   cfg.labels = Object.fromEntries(cfg.group.map(g => [g, cfg.title]));
   cfg.group.forEach(g => { LIVE_LESSONS[g] = cfg; });
 });
+// 📍 Right Now on the math reviews (Marcos 11/20: "is it possible to view the screens of students as they take the review or
+// test" → "Yes, add it" for Module 5, then "Yes, add both" for Module 4 and Base Ten): one panel for all of a unit's parts.
+// The sites send a row at every question ending with { e:'on', q, of } and log each scored answer as { e:'answer', id, ok }
+// (one try). The Warm-Up, the Practice and the Review have four versions (a retry gets new numbers) and the dashboard's
+// question copies are version 1, so a miss uses the row's own words (a True/False table's miss names each wrong row,
+// "A03.2") and a ✓ box's hover names the KIND of question (its skill).
+function addMathLive(cfg) {
+  const skillOf = {};
+  Object.entries(cfg.skills).forEach(([skill, ids]) => ids.forEach(id => { skillOf[id] = skill; }));
+  cfg.textOf = (id, own) => own[id]
+    || Object.keys(own).filter(k => k.startsWith(id + '.')).map(k => own[k]).join(' / ')
+    || skillOf[id] || '';
+  cfg.labels = Object.fromEntries(cfg.group.map(g => [g, cfg.short]));
+  cfg.group.forEach(g => { LIVE_LESSONS[g] = cfg; });
+}
+addMathLive({ group: ['mod4w-warmup', 'mod4-practice', 'mod4b-review', 'mod4t-test', 'mod4u-test'], title: 'Math Module 4', short: 'MM4', skills: MOD4_SKILLS });
+addMathLive({ group: ['nbtw-warmup', 'nbtp-practice', 'nbta-test', 'nbtb-test'], title: 'SBAC Base Ten', short: 'Base Ten', skills: NBT_SKILLS });
 GAME_ORDER.unshift(...INFP_GAMES);
 
 /* WHERE EACH KID IS (Marcos 11/11: "Yes, build it"). An activity climbs Level 1 → 6, and 6 of 8 (70%) on a level opens
@@ -9876,6 +9895,8 @@ function renderChronology(student) {
     // A science lesson's answers carry a try (t), not a question number (11/11: the timeline said "Qundefined (L34)")
     if (ev.e === 'answer' && ev.t != null) look.text = ev.ok ? (Number(ev.t) === 2 ? 'Right on the 2nd try' : 'Right')
                                                               : (Number(ev.t) === 2 ? 'Missed' : 'Missed, one more try');
+    // One try per question (Math Module 5, Inference Practice, the SBAC reviews): no t — say right or missed, not "answer"
+    if (ev.e === 'answer' && ev.t == null && ev.ok != null) look.text = ev.ok ? 'Right' : 'Missed';
     if (ev.e === 'trial') look.text = 'Wrote a push in the table';   // Science 1.1's cart pushes
     const onTask = ev.on != null ? formatTime(ev.on) + ' on task' : '';
     const where  = (ev.e === 'finish' || ev.e === 'start') ? ''
