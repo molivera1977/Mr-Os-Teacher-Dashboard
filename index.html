@@ -7947,11 +7947,11 @@ function liveStudent(name, rows, screens, cfg) {
     const on = last && last.e === 'on' ? last : null;
     const done = newest.status === 'complete';
     const where = done ? `✅ Finished · ${newest.score} of ${newest.total}`
-      : on ? (on.cards ? '📖 Lesson cards' : `Question ${on.q} of ${on.of || total}`)   // on the lesson cards (Inference Practice, 11/11)
+      : on ? (on.cards ? (cfg.cardsLabel || '📖 Lesson cards') : `Question ${on.q} of ${on.of || total}`)   // on the lesson cards (Inference Practice, 11/11; vocab: word cards)
       : answered ? `Question ${Math.min(answered + 1, total || answered + 1)} of ${total}`   // the old page: the one after those answered
       : 'Just started';
     return { ...base, marks: boxes, right: rowRight, answered, unboxed: Math.max(0, answered - boxes.size), where,
-      step: `${cfg.labels[newest.game] || newest.game} · ${String(newest.form || '').replace(/ · .*/, '')}`, waiting: false, done };
+      step: [cfg.labels[newest.game] || newest.game, String(newest.form || '').replace(/ · .*/, '')].filter(Boolean).join(' · '), waiting: false, done };
   }
   const screen = [...events].reverse().find(e => e && e.p);
   const p = screen ? screen.p : '';
@@ -8004,9 +8004,10 @@ function renderRightNow(data) {
     const markTip = { ok: 'right on the first try', ok2: 'right on the second try', miss: 'missed' };
     const rows = people.map(x => {
       const qText = id => (cfg.textOf ? plainText(cfg.textOf(id, x.missText)) : cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
+      const boxName = id => (cfg.chipOf && cfg.chipOf(id)) || id;   // vocab (11/20): the word, not W4101
       const chips = [...x.marks].map(([id, m]) =>
-        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(id)} ${markLabel[m]}</span>`).join('');
-      const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => `${escHtml(id)} ${escHtml(qText(id))}`);
+        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(boxName(id))} ${markLabel[m]}</span>`).join('');
+      const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => (boxName(id) !== id ? `${escHtml(boxName(id))} — ` : `${escHtml(id)} `) + escHtml(qText(id)));
       return `<div class="live-row${x.waiting ? ' waiting' : ''}">
         <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
@@ -8413,6 +8414,24 @@ VOCABP_STORIES.concat(typeof VOCABP_RELEASED !== 'undefined' ? VOCABP_RELEASED :
     games.push(game);
   }));
   if (story.released) VOCABP_OLDER[family] = games; else VOCABP_GAMES.push(...games);
+});
+// 📍 Right Now on Wonders Vocabulary Practice (Marcos 11/20: "Yes, those three" — after "I want this to be standard for all
+// future sites"): one panel per story for all its lists and activities. The site sends a row at every question and at the
+// word cards ({ e:'on', q, of, cards }) and logs every answer { e:'answer', id, ok } (one try). A box is named by its WORD
+// (an id like W4101 means nothing at a glance); its hover and a miss give the question as the dashboard lists it (the
+// questions do not change between tries).
+VOCABP_STORIES.concat(typeof VOCABP_RELEASED !== 'undefined' ? VOCABP_RELEASED : []).forEach(story => {
+  const word = {}, text = {}, labels = {}, group = [];
+  story.lists.forEach(list => VOCABP_KINDS.forEach(k => {
+    if (k.kind === 'cloze' && !list.cloze) return;
+    const game = `vocab-${story.id}-l${list.n}-${k.kind}`;
+    group.push(game);
+    labels[game] = `List ${list.n} · ${k.label}`;
+    vocabpQuestions(story, list, k.kind).forEach(q => { word[q.id] = q.word; text[q.id] = q.q; });
+  }));
+  const cfg = { group, labels, title: `Vocabulary — ${story.title}`, cardsLabel: '📖 Word cards',
+    chipOf: id => word[id], textOf: (id, own) => own[id] || text[id] || '' };
+  group.forEach(g => { LIVE_LESSONS[g] = cfg; });
 });
 // The older stories a student has a score on (a teacher's test run alone does not count), newest first.
 function olderVocabFamilies() {
