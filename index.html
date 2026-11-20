@@ -1001,6 +1001,7 @@ const GAME_ORDER = [
   'talent-review-vocab', 'talent-review-comp', 'talent-review-cloze',
   'energymotion-lesson',
   'nbta-test', 'nbtb-test', 'nbtp-practice', 'nbtw-warmup',
+  'mod5t-test', 'mod5u-test', 'mod5b-review', 'mod5-practice', 'mod5w-warmup',
   'mod4t-test', 'mod4u-test', 'mod4b-review', 'mod4-practice', 'mod4w-warmup',
   'mod3t-test', 'mod3u-test', 'mod3b-review', 'mod3a-review', 'mod3-practice', 'mod3w-warmup', 'mod3z-prewarmup',
   'mod2t-test', 'mod2u-test', 'mod2b-review', 'mod2a-review', 'mod2-practice', 'mod2w-warmup',
@@ -1223,6 +1224,11 @@ const GAME_LABELS = {
   'nbtp-practice': '🌱 SBAC Base Ten — Practice',
   'nbta-test':     '📝 SBAC Base Ten — Test Form A',
   'nbtb-test':     '📝 SBAC Base Ten — Test Form B',
+  'mod5w-warmup': '🔥 MM5 — Warm-Up',          // 11/19: multiply by 1-digit numbers, two-step problems — Module 4's 4 parts
+  'mod5-practice': '🌱 MM5 — Practice',
+  'mod5b-review': '📘 MM5 — Review',
+  'mod5t-test':   '📝 MM5 — Test',
+  'mod5u-test':   '📝 MM5 — Test (Retake)',
   'mod4w-warmup': '🔥 MM4 — Warm-Up',          // 11/13: patterns, estimates, mental math — 4 parts
   'mod4-practice': '🌱 MM4 — Practice',
   'mod4b-review': '📘 MM4 — Review',
@@ -1340,6 +1346,11 @@ const MAX_SCORES = {
   'nbtb-test': 15,
   'nbtp-practice': 15,
   'nbtw-warmup': 15,       // only its 15 questions are scored (the worked examples and the steps are not)
+  'mod5t-test': 15,
+  'mod5u-test': 15,
+  'mod5b-review': 15,
+  'mod5-practice': 15,
+  'mod5w-warmup': 9,       // its 9 scored questions only (its 6 worked examples and 15 steps are not scored)
   'mod4t-test': 16,
   'mod4u-test': 16,
   'mod4b-review': 16,
@@ -4823,6 +4834,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'awoc-test-vocab': 'awoc', 'awoc-test-comp': 'awoc', 'awoc-test-cloze': 'awoc',
   'rliabw-review': 'rliab-review',   // Read Literary Warm Up joins the A/B/C group
   'nbtw-warmup': 'nbt', 'nbtp-practice': 'nbt', 'nbta-test': 'nbt', 'nbtb-test': 'nbt',
+  'mod5w-warmup': 'mod5', 'mod5-practice': 'mod5', 'mod5b-review': 'mod5', 'mod5t-test': 'mod5', 'mod5u-test': 'mod5',
   'mod4w-warmup': 'mod4', 'mod4-practice': 'mod4', 'mod4b-review': 'mod4', 'mod4t-test': 'mod4', 'mod4u-test': 'mod4',
   'mod3z-prewarmup': 'mod3', 'mod3w-warmup': 'mod3', 'mod3-practice': 'mod3', 'mod3a-review': 'mod3', 'mod3b-review': 'mod3', 'mod3t-test': 'mod3', 'mod3u-test': 'mod3',
   'mod2w-warmup': 'mod2', 'mod2-practice': 'mod2', 'mod2a-review': 'mod2', 'mod2b-review': 'mod2', 'mod2t-test': 'mod2', 'mod2u-test': 'mod2',
@@ -4830,6 +4842,7 @@ const FORM_FAMILY_EXTRA = { 'rounding-practice-a': 'rounding', 'rounding-practic
   'mod1a-review': 'mod1', 'mod1b-review': 'mod1', 'mod1c-review': 'mod1', 'mod1a-test': 'mod1', 'mod1b-test': 'mod1', 'mod1c-test': 'mod1' };
 const FORM_FAMILY_LABELS = {
   'nbt':           '🧮 SBAC Base Ten',
+  'mod5':          '🧮 Math Module 5 Review and Test',
   'mod4':          '🧮 Math Module 4 Review and Test',
   'mod3':          '🧮 Math Module 3 Review and Test',
   'mod2':          '🧮 Math Module 2 Review and Test',
@@ -4845,7 +4858,7 @@ const FORM_FAMILY_LABELS = {
   'awoc':          'A World of Change Review and Test',
 };
 // Groups whose members are parts of one assignment (Vocabulary / Comprehension / Cloze), not forms
-const FAMILY_NOUN = { 'aa': ['part', 'parts'], 'nbt': ['part', 'parts'], 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod4': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
+const FAMILY_NOUN = { 'aa': ['part', 'parts'], 'nbt': ['part', 'parts'], 'ds': ['part', 'parts'], 'talent': ['part', 'parts'], 'awoc': ['part', 'parts'], 'mod5': ['part', 'parts'], 'mod4': ['part', 'parts'], 'mod3': ['part', 'parts'], 'mod2': ['part', 'parts'], 'mod1': ['part', 'parts'] };
 function familyNoun(fam, plural) {
   const n = FAMILY_NOUN[fam] || ['form', 'forms'];
   return plural ? n[1] : n[0];
@@ -5672,6 +5685,175 @@ const NBT_SKILL_BANK = {};
 Object.entries(NBT_SKILLS).forEach(([skill, ids]) =>
   ids.forEach(id => { NBT_SKILL_BANK[id] = `(${skill}) ${NBT_QUESTIONS[id]}`; }));
 // ── NBT BANK END ──
+// ── Math Module 5 Review and Test (math-module-5, built 11/19) — multiply by a 1-digit number, two-step problems
+// (4.NBT.5, 4.OA.3). Module 4's four parts (Marcos 11/19): Warm-Up (mod5w-warmup, W01–W30: 6 worked examples
+// "Watch: …", 15 steps "Step: …" (not scored), 9 scored) · Practice (mod5-practice, P01–P15) · Review (mod5b-review,
+// B01–B15) · Test (mod5t-test, T01–T15; retake = mod5u-test, U01–U15). The same 15 kinds of question at the same spots
+// on every part. X01–X15 / Y01–Y15 = "try one like it" after a miss in the Practice / the Review.
+// GENERATED 11/19 FROM math-module-5/data (form_w/p/b/t/u.js, twin_x/y.js, skills.js — the site's tools/gen_m5.js):
+// a worked example = "Watch: " + its title, a step = "Step: " + its question, a question = its question text — the same
+// rule that rebuilds MOD4_QUESTIONS from math-module-4/data exactly. Four versions of W/P/B (a retry gets new numbers);
+// these labels are version 1. MOD5_SKILLS / MOD5_STANDARDS = the site's SKILLS / SKILL_STANDARDS. Rebuild, don't hand-edit.
+const MOD5_QUESTIONS = {
+  W01: "Watch: Base-ten blocks",
+  W02: "Step: Count one group. What number is it?",
+  W03: "Step: There are 3 groups of 224. Which equation?",
+  W04: "What multiplication equation is shown by the base-ten blocks?",
+  W05: "Watch: Area models",
+  W06: "Step: 2 × 14. What goes in the first box? 2 × 10 = ?",
+  W07: "Step: 2 × 4 = ?",
+  W08: "Step: 20 + 8 = ?",
+  W09: "Which multiplication equation is shown by the area model?",
+  W10: "What numbers complete the area model to show 2 × 22?",
+  W11: "Watch: Expanded form",
+  W12: "Step: 2 × 52. Write 52 in expanded form.",
+  W13: "Step: Which shows both parts multiplied by 2?",
+  W14: "Which of these uses expanded form and the Distributive Property to find 2 × 21?",
+  W15: "Watch: Partial products",
+  W16: "Step: 2 × 28. Start with the ones. 2 × 8 = ?",
+  W17: "Step: Now the tens. 2 × 20 = ?",
+  W18: "Step: Add the partial products. 16 + 40 = ?",
+  W19: "Use partial products to find 2 × 12. What are the tens product and the ones product?",
+  W20: "Watch: The short way",
+  W21: "Step: 255 × 3. Start with the ones. 3 × 5 = ?",
+  W22: "Step: 15: write 5. What goes on top?",
+  W23: "Step: Finish the short way. 255 × 3 = ?",
+  W24: "What is the product? 16 × 2 = ?",
+  W25: "What is the product? 116 × 2 = ?",
+  W26: "Watch: Two-step problems",
+  W27: "Step: The field trip has 3 vans. Each van has 2 teachers and 12 students. Step 1: how many on one van?",
+  W28: "Step: Step 2: 3 vans of 14. How many in all?",
+  W29: "The bake sale has 2 trays. There are 2 muffins and 11 cookies on each tray. How many muffins and cookies are there in all?",
+  W30: "Kai has 30 crayons. Each box holds 3 crayons. Kai packed 4 boxes. Part A: Which equation shows how many crayons are left, n?",
+  P01: "Which multiplication equation is shown by the area model?",
+  P02: "What is the product? 22 × 6 = ?",
+  P03: "What is the product? 187 × 3 = ?",
+  P04: "What is the product? 1,589 × 3 = ?",
+  P05: "Which of these uses expanded form and the Distributive Property to find 4 × 25?",
+  P06: "The field trip has 2 vans. There are 9 teachers and 12 students in each van. How many teachers and students are there in all?",
+  P07: "What numbers complete the area model to show 7 × 61?",
+  P08: "Multiply. 6 × 730 = ?",
+  P09: "Use partial products to find 2 × 27. What are the tens product and the ones product?",
+  P10: "Multiply. 6 × 21 = ? tens + ? ones. Which is right?",
+  P11: "What multiplication equation is shown by the base-ten blocks?",
+  P12: "A baker puts out 4 trays of 28 muffins and 3 trays of 11 rolls on the table. How many muffins and rolls are there in all?",
+  P13: "A small tower has 9 red blocks and 8 blue blocks. A big tower has 2 times as many blocks. How many blocks are in the big tower?",
+  P14: "Luis has 55 crayons. Each box holds 6 crayons. Luis packed 5 boxes. Part A: Which equation shows how many crayons are left, n?",
+  P15: "Luis has 55 crayons. Each box holds 6 crayons. Luis packed 5 boxes. Part B: How many crayons are left?",
+  B01: "Which multiplication equation is shown by the area model?",
+  B02: "What is the product? 23 × 8 = ?",
+  B03: "What is the product? 116 × 6 = ?",
+  B04: "What is the product? 1,897 × 3 = ?",
+  B05: "Which of these uses expanded form and the Distributive Property to find 5 × 24?",
+  B06: "The sticker box has 2 packs. There are 6 gold stickers and 19 green stickers in each pack. How many gold stickers and green stickers are there in all?",
+  B07: "What numbers complete the area model to show 8 × 108?",
+  B08: "Multiply. 4 × 3,700 = ?",
+  B09: "Use partial products to find 4 × 18. What are the tens product and the ones product?",
+  B10: "Multiply. 2 × 73 = ? tens + ? ones. Which is right?",
+  B11: "What multiplication equation is shown by the base-ten blocks?",
+  B12: "A library puts out 6 stacks of 18 books and 3 stacks of 21 magazines on the tables. How many books and magazines are there in all?",
+  B13: "A small tower has 7 red blocks and 6 blue blocks. A big tower has 3 times as many blocks. How many blocks are in the big tower?",
+  B14: "Jake has 70 stickers. Each page holds 8 stickers. Jake filled 4 pages. Part A: Which equation shows how many stickers are left, n?",
+  B15: "Jake has 70 stickers. Each page holds 8 stickers. Jake filled 4 pages. Part B: How many stickers are left?",
+  T01: "Which multiplication equation is shown by the area model?",
+  T02: "What is the product? 32 × 7 = ?",
+  T03: "What is the product? 117 × 7 = ?",
+  T04: "What is the product? 1,596 × 4 = ?",
+  T05: "Which of these uses expanded form and the Distributive Property to find 3 × 51?",
+  T06: "The field trip has 3 vans. There are 2 teachers and 16 students in each van. How many teachers and students are there in all?",
+  T07: "What numbers complete the area model to show 9 × 208?",
+  T08: "Multiply. 5 × 6,500 = ?",
+  T09: "Use partial products to find 7 × 15. What are the tens product and the ones product?",
+  T10: "Multiply. 2 × 81 = ? tens + ? ones. Which is right?",
+  T11: "What multiplication equation is shown by the base-ten blocks?",
+  T12: "A library puts out 3 stacks of 11 books and 7 stacks of 22 magazines on the tables. How many books and magazines are there in all?",
+  T13: "Omar reads 10 pages on Monday and 11 pages on Tuesday. Ana reads 2 times as many pages. How many pages does Ana read?",
+  T14: "Ivy has 85 stickers. Each page holds 11 stickers. Ivy filled 5 pages. Part A: Which equation shows how many stickers are left, n?",
+  T15: "Ivy has 85 stickers. Each page holds 11 stickers. Ivy filled 5 pages. Part B: How many stickers are left?",
+  U01: "Which multiplication equation is shown by the area model?",
+  U02: "What is the product? 28 × 8 = ?",
+  U03: "What is the product? 257 × 3 = ?",
+  U04: "What is the product? 1,148 × 6 = ?",
+  U05: "Which of these uses expanded form and the Distributive Property to find 4 × 35?",
+  U06: "The bake sale has 4 trays. There are 2 muffins and 12 cookies on each tray. How many muffins and cookies are there in all?",
+  U07: "What numbers complete the area model to show 8 × 209?",
+  U08: "Multiply. 4 × 7,600 = ?",
+  U09: "Use partial products to find 5 × 25. What are the tens product and the ones product?",
+  U10: "Multiply. 3 × 53 = ? tens + ? ones. Which is right?",
+  U11: "What multiplication equation is shown by the base-ten blocks?",
+  U12: "A library puts out 5 stacks of 26 books and 3 stacks of 19 magazines on the tables. How many books and magazines are there in all?",
+  U13: "A small tower has 6 red blocks and 15 blue blocks. A big tower has 2 times as many blocks. How many blocks are in the big tower?",
+  U14: "Max has 85 markers. Each cup holds 12 markers. Max filled 4 cups. Part A: Which equation shows how many markers are left, n?",
+  U15: "Max has 85 markers. Each cup holds 12 markers. Max filled 4 cups. Part B: How many markers are left?",
+  X01: "Which multiplication equation is shown by the area model?",
+  X02: "What is the product? 38 × 3 = ?",
+  X03: "What is the product? 174 × 3 = ?",
+  X04: "What is the product? 2,268 × 2 = ?",
+  X05: "Which of these uses expanded form and the Distributive Property to find 2 × 46?",
+  X06: "The garden has 2 pots. There are 9 red flowers and 11 yellow flowers in each pot. How many red flowers and yellow flowers are there in all?",
+  X07: "What numbers complete the area model to show 8 × 45?",
+  X08: "Multiply. 9 × 370 = ?",
+  X09: "Use partial products to find 2 × 26. What are the tens product and the ones product?",
+  X10: "Multiply. 2 × 63 = ? tens + ? ones. Which is right?",
+  X11: "What multiplication equation is shown by the base-ten blocks?",
+  X12: "A library puts out 7 stacks of 14 books and 3 stacks of 13 magazines on the tables. How many books and magazines are there in all?",
+  X13: "A small tower has 6 red blocks and 5 blue blocks. A big tower has 3 times as many blocks. How many blocks are in the big tower?",
+  X14: "Eva has 50 eggs. Each carton holds 8 eggs. Eva filled 4 cartons. Part A: Which equation shows how many eggs are left, n?",
+  X15: "Eva has 50 eggs. Each carton holds 8 eggs. Eva filled 4 cartons. Part B: How many eggs are left?",
+  Y01: "Which multiplication equation is shown by the area model?",
+  Y02: "What is the product? 28 × 6 = ?",
+  Y03: "What is the product? 135 × 5 = ?",
+  Y04: "What is the product? 1,834 × 3 = ?",
+  Y05: "Which of these uses expanded form and the Distributive Property to find 2 × 58?",
+  Y06: "The field trip has 2 vans. There are 8 teachers and 16 students in each van. How many teachers and students are there in all?",
+  Y07: "What numbers complete the area model to show 8 × 91?",
+  Y08: "Multiply. 5 × 2,100 = ?",
+  Y09: "Use partial products to find 3 × 24. What are the tens product and the ones product?",
+  Y10: "Multiply. 2 × 72 = ? tens + ? ones. Which is right?",
+  Y11: "What multiplication equation is shown by the base-ten blocks?",
+  Y12: "A library puts out 7 stacks of 15 books and 5 stacks of 12 magazines on the tables. How many books and magazines are there in all?",
+  Y13: "Noah picks 11 apples in the morning and 8 apples after lunch. Ella picks 2 times as many apples. How many apples does Ella pick?",
+  Y14: "Ana has 65 crayons. Each box holds 9 crayons. Ana packed 3 boxes. Part A: Which equation shows how many crayons are left, n?",
+  Y15: "Ana has 65 crayons. Each box holds 9 crayons. Ana packed 3 boxes. Part B: How many crayons are left?",
+};
+const MOD5_SKILLS = {
+  "Base-ten blocks: which equation?": ['W04','P11','B11','T11','U11','X11','Y11'],
+  "Area model: which equation?": ['W09','P01','B01','T01','U01','X01','Y01'],
+  "Area model: find the parts": ['W10','P07','B07','T07','U07','X07','Y07'],
+  "Expanded form and the Distributive Property": ['W14','P05','B05','T05','U05','X05','Y05'],
+  "Partial products: the tens and the ones": ['W19','P09','B09','T09','U09','X09','Y09'],
+  "Multiply a 2-digit number": ['W24','P02','B02','T02','U02','X02','Y02'],
+  "Multiply a 3-digit number": ['W25','P03','B03','T03','U03','X03','Y03'],
+  "Two-step problem: equal groups of two things": ['W29','P06','B06','T06','U06','X06','Y06'],
+  "Which equation shows how many are left?": ['W30','P14','B14','T14','U14','X14','Y14'],
+  "Multiply a 4-digit number": ['P04','B04','T04','U04','X04','Y04'],
+  "Multiply a big number by parts": ['P08','B08','T08','U08','X08','Y08'],
+  "Tens and ones": ['P10','B10','T10','U10','X10','Y10'],
+  "Two-step problem: add two products": ['P12','B12','T12','U12','X12','Y12'],
+  "Two-step problem: add, then multiply": ['P13','B13','T13','U13','X13','Y13'],
+  "How many are left?": ['P15','B15','T15','U15','X15','Y15'],
+};
+const MOD5_STANDARDS = {
+  "Area model: which equation?": '4.NBT.5',
+  "Multiply a 2-digit number": '4.NBT.5',
+  "Multiply a 3-digit number": '4.NBT.5',
+  "Multiply a 4-digit number": '4.NBT.5',
+  "Expanded form and the Distributive Property": '4.NBT.5',
+  "Two-step problem: equal groups of two things": '4.OA.3',
+  "Area model: find the parts": '4.NBT.5',
+  "Multiply a big number by parts": '4.NBT.5',
+  "Partial products: the tens and the ones": '4.NBT.5',
+  "Tens and ones": '4.NBT.5',
+  "Base-ten blocks: which equation?": '4.NBT.5',
+  "Two-step problem: add two products": '4.OA.3',
+  "Two-step problem: add, then multiply": '4.OA.3',
+  "Which equation shows how many are left?": '4.OA.3',
+  "How many are left?": '4.OA.3',
+};
+const MOD5_SKILL_BANK = {};
+Object.entries(MOD5_SKILLS).forEach(([skill, ids]) =>
+  ids.forEach(id => { MOD5_SKILL_BANK[id] = `(${skill}) ${MOD5_QUESTIONS[id]}`; }));
+
 // ── Math Module 4 Review and Test (math-module-4, built 11/13) — patterns, estimates, mental math (4.NBT.5/6).
 // Four parts (Marcos 11/13: "I'm not sure that we need the crazy amounts of levels"): Warm-Up (mod4w-warmup, W01–W30:
 // 6 worked examples "Watch: …", 15 steps "Step: …" (not scored), 9 scored) · Practice (mod4-practice, P01–P16) ·
@@ -7646,6 +7828,12 @@ const SKILL_REPORTS = {
   'nbtp-practice':   { bank: NBT_SKILL_BANK,    form: 'P', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
   'nbta-test':       { bank: NBT_SKILL_BANK,    form: 'A', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
   'nbtb-test':       { bank: NBT_SKILL_BANK,    form: 'B', standards: NBT_STANDARDS,    site: 'sbac-base-ten-iab-review' },
+  // Module 5 (11/19): the same letters as Module 4
+  'mod5t-test':      { bank: MOD5_SKILL_BANK,   form: 'T', standards: MOD5_STANDARDS,   site: 'math-module-5' },
+  'mod5u-test':      { bank: MOD5_SKILL_BANK,   form: 'U', standards: MOD5_STANDARDS,   site: 'math-module-5' },
+  'mod5b-review':    { bank: MOD5_SKILL_BANK,   form: 'B', standards: MOD5_STANDARDS,   site: 'math-module-5' },
+  'mod5-practice':   { bank: MOD5_SKILL_BANK,   form: 'P', standards: MOD5_STANDARDS,   site: 'math-module-5' },
+  'mod5w-warmup':    { bank: MOD5_SKILL_BANK,   form: 'W', standards: MOD5_STANDARDS,   site: 'math-module-5' },
   'mod4t-test':      { bank: MOD4_SKILL_BANK,   form: 'T', standards: MOD4_STANDARDS,   site: 'math-module-4' },
   'mod4u-test':      { bank: MOD4_SKILL_BANK,   form: 'U', standards: MOD4_STANDARDS,   site: 'math-module-4' },
   'mod4b-review':    { bank: MOD4_SKILL_BANK,   form: 'B', standards: MOD4_STANDARDS,   site: 'math-module-4' },
@@ -8555,6 +8743,8 @@ function addMathLive(cfg) {
 }
 addMathLive({ group: ['mod4w-warmup', 'mod4-practice', 'mod4b-review', 'mod4t-test', 'mod4u-test'], title: 'Math Module 4', short: 'MM4', skills: MOD4_SKILLS });
 addMathLive({ group: ['nbtw-warmup', 'nbtp-practice', 'nbta-test', 'nbtb-test'], title: 'SBAC Base Ten', short: 'Base Ten', skills: NBT_SKILLS });
+// Module 5 (11/20): goes live WITH the Module 5 lines above (MOD5_SKILLS) — never before them
+addMathLive({ group: ['mod5w-warmup', 'mod5-practice', 'mod5b-review', 'mod5t-test', 'mod5u-test'], title: 'Math Module 5', short: 'MM5', skills: MOD5_SKILLS });
 GAME_ORDER.unshift(...INFP_GAMES);
 
 /* WHERE EACH KID IS (Marcos 11/11: "Yes, build it"). An activity climbs Level 1 → 6, and 6 of 8 (70%) on a level opens
@@ -9531,6 +9721,11 @@ function getQuestionText(id) {
     'nbtb-test': NBT_QUESTIONS,
     'nbtp-practice': NBT_QUESTIONS,
     'nbtw-warmup': NBT_QUESTIONS,
+    'mod5t-test': MOD5_QUESTIONS,
+    'mod5u-test': MOD5_QUESTIONS,
+    'mod5b-review': MOD5_QUESTIONS,
+    'mod5-practice': MOD5_QUESTIONS,
+    'mod5w-warmup': MOD5_QUESTIONS,
     'mod4t-test': MOD4_QUESTIONS,
     'mod4u-test': MOD4_QUESTIONS,
     'mod4b-review': MOD4_QUESTIONS,
@@ -9605,6 +9800,7 @@ const UNIT_GATES = [
   // SBAC IAB Base Ten (11/14): no Review — 70% on the Practice opens Test Form A; Test Form B opens once Form A is finished.
   // eachTest: the two forms are two things to take (📋 Who Owes What lists each), not a test and its retake.
   { warmUp: 'nbtw-warmup', practiceA: 'nbtp-practice', tests: ['nbta-test', 'nbtb-test'], cutoff: 70, eachTest: true },
+  { warmUp: 'mod5w-warmup', practiceA: 'mod5-practice', review: 'mod5b-review', tests: ['mod5t-test', 'mod5u-test'], cutoff: 70 },   // Module 4's 4 parts: no Practice B (11/19)
   { warmUp: 'mod4w-warmup', practiceA: 'mod4-practice', review: 'mod4b-review', tests: ['mod4t-test', 'mod4u-test'], cutoff: 70 },   // 4 parts: no Practice B (11/13)
   { preWarmUp: 'mod3z-prewarmup', warmUp: 'mod3w-warmup', practiceA: 'mod3-practice', practiceB: 'mod3a-review', review: 'mod3b-review', tests: ['mod3t-test', 'mod3u-test'], cutoff: 70 },
   { warmUp: 'mod2w-warmup', practiceA: 'mod2-practice', practiceB: 'mod2a-review', review: 'mod2b-review', tests: ['mod2t-test', 'mod2u-test'], cutoff: 70 },
