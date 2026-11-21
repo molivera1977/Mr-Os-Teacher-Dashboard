@@ -8804,6 +8804,23 @@ const FACTS_LIVE = { facts: true, group: ['facts-review', 'facts-addsub', 'facts
   labels: { ...FACT_SITES, 'facts-second': FACT_SECOND_LABEL }, legend: '✓ / ✗ = the latest answer to that fact',
   eventsOf: sess => { try { const e = JSON.parse((sess && sess.events) || '{}'); return Array.isArray(e && e.log) ? e.log : []; } catch (x) { return []; } } };
 FACTS_LIVE.group.forEach(g => { LIVE_LESSONS[g] = FACTS_LIVE; });
+// 📍 Right Now on a reading unit's review + test (Marcos 11/20: "Yes, add it" — the review/test every new unit is copied
+// from). One panel for the unit's six parts: "Review · Comprehension", "Question 5 of 20", a box per question. The two sites
+// share question ids (the test reuses the review's), so a box's words come from its own row's site: the review changes its
+// questions between tries (Set 1, Set 2), so its ✓ box names the skill; the test has one set, so its ✓ box names the
+// question; a miss always uses the row's own words. A new unit: one more addReadingUnitLive line with its own lists.
+function addReadingUnitLive({ title, review, test }) {
+  const SECTION = { vocab: 'Vocabulary', comp: 'Comprehension', cloze: 'Cloze' };
+  const group = [], labels = {};
+  [['Review', review], ['Test', test]].forEach(([part, side]) =>
+    Object.entries(side.games).forEach(([sec, g]) => { group.push(g); labels[g] = `${part} · ${SECTION[sec]}`; }));
+  const testGames = new Set(Object.values(test.games));
+  const cfg = { group, labels, title, textOf: (id, own, game) => own[id] || (testGames.has(game) ? test.questions[id] : review.skills[id]) || '' };
+  group.forEach(g => { LIVE_LESSONS[g] = cfg; });
+}
+addReadingUnitLive({ title: 'Animal Adaptations',
+  review: { games: { vocab: 'aa-review-vocab', comp: 'aa-review-comp', cloze: 'aa-review-cloze' }, skills: AA_REVIEW_SKILLS_BY_ID },
+  test:   { games: { vocab: 'aa-test-vocab', comp: 'aa-test-comp', cloze: 'aa-test-cloze' }, questions: AA_TEST_QUESTIONS } });
 GAME_ORDER.unshift(...INFP_GAMES);
 
 /* WHERE EACH KID IS (Marcos 11/11: "Yes, build it"). An activity climbs Level 1 → 6, and 6 of 8 (70%) on a level opens
