@@ -8965,6 +8965,13 @@ POSHQ_PARTS.forEach(p => p.stages.forEach(st => {
   POSHQ_GAMES.push(game);
 }));
 GAME_ORDER.unshift(...POSHQ_GAMES);
+// 📍 Right Now on Parts of Speech HQ (Marcos 11/21: "Yes, add it"): one panel for its five parts × Learn · Practice · Review.
+// The site sends a row at every question and on the lesson cards, with every answer. Every version has its own ids, so a
+// box's words are the dashboard's copy of that very question; a miss in the row's own words. "1. Nouns · Review".
+const POSHQ_LIVE = { group: POSHQ_GAMES.slice(), title: 'Parts of Speech HQ',
+  labels: Object.fromEntries(POSHQ_PARTS.flatMap(p => p.stages.map(st => [`pos-${p.key}-${st.key}`, `${p.n}. ${p.label}`]))),
+  textOf: (id, own, game) => own[id] || (POSHQ_QUESTION_BANKS[game] || {})[id] || '' };
+POSHQ_GAMES.forEach(g => { LIVE_LESSONS[g] = POSHQ_LIVE; });
 // Its stages by pass mark (11/11, see GATED STEPS): a Learn and a Practice are passed by finishing them, a Review at 75%
 // (the site's data/pos.js POS_STAGES pass; dashboard-steps-pos.spec.js compares them)
 const POSHQ_PASS = { learn: 0, practice: 0, review: 75 };
