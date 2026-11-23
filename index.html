@@ -116,6 +116,26 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .live-chip.ok2{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
 .live-chip.miss{background:var(--flagged);color:var(--flagged-text);border-color:var(--flagged-border);}
 .live-missed{font-size:.75rem;font-weight:700;color:var(--flagged-text);margin-top:5px;line-height:1.45;}
+/* 📍 Right Now, like Mrs. Wright's Class Scores (11/23): a box is a button; its question opens under the student */
+button.live-chip{font-family:inherit;cursor:pointer;line-height:1.35;}
+button.live-chip:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
+.live-chip.open{box-shadow:0 0 0 2px var(--text);}
+.live-chip.worked{border-style:dashed;}
+.live-pct{display:inline-block;margin-left:5px;padding:0 7px;border-radius:10px;font-size:.72rem;font-weight:800;border:1px solid;}
+.live-pct.p-hi{background:var(--complete);color:var(--complete-text);border-color:var(--complete-border);}
+.live-pct.p-mid{background:var(--inprogress);color:var(--inprogress-text);border-color:var(--inprogress-border);}
+.live-pct.p-low{background:var(--retry);color:var(--retry-text);border-color:var(--retry-border);}
+.live-pct.p-bad{background:var(--flagged);color:var(--flagged-text);border-color:var(--flagged-border);}
+.live-box{margin-top:6px;padding:8px 10px;border:2px solid var(--border);border-radius:10px;background:var(--surface);font-size:.8rem;font-weight:700;line-height:1.45;color:var(--text);}
+.live-box .lb-head{font-weight:800;margin-bottom:2px;}
+.live-box .lb-q{margin-top:3px;}
+.lb-pick{color:var(--flagged-text);}
+.lb-right{color:var(--complete-text);}
+.live-box .lb-note{color:var(--muted);font-size:.74rem;margin-top:3px;}
+.live-missed-title{font-weight:800;}
+.live-missed ul{margin:2px 0 0;padding-left:18px;}
+.live-missed li{margin:2px 0;}
+.live-missed .lm-row{display:block;}
 @media (max-width:700px){.live-row{grid-template-columns:1fr;}}
 .flag-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:800;background:var(--flagged);color:var(--flagged-text);border:1px solid var(--flagged-border);margin-left:6px;}
 .score-bar-wrap{display:flex;align-items:center;gap:8px;}
@@ -7941,6 +7961,19 @@ function loadLiveScreens(site) {
 const plainText = html => { const d = document.createElement('div'); d.innerHTML = String(html || ''); return (d.textContent || '').trim(); };
 
 // One student's newest row today, from any game in the panel (a science lesson is one game; Inference Practice is eight).
+/* A row's saved misses, each { id, text, pick, right } (11/23, 🔎 for a tapped box and the missed list):
+   "[A12.2] (Skill) the words (picked: True) (right: False)" — "(right: …)" only where the site saves it (Mrs. Wright's
+   copy does since 11/18); a fact game's "7 × 9 (56)" = the fact and what they typed. */
+function liveMissEntries(wrongQuestions, facts) {
+  return String(wrongQuestions || '').split(' | ').map(t => t.trim()).filter(Boolean).map(t => {
+    if (facts) {
+      const f = /^(.*?)\s*\(([^()]*)\)$/.exec(t);
+      return f ? { id: f[1].trim(), text: f[1].trim(), pick: f[2].trim(), right: '' } : { id: t, text: t, pick: '', right: '' };
+    }
+    const m = /^\[([^\]]+)\]\s*(?:\([^)]*\)\s*)?(.*?)(?:\s*\(picked: (.*?)\))?(?:\s*\(right: (.*)\))?$/.exec(t);
+    return m ? { id: m[1], text: m[2], pick: m[3] || '', right: m[4] || '' } : null;
+  }).filter(Boolean);
+}
 function liveStudent(name, rows, screens, cfg) {
   const when = x => new Date(x.timestamp).getTime() || 0;
   const newest = rows.reduce((b, x) => (!b || when(x) >= when(b) ? x : b), null);
@@ -7954,14 +7987,13 @@ function liveStudent(name, rows, screens, cfg) {
     else if (e.ok) marks.set(e.id, was === 'ok' ? 'ok' : 'ok2');
     else if (!was) marks.set(e.id, 'miss');
   });
-  // the row's own miss text names the real question (Inference Practice: at the student's level)
+  // the row's own miss text names the real question (Inference Practice: at the student's level); what they picked and,
+  // when the site saved it, the right answer ride along for 🔎 a tapped box and the missed list (11/23)
+  const misses = liveMissEntries(newest.wrongQuestions, cfg.facts);
   const missText = {};
-  String(newest.wrongQuestions || '').split(' | ').forEach(t => {
-    const m = /^\[([^\]]+)\]\s*(?:\([^)]*\)\s*)?(.*?)(?:\s*\(picked: .*\))?$/.exec(t.trim());
-    if (m) missText[m[1]] = m[2];
-  });
+  misses.forEach(m => { missText[m.id] = m.text; });
   const right = [...marks.values()].filter(m => m !== 'miss').length;
-  const base = { name, marks, right, answered: marks.size, unboxed: 0, at: when(newest), missText, game: newest.game };
+  const base = { name, marks, right, answered: marks.size, unboxed: 0, at: when(newest), missText, misses, worked: new Set(), game: newest.game };
   if (cfg.facts) {   // 📍 fact practice (11/20): no set length, the same fact again and again — a box per FACT, its latest answer
     const boxes = new Map();   // first-seen order; Map.set on a fact already there keeps its place and takes the newest answer
     cfg.eventsOf(newest).forEach(e => { if (e && e.e === 'answer' && e.id) boxes.set(e.id, e.ok ? 'ok' : 'miss'); });
@@ -7977,9 +8009,21 @@ function liveStudent(name, rows, screens, cfg) {
     // a True/False table's miss names each wrong row ("A03.2", Base Ten): its box is the question's ("A03")
     const ofQ = id => (marks.has(id) ? id : id.replace(/\.\d+$/, ''));
     const oldMisses = [...new Set(Object.keys(missText).map(ofQ))].filter(id => !marks.has(id));
-    const boxes = new Map([...oldMisses.map(id => [id, 'miss']), ...marks]);
+    let boxes = new Map([...oldMisses.map(id => [id, 'miss']), ...marks]);
     const rowRight = Number(newest.score) || 0;
     const answered = rowRight + [...boxes.values()].filter(m => m === 'miss').length;
+    // 🟩 WORKED OUT (11/23, Mrs. Wright's Class Scores): answers with no box (a page with no answer log) on a part that asks
+    // its scored questions in order (LIVE_IN_ORDER): the first `answered` were answered, and each one not missed was right.
+    // Only when every box already there falls inside them; a test (shuffled) never.
+    const order = LIVE_IN_ORDER[newest.game];
+    const worked = new Set();
+    if (order && answered > boxes.size && answered <= order.length) {
+      const first = order.slice(0, answered);
+      if ([...boxes.keys()].every(id => first.includes(id))) {
+        first.forEach(id => { if (!boxes.has(id)) worked.add(id); });
+        boxes = new Map(first.map(id => [id, boxes.get(id) || 'ok']));
+      }
+    }
     const total = Number(newest.total) || 0;
     const last = events[events.length - 1];
     const on = last && last.e === 'on' ? last : null;
@@ -7988,7 +8032,7 @@ function liveStudent(name, rows, screens, cfg) {
       : on ? (on.cards ? (cfg.cardsLabel || '📖 Lesson cards') : `Question ${on.q} of ${on.of || total}`)   // on the lesson cards (Inference Practice, 11/11; vocab: word cards)
       : answered ? `Question ${Math.min(answered + 1, total || answered + 1)} of ${total}`   // the old page: the one after those answered
       : 'Just started';
-    return { ...base, marks: boxes, right: rowRight, answered, unboxed: Math.max(0, answered - boxes.size), where,
+    return { ...base, marks: boxes, worked, right: rowRight, answered, unboxed: Math.max(0, answered - boxes.size), where,
       step: [cfg.labels[newest.game] || newest.game, String(newest.form || '').replace(/ · .*/, '')].filter(Boolean).join(' · '), waiting: false, done };
   }
   const screen = [...events].reverse().find(e => e && e.p);
@@ -8013,6 +8057,18 @@ function liveDetail(events, p) {
 }
 
 let liveToken = 0;
+// 🔎 TAP A BOX (11/23, Mrs. Wright's Class Scores): the open box per panel ({ name, id } by its body's id) and the panel's
+// last drawing, so a tap draws it again; the 30 s update keeps the box open (by name and question).
+const liveOpen = {};
+const liveLast = {};
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.live-chip[data-live-id]');
+  if (!b) return;
+  const key = b.dataset.liveBody, cur = liveOpen[key];
+  liveOpen[key] = cur && cur.name === b.dataset.liveName && cur.id === b.dataset.liveId ? null : { name: b.dataset.liveName, id: b.dataset.liveId };
+  const last = liveLast[key];
+  if (last) renderRightNow(last.data, last.at);
+});
 // `at`: where it draws — the assignment page's panel, or the 🧮 Fact Fluency tab's (11/20: its games have no assignment page)
 const LIVE_AT_ASSIGNMENT = { wrap: 'liveWrap', subtitle: 'liveSubtitle', body: 'liveBody', auto: 'liveAuto', game: () => currentGame };
 function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
@@ -8045,27 +8101,69 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
     const clock = t => new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const markLabel = { ok: '✓', ok2: '2nd', miss: '✗' };
     const markTip = { ok: 'right on the first try', ok2: 'right on the second try', miss: 'missed' };
+    const markSays = { ok: '✓ right', ok2: '✓ right on the second try', miss: '✗ missed' };
+    liveLast[at.body] = { data, at };
+    const open = liveOpen[at.body];
+    const pickWord = cfg.facts ? 'typed' : 'picked';
     const rows = people.map(x => {
       const qText = id => (cfg.textOf ? plainText(cfg.textOf(id, x.missText, x.game)) : cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
       const boxName = id => (cfg.chipOf && cfg.chipOf(id)) || id;   // vocab (11/20): the word, not W4101
+      // 🔎 (11/23, like Mrs. Wright's Class Scores): a box's saved misses — a True/False table's wrong rows ("A12.2") under
+      // its question; a fact, its latest miss. Each: the words, what they picked, the right answer when it is known.
+      const missesOf = id => {
+        const own = x.misses.filter(m => m.id === id || m.id.startsWith(id + '.'));
+        return cfg.facts ? own.slice(-1) : own;
+      };
+      const rightOf = (id, m) => m.right || (cfg.answerOf ? String(cfg.answerOf(id, x.game) || '') : '');
+      const qOf = id => (qText(id) !== id && qText(id) !== boxName(id) ? qText(id) : '');   // words beyond the box's own name
+      // one saved miss: "Row 2: " (a table's row) + its words · ✗ what they picked · ✓ the right answer
+      // (the 4th-grade SBAC reviews, cfg.questions: the question as it reads NOW — their wording changed after October's tries)
+      const labelOf = (id, m) => (m.id !== id ? `Row ${m.id.slice(id.length + 1)}: ` : '')
+        + (cfg.questions && m.id === id ? qOf(id) : m.text && m.text !== boxName(id) ? m.text : m.id === id ? qOf(id) : '');
+      const pickRight = (id, m) => [m.pick ? `<span class="lb-pick">✗ ${pickWord} ${escHtml(m.pick)}</span>` : '',
+        rightOf(id, m) ? `<span class="lb-right">✓ right ${escHtml(rightOf(id, m))}</span>` : ''].filter(Boolean).join(' · ');
+      const isOpen = id => !!open && open.name === x.name && open.id === id;
       const chips = [...x.marks].map(([id, m]) =>
-        `<span class="live-chip ${m}" title="${escHtml(`${id} · ${markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(boxName(id))} ${markLabel[m]}</span>`).join('');
-      const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => (boxName(id) !== id ? `${escHtml(boxName(id))} — ${escHtml(qText(id))}`
-        : qText(id) === id ? escHtml(id) : `${escHtml(id)} ${escHtml(qText(id))}`));
+        `<button type="button" class="live-chip ${m}${x.worked.has(id) ? ' worked' : ''}${isOpen(id) ? ' open' : ''}" data-live-body="${escHtml(at.body)}" data-live-name="${escHtml(x.name)}" data-live-id="${escHtml(id)}" aria-expanded="${isOpen(id)}" title="${escHtml(`${id} · ${x.worked.has(id) ? 'right (worked out)' : markTip[m]}${qText(id) !== id ? ' · ' + qText(id) : ''}`)}">${escHtml(boxName(id))} ${markLabel[m]}</button>`).join('');
+      const openId = [...x.marks.keys()].find(isOpen);
+      let box = '';
+      if (openId) {
+        const m = x.marks.get(openId);
+        const own = m === 'miss' ? missesOf(openId) : [];
+        const lines = own.length
+          ? own.map(e => `${labelOf(openId, e) ? `<div class="lb-q">${escHtml(labelOf(openId, e))}</div>` : ''}${pickRight(openId, e) ? `<div>${pickRight(openId, e)}</div>` : ''}`).join('')
+          : qOf(openId) ? `<div class="lb-q">${escHtml(qOf(openId))}</div>` : '';
+        const note = x.worked.has(openId) ? `<div class="lb-note">Worked out from the score: the ${escHtml(String(x.step || '').split(' · ').pop() || 'part')} asks its questions in order, and ${escHtml(boxName(openId))} was not missed.</div>`
+          : m === 'miss' && !own.some(e => e.pick) ? '<div class="lb-note">What they picked was not saved.</div>' : '';
+        box = `<div class="live-box"><div class="lb-head">${escHtml(boxName(openId))} · ${markSays[m]}</div>${lines}${note}</div>`;
+      }
+      // MISSED SO FAR, one question a line (11/23): ✗ what they picked · ✓ the right answer; a table: a line per wrong row
+      const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => {
+        const own = missesOf(id);
+        const plain = boxName(id) !== id ? `${escHtml(boxName(id))} — ${escHtml(qText(id))}` : qText(id) === id ? escHtml(id) : `${escHtml(id)} ${escHtml(qText(id))}`;
+        if (!own.length) return plain;
+        const one = e => [escHtml(labelOf(id, e)), pickRight(id, e)].filter(Boolean).join(' — ');
+        const sep = boxName(id) !== id ? ' — ' : ' ';   // vocab: "adaptation — Which one shows adaptation?" (as before)
+        if (own.length > 1) return `${escHtml(boxName(id))}${sep}${own.map(e => `<span class="lm-row">${one(e)}</span>`).join('')}`;
+        return labelOf(id, own[0]) ? `${escHtml(boxName(id))}${sep}${one(own[0])}` : [escHtml(boxName(id)), pickRight(id, own[0])].filter(Boolean).join(' — ');
+      });
+      const pct = x.answered ? Math.round((x.right / x.answered) * 100) : null;
+      const pctCls = pct >= 80 ? 'p-hi' : pct >= 60 ? 'p-mid' : pct >= 40 ? 'p-low' : 'p-bad';
       return `<div class="live-row${x.waiting ? ' waiting' : ''}">
         <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
           ${x.detail ? `<small class="live-detail">${escHtml(x.detail)}</small>` : ''}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
-          <small>${x.right} of ${x.answered} right</small></div>
+          <small>${x.right} of ${x.answered} right${x.done ? '' : ' so far'}${pct == null ? '' : `<span class="live-pct ${pctCls}">${pct}%</span>`}</small></div>
         <div><div class="live-chips">${chips || (x.unboxed || x.answered ? '' : '<span class="live-when">no questions answered yet</span>')}${x.unboxed ? `<span class="live-when live-unboxed">+${x.unboxed} right on the older page (no box)</span>` : ''}</div>
-          ${missed.length ? `<div class="live-missed">Missed: ${missed.join(' · ')}</div>` : ''}</div>
+          ${box}
+          ${missed.length ? `<div class="live-missed"><div class="live-missed-title">Missed so far</div><ul>${missed.map(l => `<li>${l}</li>`).join('')}</ul></div>` : ''}</div>
       </div>`;
     }).join('');
     document.getElementById(at.body).innerHTML = `
       <div class="live-head">
         <label><input type="checkbox" id="${at.auto}" ${autoOn ? 'checked' : ''} onchange="setLiveAuto(this.checked)"/> Keep this up to date (every 30 s)</label>
-        <span>${cfg.legend || `✓ right${cfg.group ? '' : ' · 2nd = right on the second try'} · ✗ missed · hover a box for the question`}</span>
+        <span>${cfg.legend || `✓ right${cfg.group ? '' : ' · 2nd = right on the second try'} · ✗ missed${people.some(x => x.worked.size) ? ' · dashed ✓ = worked out from the score' : ''} · tap a box for the question`}</span>
       </div>${rows}`;
     wrap.style.display = 'block';
   });
@@ -8806,6 +8904,18 @@ function addMathLive(cfg) {
 }
 addMathLive({ group: ['mod4w-warmup', 'mod4-practice', 'mod4b-review', 'mod4t-test', 'mod4u-test'], title: 'Math Module 4', short: 'MM4', skills: MOD4_SKILLS });
 addMathLive({ group: ['nbtw-warmup', 'nbtp-practice', 'nbta-test', 'nbtb-test'], title: 'SBAC Base Ten', short: 'Base Ten', skills: NBT_SKILLS });
+// 🟩 WORKED OUT (11/23, Mrs. Wright's Class Scores): the Warm-Up and the Practice ask their scored questions in THIS order on
+// every version (the sites' keepsOrder; a step or a "try one like it" is not scored), so a row with no answer log shows its
+// first (score + misses) questions, each one not missed a ✓. The tests shuffle: not listed. Checked against each site's own
+// files by site-tests dashboard-right-now-tap.spec.js — a new Warm-Up or Practice question means a new list here.
+const LIVE_IN_ORDER = Object.fromEntries(Object.entries({
+  'nbtw-warmup':   'W03 W04 W07 W08 W11 W12 W15 W16 W19 W22 W25 W26 W29 W30 W33',
+  'nbtp-practice': 'P01 P02 P03 P04 P05 P06 P07 P08 P09 P10 P11 P12 P13 P14 P15',
+  'mod4w-warmup':  'W05 W06 W10 W11 W12 W17 W21 W29 W30',
+  'mod4-practice': 'P01 P02 P03 P04 P05 P06 P07 P08 P09 P10 P11 P12 P13 P14 P15 P16',
+  'mod5w-warmup':  'W04 W09 W10 W14 W19 W24 W25 W29 W30',
+  'mod5-practice': 'P01 P02 P03 P04 P05 P06 P07 P08 P09 P10 P11 P12 P13 P14 P15',
+}).map(([g, ids]) => [g, ids.split(' ')]));
 // Module 5 (11/20): goes live WITH the Module 5 lines above (MOD5_SKILLS) — never before them
 addMathLive({ group: ['mod5w-warmup', 'mod5-practice', 'mod5b-review', 'mod5t-test', 'mod5u-test'], title: 'Math Module 5', short: 'MM5', skills: MOD5_SKILLS });
 // 📍 Right Now on the General Knowledge hub (Marcos 11/20: "Yes, those three"): one panel for its four quizzes. The hub
@@ -8814,7 +8924,8 @@ addMathLive({ group: ['mod5w-warmup', 'mod5-practice', 'mod5b-review', 'mod5t-te
 // file (gkQuestionsFor reads it; until it lands a box shows its id).
 const GK_LIVE = { group: GK_GAMES.slice(), title: 'General Knowledge', ready: () => Promise.all(GK_GAMES.map(loadGkQuestions)),
   labels: Object.fromEntries(GK_GAMES.map(g => [g, 'General Knowledge'])),
-  textOf: (id, own, game) => own[id] || ((gkQuestionsFor(game) || []).find(q => q.id === id) || {}).text || '' };
+  textOf: (id, own, game) => own[id] || ((gkQuestionsFor(game) || []).find(q => q.id === id) || {}).text || '',
+  answerOf: (id, game) => ((gkQuestionsFor(game) || []).find(q => q.id === id) || {}).answer || '' };   // 🔎 the hub's own file (11/23)
 GK_GAMES.forEach(g => { LIVE_LESSONS[g] = GK_LIVE; });
 // 📍 Right Now on Math Fact Review (Marcos 11/20: "Yes, those three"), on the 🧮 Fact Fluency tab: one panel for the fact
 // games. Practice has no set length and the same fact comes again, so a box is a FACT with its latest answer and the place
@@ -8822,7 +8933,15 @@ GK_GAMES.forEach(g => { LIVE_LESSONS[g] = GK_LIVE; });
 // fact time, 11/18); its events stay { v:1, facts } (🔁 Second Chance reads them) with a log of answers added.
 const FACTS_LIVE = { facts: true, group: ['facts-review', 'facts-addsub', 'facts-tens', 'facts-second'], title: 'Math Fact Review',
   labels: { ...FACT_SITES, 'facts-second': FACT_SECOND_LABEL }, legend: '✓ / ✗ = the latest answer to that fact',
-  eventsOf: sess => { try { const e = JSON.parse((sess && sess.events) || '{}'); return Array.isArray(e && e.log) ? e.log : []; } catch (x) { return []; } } };
+  eventsOf: sess => { try { const e = JSON.parse((sess && sess.events) || '{}'); return Array.isArray(e && e.log) ? e.log : []; } catch (x) { return []; } },
+  // 🔎 a fact's right answer, worked out from the fact itself (11/23): "7 × 9" → 63
+  answerOf: id => {
+    const m = /^(\d+)\s*([×x*÷/+−-])\s*(\d+)$/.exec(String(id).trim());
+    if (!m) return '';
+    const a = Number(m[1]), b = Number(m[3]);
+    const v = { '×': a * b, x: a * b, '*': a * b, '÷': b ? a / b : NaN, '/': b ? a / b : NaN, '+': a + b, '−': a - b, '-': a - b }[m[2]];
+    return Number.isFinite(v) ? String(v) : '';
+  } };
 FACTS_LIVE.group.forEach(g => { LIVE_LESSONS[g] = FACTS_LIVE; });
 // 📍 Right Now on a reading unit's review + test (Marcos 11/20: "Yes, add it" — the review/test every new unit is copied
 // from). One panel for the unit's six parts: "Review · Comprehension", "Question 5 of 20", a box per question. The two sites
