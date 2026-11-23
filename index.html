@@ -9290,8 +9290,8 @@ function parseWrongQuestions(str, questionTexts) {
       // EBSR miss is dropped and the heatmap shows those parts as correct.
       const m = e.match(/^\[([A-Z]\d+(?:\.[0-9A-Z])?)\]\s*(.*)/);
       if (!m) return null;
-      // GK entries end with the student's pick — keep only the question text
-      if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2].replace(/\s*\(picked: .*\)$/, '');
+      // GK entries end with the student's pick (Base Ten, 11/23: then the right answer) — keep only the question text
+      if (!questionTexts[m[1]]) questionTexts[m[1]] = m[2].replace(/\s*\((?:picked|right): .*\)$/, '');
       return m[1];
     }).filter(Boolean);
   }
@@ -9299,12 +9299,13 @@ function parseWrongQuestions(str, questionTexts) {
 }
 
 // The answer a student chose on each missed question, when the review saved it:
-// "[B06] (Skill) question (picked: their answer)" → { B06: 'their answer' }.
+// "[B06] (Skill) question (picked: their answer)" → { B06: 'their answer' }. A site that also saves the right answer
+// (Base Ten, 11/23: "… (picked: 7) (right: 9)") still gives just the pick.
 // Attempts saved before picks were recorded simply have no entry.
 function parsePicks(str) {
   const picks = {};
   String(str || '').replace(/^\[⚠️ FAST:[^\]]*\]\s*/, '').split(' | ').forEach(e => {
-    const m = /^\[([A-Z]\d+(?:\.\w+)?)\].*?\(picked: (.*)\)$/.exec(e);
+    const m = /^\[([A-Z]\d+(?:\.\w+)?)\].*?\(picked: (.*?)\)(?:\s*\(right: .*\))?$/.exec(e);
     if (m) picks[m[1]] = m[2];
   });
   return picks;
