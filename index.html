@@ -8627,7 +8627,7 @@ function stepNeed(pct, total, step = 1) {
 }
 // Half points (Marcos 11/23, "Half point each"): Math Module 4's Warm-Up gives back half a point for each extra question
 // answered right after a miss, so its scores can end in ½ (6½ of 9 = 72% passes; stepPassed already works by percent)
-const STEP_HALF = { 'mod4w-warmup': true };
+const STEP_HALF = { 'mod4w-warmup': true, 'mod5w-warmup': true };   // + Math Module 5's Warm-Up (11/23, his "Yes, add it")
 const halfStr = v => { const n = Number(v) || 0, w = Math.floor(n); return n === w ? String(w) : `${w || ''}½`; };
 function stepWhere(game, student) {
   const pct = STEP_PASS[game] || 0;
