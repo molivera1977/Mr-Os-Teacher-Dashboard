@@ -7992,8 +7992,12 @@ function liveStudent(name, rows, screens, cfg) {
   const misses = liveMissEntries(newest.wrongQuestions, cfg.facts);
   const missText = {};
   misses.forEach(m => { missText[m.id] = m.text; });
+  // 🔎 (11/24, Marcos: "shouldnt i see the problem"): a site that logs each answer's question and right answer
+  // ({ e:'answer', id, ok, say, a } — math-module-5) shows them on a tapped ✓ box too, in the student's own numbers
+  const asked = {}, rightAnswer = {};
+  events.forEach(e => { if (e && e.e === 'answer' && e.id) { if (e.say) asked[e.id] = String(e.say); if (e.a != null && e.a !== '') rightAnswer[e.id] = String(e.a); } });
   const right = [...marks.values()].filter(m => m !== 'miss').length;
-  const base = { name, marks, right, answered: marks.size, unboxed: 0, at: when(newest), missText, misses, worked: new Set(), game: newest.game };
+  const base = { name, marks, right, answered: marks.size, unboxed: 0, at: when(newest), missText, asked, rightAnswer, misses, worked: new Set(), game: newest.game };
   if (cfg.facts) {   // 📍 fact practice (11/20): no set length, the same fact again and again — a box per FACT, its latest answer
     const boxes = new Map();   // first-seen order; Map.set on a fact already there keeps its place and takes the newest answer
     cfg.eventsOf(newest).forEach(e => { if (e && e.e === 'answer' && e.id) boxes.set(e.id, e.ok ? 'ok' : 'miss'); });
@@ -8011,7 +8015,10 @@ function liveStudent(name, rows, screens, cfg) {
     const oldMisses = [...new Set(Object.keys(missText).map(ofQ))].filter(id => !marks.has(id));
     let boxes = new Map([...oldMisses.map(id => [id, 'miss']), ...marks]);
     const rowRight = Number(newest.score) || 0;
-    const answered = rowRight + [...boxes.values()].filter(m => m === 'miss').length;
+    // half a point back on a Warm-Up follow-up (MM4 + MM5, 11/23) is in the score but is not a question answered: 2 right
+    // + ½ back + 1 missed = 2½ of 3, not "2.5 of 3.5" with "+0.5 right on the older page" (11/24)
+    const halfBack = events.reduce((n, e) => n + (e && e.e === 'twin' ? Number(e.pts) || 0 : 0), 0);
+    const answered = Math.floor(rowRight - halfBack + 1e-9) + [...boxes.values()].filter(m => m === 'miss').length;
     // 🟩 WORKED OUT (11/23, Mrs. Wright's Class Scores): answers with no box (a page with no answer log) on a part that asks
     // its scored questions in order (LIVE_IN_ORDER): the first `answered` were answered, and each one not missed was right.
     // Only when every box already there falls inside them; a test (shuffled) never.
@@ -8028,7 +8035,7 @@ function liveStudent(name, rows, screens, cfg) {
     const last = events[events.length - 1];
     const on = last && last.e === 'on' ? last : null;
     const done = newest.status === 'complete';
-    const where = done ? `✅ Finished · ${newest.score} of ${newest.total}`
+    const where = done ? `✅ Finished · ${halfStr(newest.score)} of ${newest.total}`
       : on ? (on.cards ? (cfg.cardsLabel || '📖 Lesson cards') : `Question ${on.q} of ${on.of || total}`)   // on the lesson cards (Inference Practice, 11/11; vocab: word cards)
       : answered ? `Question ${Math.min(answered + 1, total || answered + 1)} of ${total}`   // the old page: the one after those answered
       : 'Just started';
@@ -8106,7 +8113,8 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
     const open = liveOpen[at.body];
     const pickWord = cfg.facts ? 'typed' : 'picked';
     const rows = people.map(x => {
-      const qText = id => (cfg.textOf ? plainText(cfg.textOf(id, x.missText, x.game)) : cfg.questions ? plainText(cfg.questions[id]) : x.missText[id]) || id;
+      const own = { ...(x.asked || {}), ...x.missText };   // the row's own words: a miss's, else the answer's (11/24)
+      const qText = id => (cfg.textOf ? plainText(cfg.textOf(id, own, x.game)) : cfg.questions ? plainText(cfg.questions[id]) : own[id]) || id;
       const boxName = id => (cfg.chipOf && cfg.chipOf(id)) || id;   // vocab (11/20): the word, not W4101
       // 🔎 (11/23, like Mrs. Wright's Class Scores): a box's saved misses — a True/False table's wrong rows ("A12.2") under
       // its question; a fact, its latest miss. Each: the words, what they picked, the right answer when it is known.
@@ -8114,7 +8122,7 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
         const own = x.misses.filter(m => m.id === id || m.id.startsWith(id + '.'));
         return cfg.facts ? own.slice(-1) : own;
       };
-      const rightOf = (id, m) => m.right || (cfg.answerOf ? String(cfg.answerOf(id, x.game) || '') : '');
+      const rightOf = (id, m) => m.right || (x.rightAnswer && x.rightAnswer[id]) || (cfg.answerOf ? String(cfg.answerOf(id, x.game) || '') : '');
       const qOf = id => (qText(id) !== id && qText(id) !== boxName(id) ? qText(id) : '');   // words beyond the box's own name
       // one saved miss: "Row 2: " (a table's row) + its words · ✗ what they picked · ✓ the right answer
       // (the 4th-grade SBAC reviews, cfg.questions: the question as it reads NOW — their wording changed after October's tries)
@@ -8132,7 +8140,8 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
         const own = m === 'miss' ? missesOf(openId) : [];
         const lines = own.length
           ? own.map(e => `${labelOf(openId, e) ? `<div class="lb-q">${escHtml(labelOf(openId, e))}</div>` : ''}${pickRight(openId, e) ? `<div>${pickRight(openId, e)}</div>` : ''}`).join('')
-          : qOf(openId) ? `<div class="lb-q">${escHtml(qOf(openId))}</div>` : '';
+          : (qOf(openId) ? `<div class="lb-q">${escHtml(qOf(openId))}</div>` : '')
+            + (m !== 'miss' && x.rightAnswer && x.rightAnswer[openId] ? `<div><span class="lb-right">✓ ${pickWord} ${escHtml(x.rightAnswer[openId])}</span></div>` : '');
         const note = x.worked.has(openId) ? `<div class="lb-note">Worked out from the score: the ${escHtml(String(x.step || '').split(' · ').pop() || 'part')} asks its questions in order, and ${escHtml(boxName(openId))} was not missed.</div>`
           : m === 'miss' && !own.some(e => e.pick) ? '<div class="lb-note">What they picked was not saved.</div>' : '';
         box = `<div class="live-box"><div class="lb-head">${escHtml(boxName(openId))} · ${markSays[m]}</div>${lines}${note}</div>`;
@@ -8154,7 +8163,7 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
           ${x.detail ? `<small class="live-detail">${escHtml(x.detail)}</small>` : ''}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
-          <small>${x.right} of ${x.answered} right${x.done ? '' : ' so far'}${pct == null ? '' : `<span class="live-pct ${pctCls}">${pct}%</span>`}</small></div>
+          <small>${halfStr(x.right)} of ${x.answered} right${x.done ? '' : ' so far'}${pct == null ? '' : `<span class="live-pct ${pctCls}">${pct}%</span>`}</small></div>
         <div><div class="live-chips">${chips || (x.unboxed || x.answered ? '' : '<span class="live-when">no questions answered yet</span>')}${x.unboxed ? `<span class="live-when live-unboxed">+${x.unboxed} right on the older page (no box)</span>` : ''}</div>
           ${box}
           ${missed.length ? `<div class="live-missed"><div class="live-missed-title">Missed so far</div><ul>${missed.map(l => `<li>${l}</li>`).join('')}</ul></div>` : ''}</div>
