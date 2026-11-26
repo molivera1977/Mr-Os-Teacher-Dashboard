@@ -1043,6 +1043,7 @@ const GAME_ORDER = [
   'rliabw-review', 'rliaba-review', 'rliabb-review', 'rliabc-review',
   'rad_quiz1',
   'gk-geography', 'gk-civics', 'gk-math', 'gk-ela',
+  'gk-twmath1', 'gk-twmath2', 'gk-twmath3', 'gk-twread1', 'gk-twread2', 'gk-twread3',   // 📝 Test Words (11/26)
   'mod1a-review', 'mod1b-review', 'mod1c-review',
 ];
 
@@ -1070,7 +1071,8 @@ const HIDDEN_GAME_PREFIXES = [];
 
 // General Knowledge Hub tests — shown on the 🌟 General Knowledge page,
 // kept off the main Overview cards and Assignment tabs.
-const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela'];
+const GK_GAMES = ['gk-geography', 'gk-civics', 'gk-math', 'gk-ela',
+  'gk-twmath1', 'gk-twmath2', 'gk-twmath3', 'gk-twread1', 'gk-twread2', 'gk-twread3'];   // 📝 Test Words (11/26, Marcos: "add them all")
 
 // Games with a written component → their written sheet key.
 // Add an entry here whenever a new assignment has a written section.
@@ -1240,6 +1242,12 @@ const GAME_LABELS = {
   'gk-civics':    '🏛️ GK — Civics',
   'gk-math':      '➕ GK — Math',
   'gk-ela':       '📚 GK — Lang Arts',
+  'gk-twmath1':   '📝 Test Words — Question Words',
+  'gk-twmath2':   '📝 Test Words — Numbers & Fractions',
+  'gk-twmath3':   '📝 Test Words — Shapes & Measuring',
+  'gk-twread1':   '📝 Test Words — Reading Questions',
+  'gk-twread2':   '📝 Test Words — Author & Story',
+  'gk-twread3':   '📝 Test Words — Writing & Research',
   'rounding2-practice-a': '🌱 Numberline — Practice A',
   'rounding2-practice': '🧭 Numberline — Practice B',
   'rounding2-review':   '🎯 Numberline — Review (Form A)',
@@ -1359,10 +1367,16 @@ const MAX_SCORES = {
   'pvfiabb-review': 23,
   'pvfiabc-review': 23,
   rad_quiz1:      23,
-  'gk-geography': 28,
-  'gk-civics':    25,
-  'gk-math':      33,
-  'gk-ela':       27,
+  'gk-geography': 29,   // 11/26: 22 + 7 new (the old 28 was wrong: the quiz had 22)
+  'gk-civics':    33,   // 11/26: 25 + 8 new
+  'gk-math':      32,   // 11/26: 33 − 12 moved to Test Words + 11 new
+  'gk-ela':       36,   // 11/26: 27 − 5 moved to Test Words + 14 new
+  'gk-twmath1':   16,
+  'gk-twmath2':   10,
+  'gk-twmath3':   16,
+  'gk-twread1':   13,
+  'gk-twread2':   12,
+  'gk-twread3':   13,
   'rounding2-practice-a': 20,
   'rounding2-practice': 16,
   'rounding2-review':   20,
@@ -1898,9 +1912,17 @@ async function refreshData() {
 // every count, average, 1st / 2nd Try, heat map and skills panel, so the current version
 // starts clean. `max` is the current version's question total, used until a finished
 // current attempt reports its own.
+// Or, with `total` in place of `since`: an attempt out of any OTHER total was on the earlier version (every
+// row the quiz saves carries its question total, so no clock is needed).
 const LESSON_VERSIONS = {
   // Science 1.1 became the 3-day lesson on 10/10 at 1:04 PM ET; the 2-day lesson was taught 10/9
   'startstop-lesson': { since: '2026-10-10T17:04:00Z', was: 'earlier 2-day version', now: '3-day lesson', max: 28 },
+  // The GK quizzes after 📝 Test Words (Marcos 11/26: "add them all"): 17 questions moved out, 40 new ones in, all
+  // numbered again. Each old total (Geography 22, Civics 25, Math 33, Lang Arts 27) differs from its new one.
+  'gk-geography': { total: 29, was: 'quiz before Test Words', now: '29 questions', max: 29 },
+  'gk-civics':    { total: 33, was: 'quiz before Test Words', now: '33 questions', max: 33 },
+  'gk-math':      { total: 32, was: 'quiz before Test Words', now: '32 questions', max: 32 },
+  'gk-ela':       { total: 36, was: 'quiz before Test Words', now: '36 questions', max: 36 },
 };
 let archivedAttempts = {}; // game → student name → [attempts on the earlier version]
 
@@ -1916,7 +1938,8 @@ function setAsideEarlierVersions(data) {
       const old = [], cur = [];
       (student.sessions || []).forEach(s => {
         const t = new Date(s.timestamp).getTime();
-        (!isNaN(t) && t < since ? old : cur).push(s);
+        const earlier = v.total ? Number(s.total) > 0 && Number(s.total) !== v.total : !isNaN(t) && t < since;
+        (earlier ? old : cur).push(s);
       });
       if (old.length) archivedAttempts[game][student.name] = old;
       if (!cur.length) return; // only the earlier version → Not Started on the current one
@@ -2779,7 +2802,7 @@ function renderGk() {
   // The tests' checklist under their scores, like every set's pick-a-form page
   const gridEl = document.getElementById('gkGrid');
   gridEl.innerHTML = '';
-  const gkLabel = g => (GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').replace(/^GK — /,'');
+  const gkLabel = g => (GAME_LABELS[g]||g).replace(/^[^\s]+\s/,'').replace(/^(GK|Test Words) — /,'');   // 📝 Test Words: the set's own name
   const grid = buildDotGrid(GK_GAMES, {
     label: gkLabel,
     open:  g => { currentGame = g; toggleView('assignment'); },
@@ -2983,7 +3006,9 @@ function openGkHeatQuestion(game, id) {
 const GK_ASSIGN_GAME = 'gk-assign';
 const GK_ASSIGN_MAX_KEY = 1e15;
 HIDDEN_GAMES.add(GK_ASSIGN_GAME);
-const GK_QUIZZES = { geography: '🌍 Geography', civics: '🏛️ Civics & Gov', math: '➕ Math', ela: '📚 Language Arts' };
+const GK_QUIZZES = { geography: '🌍 Geography', civics: '🏛️ Civics & Gov', math: '➕ Math', ela: '📚 Language Arts',
+  twmath1: '📝 Test Words: Question Words', twmath2: '📝 Test Words: Numbers & Fractions', twmath3: '📝 Test Words: Shapes & Measuring',
+  twread1: '📝 Test Words: Reading Questions', twread2: '📝 Test Words: Author & Story', twread3: '📝 Test Words: Writing & Research' };
 let gkAssignRows = null, gkAssignLoading = false, gkAssignError = '';
 const gkPicked = new Set();
 
@@ -5107,7 +5132,7 @@ function renderAssignment() {
   const archivedStudents = Object.keys(archived).filter(n => STUDENT_ROSTER.includes(n));
   if (version && archivedStudents.length) {
     document.getElementById('assignmentStats').insertAdjacentHTML('beforeend',
-      `<div class="version-note">ℹ️ This page shows the <b>${escHtml(version.now)}</b> only (attempts since ${formatSessionDate(new Date(version.since))}).
+      `<div class="version-note">ℹ️ This page shows the <b>${escHtml(version.now)}</b> only (${version.since ? `attempts since ${formatSessionDate(new Date(version.since))}` : `attempts out of ${version.total}`}).
         ${archivedStudents.length} student${archivedStudents.length > 1 ? 's have' : ' has'} work on the <b>${escHtml(version.was)}</b> — it is kept and shown on each student, but not counted here.</div>`);
   }
 
