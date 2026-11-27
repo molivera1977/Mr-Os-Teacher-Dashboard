@@ -154,6 +154,7 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .sl-item{font:inherit;font-size:.82rem;font-weight:800;border:1px solid var(--border);border-radius:999px;padding:4px 10px;background:var(--surface2);color:var(--text);cursor:pointer;}
 .sl-item.sl-plain{cursor:default;} .sl-note{font-weight:700;color:var(--muted);}
 #assignmentBody tr[data-name] > td:nth-child(-n+4){cursor:pointer;}
+#profileBody tr.pf-tap > td{cursor:pointer;} #profileBody tr.pf-tap:hover > td{background:var(--surface2);} #profileBody tr.tries-open > td{background:var(--surface2);}
 #assignmentBody tr.tries-open > td{background:var(--surface2);}
 .tries-row > td{background:var(--surface2);padding:8px 12px !important;}
 .tr-head{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
@@ -9018,6 +9019,9 @@ function addMathLive(cfg) {
   cfg.group.forEach(g => { LIVE_LESSONS[g] = cfg; });
 }
 addMathLive({ group: ['mod4w-warmup', 'mod4-practice', 'mod4b-review', 'mod4t-test', 'mod4u-test'], title: 'Math Module 4', short: 'MM4', skills: MOD4_SKILLS });
+// Module 3 (Marcos 11/27: "add the same to MM3"): its site logs each scored answer with its question and right answer from the
+// 11/27 push on; a row saved before that has no answers in its log (an older page: no boxes, its misses still listed)
+addMathLive({ group: ['mod3z-prewarmup', 'mod3w-warmup', 'mod3-practice', 'mod3a-review', 'mod3b-review', 'mod3t-test', 'mod3u-test'], title: 'Math Module 3', short: 'MM3', skills: MOD3_SKILLS });
 addMathLive({ group: ['nbtw-warmup', 'nbtp-practice', 'nbta-test', 'nbtb-test'], title: 'SBAC Base Ten', short: 'Base Ten', skills: NBT_SKILLS });
 // 🟩 WORKED OUT (11/23, Mrs. Wright's Class Scores): the Warm-Up and the Practice ask their scored questions in THIS order on
 // every version (the sites' keepsOrder; a step or a "try one like it" is not scored), so a row with no answer log shows its
@@ -9694,9 +9698,9 @@ function openDetailOn(game, name) {
   openDetail(name);
 }
 // 📋 a student's tries under their row
-function triesHtml(student) {
-  const max = MAX_SCORES[currentGame] || 100;
-  const ids = gridQuestionIds(currentGame);
+function triesHtml(student, game = currentGame) {
+  const max = MAX_SCORES[game] || 100;
+  const ids = gridQuestionIds(game);
   const tries = (student.sessions || []).map((s, i) => ({ s, i })).reverse();   // newest first
   return `<div class="tr-box"><div class="tr-head">${escHtml(student.name)} · ${tries.length} ${tries.length === 1 ? 'try' : 'tries'}, newest first${ids.length ? ' · tap a box for that question' : ''}</div>` +
     tries.map(({ s, i }) => {
@@ -9705,12 +9709,12 @@ function triesHtml(student) {
       const pct = sf ? sf.pct : max ? Math.round((Number(s.score) || 0) / max * 100) : 0;
       const v = tryVersion(s);
       const row = ids.length ? gridRowOf(student.name, s, ids) : null;
-      const open = id => !!stripOpen && stripOpen.game === currentGame && stripOpen.name === student.name && stripOpen.i === i && stripOpen.id === id;
+      const open = id => !!stripOpen && stripOpen.game === game && stripOpen.name === student.name && stripOpen.i === i && stripOpen.id === id;
       const strip = row && done ? `<div class="tr-strip">${ids.map(id => {
         const ok = !row.missed.has(id);
-        return `<button type="button" class="tr-sq ${ok ? 'ok' : 'miss'}${open(id) ? ' open' : ''}" data-tr-name="${escHtml(student.name)}" data-tr-i="${i}" data-tr-id="${escHtml(id)}" title="${escHtml(id)} · ${ok ? 'right' : 'missed'}">${ok ? '✓' : '✗'}</button>`;
+        return `<button type="button" class="tr-sq ${ok ? 'ok' : 'miss'}${open(id) ? ' open' : ''}" data-tr-game="${escHtml(game)}" data-tr-name="${escHtml(student.name)}" data-tr-i="${i}" data-tr-id="${escHtml(id)}" title="${escHtml(id)} · ${ok ? 'right' : 'missed'}">${ok ? '✓' : '✗'}</button>`;
       }).join('')}</div>` : '';
-      const isOpen = !!stripOpen && stripOpen.game === currentGame && stripOpen.name === student.name && stripOpen.i === i;
+      const isOpen = !!stripOpen && stripOpen.game === game && stripOpen.name === student.name && stripOpen.i === i;
       return `<div class="tr-try"><div class="tr-line"><b>${escHtml(s.form || `Try ${i + 1}`)}</b> · ${formatSessionDate(sessionDate(s))} · <b>${s.score}/${max}</b> (${pct}%${sf ? ` so far, ${sf.right} of ${sf.answered}` : ''}) · ⏱ ${s.elapsed != null ? formatTime(s.elapsed) : '—'} · left the page ${Number(s.tabSwitches) || 0}×${v > 1 ? ` · version ${v}` : ''} · ${done ? '✅ finished' : '🔄 still going'}</div>${strip}${isOpen ? `<div class="tr-qbox qx" data-tr-box="1"><div class="qx-note">Loading the question…</div></div>` : ''}</div>`;
     }).join('') + '</div>';
 }
@@ -9731,17 +9735,18 @@ function drawTriesRows() {
     row.innerHTML = `<td colspan="9">${triesHtml(student)}</td>`;
     tr.insertAdjacentElement('afterend', row);
   });
-  fillStripBox();
+  fillStripBox('#assignmentBody');
 }
-async function fillStripBox() {
-  const slot = document.querySelector('#assignmentBody .tr-qbox[data-tr-box]');
+async function fillStripBox(root) {
+  const slot = document.querySelector(`${root} .tr-qbox[data-tr-box]`);
   if (!slot || !stripOpen) return;
-  const student = (dashData[currentGame] || []).find(s => s.name === stripOpen.name);
+  const game = stripOpen.game;
+  const student = (dashData[game] || []).find(s => s.name === stripOpen.name);
   const sess = student && student.sessions[stripOpen.i];
   if (!sess) { slot.remove(); return; }
-  const ids = gridQuestionIds(currentGame);
+  const ids = gridQuestionIds(game);
   const row = gridRowOf(student.name, sess, ids);
-  const cfg = SKILL_REPORTS[currentGame];
+  const cfg = SKILL_REPORTS[game];
   const token = ++gridToken;
   if (cfg && cfg.site) {
     try {
@@ -9751,11 +9756,32 @@ async function fillStripBox() {
     } catch (e) { slot.innerHTML = '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>'; }
     return;
   }
-  const q = gkQuestionsFor(currentGame).find(x => x.id === stripOpen.id);
+  const q = gkQuestionsFor(game).find(x => x.id === stripOpen.id);
   const known = row.missed.has(stripOpen.id) ? [pickOfTry(student.name, sess, stripOpen.id)].filter(p => p.picked != null) : [];
   slot.innerHTML = q ? `<div class="qx-line">${escHtml(q.text || '')}</div><div class="qx-line">Correct answer: <span class="qx-right qx-pill">${escHtml(q.answer ?? '—')} ✅</span></div>${typedPickLines(known, null)}`
     : `<div class="qx-line">${escHtml(String((cfg && cfg.bank && cfg.bank[stripOpen.id]) || stripOpen.id).replace(/^\([^)]*\)\s*/, ''))}</div>${typedPickLines(known, null)}`;
 }
+// 👤 THE PROFILE (Marcos 11/27, his screenshot of a student's Module 5 parts: "i should be able to click here too"): a part's
+// row opens that student's tries on it right under the row — the same lines, ✓ / ✗ strip and boxes as the results table
+const profileTriesOpen = new Set();   // the parts open in the profile showing now
+let profileTriesName = null;
+function drawProfileTries() {
+  const body = document.getElementById('profileBody');
+  if (!body) return;
+  body.querySelectorAll('tr.tries-row').forEach(tr => tr.remove());
+  body.querySelectorAll('tr.pf-tap').forEach(tr => tr.classList.toggle('tries-open', profileTriesOpen.has(tr.dataset.game)));
+  [...body.querySelectorAll('tr.pf-tap')].forEach(tr => {
+    if (!profileTriesOpen.has(tr.dataset.game)) return;
+    const student = (dashData[tr.dataset.game] || []).find(s => s.name === tr.dataset.name);
+    if (!student) return;
+    const row = document.createElement('tr');
+    row.className = 'tries-row';
+    row.innerHTML = `<td colspan="7">${triesHtml(student, tr.dataset.game)}</td>`;
+    tr.insertAdjacentElement('afterend', row);
+  });
+  fillStripBox('#profileBody');
+}
+
 // 📋 the student window: a skill jumps to its questions; Sessions / Tab Switches open the tries
 function jumpQbqSkill(btn) {
   const block = btn.closest('.qbq-attempt');
@@ -9817,10 +9843,17 @@ document.addEventListener('click', e => {
   // 📋 a student's tries
   const sq = t.closest('.tr-sq');
   if (sq) {
-    const next = { game: currentGame, name: sq.dataset.trName, i: Number(sq.dataset.trI), id: sq.dataset.trId };
+    const next = { game: sq.dataset.trGame || currentGame, name: sq.dataset.trName, i: Number(sq.dataset.trI), id: sq.dataset.trId };
     const same = stripOpen && stripOpen.game === next.game && stripOpen.name === next.name && stripOpen.i === next.i && stripOpen.id === next.id;
     stripOpen = same ? null : next;
-    drawTriesRows();
+    if (sq.closest('#profileBody')) drawProfileTries(); else drawTriesRows();
+    return;
+  }
+  const pf = t.closest('#profileBody tr.pf-tap > td');
+  if (pf && !t.closest('button, a, input, select')) {
+    const g = pf.parentElement.dataset.game;
+    if (profileTriesOpen.has(g)) profileTriesOpen.delete(g); else profileTriesOpen.add(g);
+    drawProfileTries();
     return;
   }
   const td = t.closest('#assignmentBody tr[data-name] > td');
@@ -10335,6 +10368,9 @@ function openProfile(name, scope) {
       const max = MAX_SCORES[game] || 100;
       const label = scope ? escHtml(scope.label(game)) : GAME_LABELS[game] || game;
       const tr = document.createElement('tr');
+      if (student && (student.sessions || []).length) {   // 👤 11/27: tap a started part → its tries under the row
+        tr.classList.add('pf-tap'); tr.dataset.game = game; tr.dataset.name = name; tr.title = 'Tap: every try on this part';
+      }
 
       if (!student) {
         tr.innerHTML = `<td>${label}</td><td><span class="status-pill notstarted">⬜ Not Started</span></td><td colspan="5" style="color:var(--muted);">—</td>`;
@@ -10387,6 +10423,9 @@ function openProfile(name, scope) {
       }
       tbody.appendChild(tr);
     });
+    // 👤 11/27: the parts left open stay open for this student; another student starts closed
+    if (profileTriesName !== name) { profileTriesOpen.clear(); profileTriesName = name; }
+    drawProfileTries();
 
     const panel = document.getElementById('studentProfile');
     panel.classList.add('open');
