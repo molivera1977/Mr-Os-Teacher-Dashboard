@@ -163,6 +163,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .tr-strip{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
 .tr-sq{font:inherit;font-size:.72rem;font-weight:800;width:26px;height:24px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:#e8f5e9;color:var(--green);}
 .tr-sq.miss{background:#ffebee;color:var(--red);} .tr-sq.open{outline:3px solid var(--accent);}
+.tr-sq.none{background:var(--surface);color:var(--muted);} .tr-sq.worked{border-style:dashed;}
+.tr-note{font-size:.78rem;font-weight:700;color:var(--muted);margin-top:4px;}
 .tr-qbox{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
 .live-name-btn{font:inherit;font-weight:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;text-decoration:underline dotted;}
 .live-missed li.lm-tap{cursor:pointer;} .live-missed li.lm-tap:hover{text-decoration:underline;}
@@ -773,8 +775,9 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
           <button class="btn btn-ghost btn-sm" onclick="closeDetail()">✕ Close</button>
         </div>
         <div class="detail-grid" id="detailGrid"></div>
-        <div id="detailSessionBreak" style="margin-bottom:14px;"></div>
+        <!-- 📝 Question by Question first, then what happened (the tries, the timeline) — Marcos 11/27 -->
         <div id="detailWrongQs" style="margin-bottom:14px;"></div>
+        <div id="detailSessionBreak" style="margin-bottom:14px;"></div>
         <div id="detailTimePerQ"></div>
       </div>
     </div>
@@ -9572,11 +9575,10 @@ async function fillGridBox() {
   const cfg = SKILL_REPORTS[currentGame];
   const gk = gkQuestionsFor(currentGame);
   if (cfg && cfg.site) {
-    try {
-      const data = await loadReviewForm(cfg.site, cfg.form);
-      if (token !== gridToken) return;
-      slot.innerHTML = gridQuestionHtml(data, open.id, people, !!row);
-    } catch (e) { if (token === gridToken) slot.innerHTML = '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>'; }
+    // only a failed load says "check the connection" (a mistake in drawing it shows as an error, not as this)
+    const data = await loadReviewForm(cfg.site, cfg.form).catch(() => null);
+    if (token !== gridToken) return;
+    slot.innerHTML = data ? gridQuestionHtml(data, open.id, people, !!row) : '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>';
     return;
   }
   const q = gk.find(x => x.id === open.id);
@@ -9697,6 +9699,25 @@ function openDetailOn(game, name) {
   if (game && game !== currentGame && dashData[game]) { familyChooserOpen = null; currentGame = game; renderAssignment(); }
   openDetail(name);
 }
+// ✓ / ✗ / not yet, by question, for one try. A finished try: every question not missed was right. A try still going
+// (Marcos 11/27, his screenshot of a Review "still going": "why cant i see the questions right or wrong"): its log's
+// answers so far (every math site logs each one since 11/20) and its misses; an older page's log has no answers — then a
+// part that asks in order (LIVE_IN_ORDER) shows its first (right + missed) questions, each one not missed a ✓ worked out
+function tryMarks(s, ids, game) {
+  const missed = gridRowOf('', s, ids).missed;
+  if (s.status === 'complete') return ids.map(id => (missed.has(id) ? 'miss' : 'ok'));
+  const seen = {};
+  eventsOf(s).forEach(e => { if (e && e.e === 'answer' && e.id) seen[String(e.id).replace(/\.\d+$/, '')] = e.ok ? 'ok' : 'miss'; });
+  missed.forEach(id => { seen[id] = 'miss'; });
+  const order = LIVE_IN_ORDER[game];
+  if (order && !Object.values(seen).includes('ok')) {
+    const answered = Math.floor(Number(s.score) || 0) + missed.size;   // a half point is a follow-up's, not a question's
+    const first = order.slice(0, answered);
+    if (answered > missed.size && [...missed].every(id => first.includes(id))) first.forEach(id => { if (!seen[id]) seen[id] = 'worked'; });
+  }
+  return ids.map(id => seen[id] || 'none');
+}
+
 // 📋 a student's tries under their row
 function triesHtml(student, game = currentGame) {
   const max = MAX_SCORES[game] || 100;
@@ -9708,12 +9729,14 @@ function triesHtml(student, game = currentGame) {
       const sf = soFarOfSession(s, max);
       const pct = sf ? sf.pct : max ? Math.round((Number(s.score) || 0) / max * 100) : 0;
       const v = tryVersion(s);
-      const row = ids.length ? gridRowOf(student.name, s, ids) : null;
+      const marks = ids.length ? tryMarks(s, ids, game) : null;
       const open = id => !!stripOpen && stripOpen.game === game && stripOpen.name === student.name && stripOpen.i === i && stripOpen.id === id;
-      const strip = row && done ? `<div class="tr-strip">${ids.map(id => {
-        const ok = !row.missed.has(id);
-        return `<button type="button" class="tr-sq ${ok ? 'ok' : 'miss'}${open(id) ? ' open' : ''}" data-tr-game="${escHtml(game)}" data-tr-name="${escHtml(student.name)}" data-tr-i="${i}" data-tr-id="${escHtml(id)}" title="${escHtml(id)} · ${ok ? 'right' : 'missed'}">${ok ? '✓' : '✗'}</button>`;
-      }).join('')}</div>` : '';
+      // every try, finished or still going (11/27): ✓ right · ✗ missed · dashed ✓ worked out · blank = not answered yet
+      const say = { ok: ['✓', 'right'], worked: ['✓', 'right (worked out from the score: this part asks in order)'], miss: ['✗', 'missed'], none: ['', 'not answered yet'] };
+      const strip = marks ? `<div class="tr-strip">${ids.map((id, k) => {
+        const m = marks[k];
+        return `<button type="button" class="tr-sq ${m === 'worked' ? 'ok worked' : m}${open(id) ? ' open' : ''}" data-tr-game="${escHtml(game)}" data-tr-name="${escHtml(student.name)}" data-tr-i="${i}" data-tr-id="${escHtml(id)}" title="${escHtml(id)} · ${say[m][1]}">${say[m][0]}</button>`;
+      }).join('')}</div>${!done && Number(s.score) > 0 && !marks.some(m => m === 'ok' || m === 'worked') ? '<div class="tr-note">This try came from an older page: only its misses were saved, not which ones were right.</div>' : ''}` : '';
       const isOpen = !!stripOpen && stripOpen.game === game && stripOpen.name === student.name && stripOpen.i === i;
       return `<div class="tr-try"><div class="tr-line"><b>${escHtml(s.form || `Try ${i + 1}`)}</b> · ${formatSessionDate(sessionDate(s))} · <b>${s.score}/${max}</b> (${pct}%${sf ? ` so far, ${sf.right} of ${sf.answered}` : ''}) · ⏱ ${s.elapsed != null ? formatTime(s.elapsed) : '—'} · left the page ${Number(s.tabSwitches) || 0}×${v > 1 ? ` · version ${v}` : ''} · ${done ? '✅ finished' : '🔄 still going'}</div>${strip}${isOpen ? `<div class="tr-qbox qx" data-tr-box="1"><div class="qx-note">Loading the question…</div></div>` : ''}</div>`;
     }).join('') + '</div>';
@@ -9749,11 +9772,9 @@ async function fillStripBox(root) {
   const cfg = SKILL_REPORTS[game];
   const token = ++gridToken;
   if (cfg && cfg.site) {
-    try {
-      const data = await loadReviewForm(cfg.site, cfg.form);
-      if (token !== gridToken || !slot.isConnected) return;
-      slot.innerHTML = gridQuestionHtml(data, stripOpen.id, [row], true);
-    } catch (e) { slot.innerHTML = '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>'; }
+    const data = await loadReviewForm(cfg.site, cfg.form).catch(() => null);
+    if (token !== gridToken || !slot.isConnected) return;
+    slot.innerHTML = data ? gridQuestionHtml(data, stripOpen.id, [row], true) : '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>';
     return;
   }
   const q = gkQuestionsFor(game).find(x => x.id === stripOpen.id);
