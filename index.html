@@ -117,6 +117,61 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .live-chip.miss{background:var(--flagged);color:var(--flagged-text);border-color:var(--flagged-border);}
 .live-missed{font-size:.75rem;font-weight:700;color:var(--flagged-text);margin-top:5px;line-height:1.45;}
 /* 📍 Right Now, like Mrs. Wright's Class Scores (11/23): a box is a button; its question opens under the student */
+/* 11/26 · question boxes by version, picks counted · the class grid · more to tap */
+.qx-ver{border-top:1px dashed var(--border);padding-top:8px;margin-top:8px;}
+.qx-ver:first-child{border-top:0;padding-top:0;margin-top:0;}
+.qx-ver-head{font-size:.8rem;font-weight:800;color:var(--muted);margin-bottom:4px;}
+.qx-q{font-weight:700;}
+.qx-n{display:inline-block;min-width:1.4em;text-align:center;border-radius:6px;background:var(--surface2);padding:0 4px;}
+.qx-top{background:var(--flagged,#fdecea);border-radius:8px;padding:2px 6px;}
+.qx-most{display:inline-block;font-size:.66rem;font-weight:800;color:#fff;background:var(--red);border-radius:999px;padding:1px 8px;margin-left:4px;}
+.qx-slip{display:inline-block;font-size:.68rem;font-weight:800;background:#fff3cc;color:#7a5200;border-radius:999px;padding:1px 8px;margin-left:4px;}
+.qx-row-miss{color:var(--red);}
+.cg-scroll{overflow-x:auto;}
+.cg-table{border-collapse:collapse;font-size:.8rem;}
+.cg-table th,.cg-table td{border:1px solid var(--border);padding:0;text-align:center;}
+.cg-table thead th{padding:6px 4px;color:var(--muted);font-size:.68rem;font-weight:800;background:var(--surface2);}
+.cg-table th.cg-name{text-align:left;padding:0 8px;white-space:nowrap;background:var(--surface);position:sticky;left:0;z-index:1;}
+.cg-sort,.cg-who{font:inherit;font-weight:800;background:none;border:0;color:var(--accent);cursor:pointer;padding:6px 0;text-align:left;}
+.cg-cell,.cg-q{font:inherit;font-weight:800;width:34px;height:30px;border:0;cursor:pointer;background:transparent;}
+.cg-cell.ok{color:var(--green);} .cg-cell.miss{color:var(--red);background:#ffebee;}
+.cg-cell.open,.cg-q.open{outline:3px solid var(--accent);outline-offset:-3px;}
+.cg-score{padding:0 8px !important;white-space:nowrap;font-weight:800;}
+.cg-pct,.cg-q{border-radius:6px;}
+.g-hi{background:#c8ecd1;} .g-mid{background:#fff3cc;} .g-low{background:#ffe0b2;} .g-bad{background:#ffcdd2;}
+.cg-pct{padding:1px 6px;margin-left:4px;}
+.cg-box{border:2px solid var(--accent);border-radius:14px;padding:12px 14px;margin-top:10px;background:var(--surface);}
+.cg-box-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;}
+.cg-box-sub{color:var(--muted);font-weight:700;font-size:.8rem;}
+.cg-box-who{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:6px;}
+.cg-box-who .cg-who{padding:0 4px;}
+.cg-close{background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:inherit;font-weight:800;}
+.stat-card.stat-tap{cursor:pointer;} .stat-card.stat-tap:hover,.stat-card.stat-tap:focus-visible{outline:2px solid var(--accent);}
+.stat-card.stat-tap.open{outline:3px solid var(--accent);}
+.stat-list{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:10px 14px;margin:-4px 0 14px;}
+.sl-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;} .sl-head .cg-close{margin-left:auto;}
+.sl-items{display:flex;flex-wrap:wrap;gap:6px;}
+.sl-item{font:inherit;font-size:.82rem;font-weight:800;border:1px solid var(--border);border-radius:999px;padding:4px 10px;background:var(--surface2);color:var(--text);cursor:pointer;}
+.sl-item.sl-plain{cursor:default;} .sl-note{font-weight:700;color:var(--muted);}
+#assignmentBody tr[data-name] > td:nth-child(-n+4){cursor:pointer;}
+#assignmentBody tr.tries-open > td{background:var(--surface2);}
+.tries-row > td{background:var(--surface2);padding:8px 12px !important;}
+.tr-head{font-size:.75rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.tr-try{padding:6px 0;border-top:1px dashed var(--border);} .tr-try:first-of-type{border-top:0;}
+.tr-line{font-size:.82rem;}
+.tr-strip{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.tr-sq{font:inherit;font-size:.72rem;font-weight:800;width:26px;height:24px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:#e8f5e9;color:var(--green);}
+.tr-sq.miss{background:#ffebee;color:var(--red);} .tr-sq.open{outline:3px solid var(--accent);}
+.tr-qbox{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.live-name-btn{font:inherit;font-weight:inherit;background:none;border:0;padding:0;color:var(--accent);cursor:pointer;text-align:left;text-decoration:underline dotted;}
+.live-missed li.lm-tap{cursor:pointer;} .live-missed li.lm-tap:hover{text-decoration:underline;}
+button.nm-name{font:inherit;cursor:pointer;}
+.nm-tag-btn{font:inherit;font-weight:inherit;background:none;border:0;padding:0;color:inherit;cursor:pointer;text-decoration:underline dotted;}
+.nm-behind{font-size:.8rem;font-weight:700;color:var(--muted);margin-top:4px;}
+.nm-behind-q{font:inherit;font-size:.78rem;font-weight:800;border:1px solid var(--border);border-radius:999px;padding:2px 8px;background:var(--surface);cursor:pointer;color:var(--accent);}
+button.qbq-skill{font:inherit;cursor:pointer;}
+.detail-stat-tap{cursor:pointer;} .detail-stat-tap:hover{outline:2px solid var(--accent);}
+th.dg-open{cursor:pointer;} th.dg-open:hover{color:var(--accent);text-decoration:underline;}
 button.live-chip{font-family:inherit;cursor:pointer;line-height:1.35;}
 button.live-chip:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
 .live-chip.open{box-shadow:0 0 0 2px var(--text);}
@@ -696,6 +751,14 @@ a.lab-link:hover b,a.lab-sname:hover,a.lab-chip:hover{text-decoration:underline;
           <div class="legend-item"><div class="legend-dot heat-3" style="background:#ffe0b2;"></div>61–80%</div>
           <div class="legend-item"><div class="legend-dot heat-4" style="background:#ffcdd2;"></div>81–100%</div>
         </div>
+      </div>
+
+      <!-- 🧮 Class grid (11/26, Mrs. Wright's question heat map): every student × every question, every box tappable -->
+      <div class="heatmap-wrap" id="classGridWrap" style="display:none;">
+        <div class="section-title">🧮 Class Grid
+          <span style="font-size:.72rem;color:var(--muted);font-weight:700;" id="classGridSubtitle"></span>
+        </div>
+        <div id="classGridBody"></div>
       </div>
 
       </div><!-- /assignmentMain -->
@@ -4497,6 +4560,7 @@ function renderOverview() {
     <div class="stat-card"><div class="stat-num" style="color:var(--muted)">${totalNotStarted}</div><div class="stat-label">Not Started</div></div>
     <div class="stat-card"><div class="stat-num">${games.length}</div><div class="stat-label">Assignments</div></div>
   `;
+  wireStats('overviewStats');   // 👆 11/26: a number card lists who is behind it
 
   // ── Assignment cards ──
   // A / B / C forms share one card, placed where the group's first form sits
@@ -4832,7 +4896,7 @@ function buildDotGrid(games, { label, open, profiles }) {
   const thead = document.createElement('thead');
   thead.innerHTML = `<tr>
     <th class="name-col">Student</th>
-    ${games.map(g => `<th title="${escHtml(GAME_LABELS[g]||g)}">${escHtml(label(g))}</th>`).join('')}
+    ${games.map(g => `<th class="dg-open" data-game="${escHtml(g)}" title="Open ${escHtml(GAME_LABELS[g]||g)}">${escHtml(label(g))}</th>`).join('')}
   </tr>`;
   table.appendChild(thead);
 
@@ -4860,7 +4924,7 @@ function buildDotGrid(games, { label, open, profiles }) {
     tbody.appendChild(tr);
   });
   table.addEventListener('click', e => {
-    const dot = e.target.closest('.status-dot[data-game]');
+    const dot = e.target.closest('.status-dot[data-game], th.dg-open[data-game]');   // 11/26: a column's name too
     if (dot) return open(dot.dataset.game);
     const td = e.target.closest('td[data-profile]');
     if (td) openProfile(td.dataset.profile, profiles === true ? undefined : profiles);
@@ -5130,6 +5194,7 @@ function renderAssignment() {
   const version  = LESSON_VERSIONS[currentGame];
   const archived = archivedAttempts[currentGame] || {};
   const archivedStudents = Object.keys(archived).filter(n => STUDENT_ROSTER.includes(n));
+  wireStats('assignmentStats');   // 👆 11/26: a number card lists who is behind it
   if (version && archivedStudents.length) {
     document.getElementById('assignmentStats').insertAdjacentHTML('beforeend',
       `<div class="version-note">ℹ️ This page shows the <b>${escHtml(version.now)}</b> only (${version.since ? `attempts since ${formatSessionDate(new Date(version.since))}` : `attempts out of ${version.total}`}).
@@ -5151,6 +5216,7 @@ function renderAssignment() {
         <td><span class="status-pill notstarted">⬜ Not Started</span></td>
         <td colspan="6" style="color:var(--muted);font-size:.8rem;">${earlier ? `<span class="version-earlier">${escHtml(version.was)}: ${escHtml(earlier)}</span>` : '—'}</td>`;
     } else {
+      tr.dataset.name = name;   // 👆 11/26: the name, status or score opens their tries under the row
       const best     = student.bestScore;
       const sfRow    = soFarOf(student, maxScore);   // still working: right so far out of the questions answered (11/18)
       const pct      = sfRow ? sfRow.pct : Math.round((best/maxScore)*100);
@@ -5186,9 +5252,11 @@ function renderAssignment() {
     }
     body.appendChild(tr);
   });
+  drawTriesRows();   // 👆 11/26: the tries that were open stay open
 
   // Heatmap
   buildHeatmap(data);
+  buildClassGrid(data);   // 🧮 11/26: the class grid, the heat map's try
   buildSkillReport(data); // after the heatmap, which settles 1st vs 2nd Try
   renderRightNow(data);
 }
@@ -5204,6 +5272,7 @@ let lastHeatmapData = [];
 function setHeatmapAttempt(n) {
   heatmapAttempt = n;
   buildHeatmap(lastHeatmapData);
+  buildClassGrid(lastHeatmapData);
   buildSkillReport(lastHeatmapData);
 }
 
@@ -8094,7 +8163,7 @@ let liveToken = 0;
 const liveOpen = {};
 const liveLast = {};
 document.addEventListener('click', e => {
-  const b = e.target.closest && e.target.closest('.live-chip[data-live-id]');
+  const b = e.target.closest && e.target.closest('.live-chip[data-live-id], .live-missed li[data-live-id]');   // 11/26: a missed line too
   if (!b) return;
   const key = b.dataset.liveBody, cur = liveOpen[key];
   liveOpen[key] = cur && cur.name === b.dataset.liveName && cur.id === b.dataset.liveId ? null : { name: b.dataset.liveName, id: b.dataset.liveId };
@@ -8172,6 +8241,7 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
         box = `<div class="live-box"><div class="lb-head">${escHtml(boxName(openId))} · ${markSays[m]}</div>${lines}${note}</div>`;
       }
       // MISSED SO FAR, one question a line (11/23): ✗ what they picked · ✓ the right answer; a table: a line per wrong row
+      const missedIds = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => id);   // 👆 11/26: a line opens its question
       const missed = [...x.marks].filter(([, m]) => m === 'miss').map(([id]) => {
         const own = missesOf(id);
         const plain = boxName(id) !== id ? `${escHtml(boxName(id))} — ${escHtml(qText(id))}` : qText(id) === id ? escHtml(id) : `${escHtml(id)} ${escHtml(qText(id))}`;
@@ -8184,14 +8254,14 @@ function renderRightNow(data, at = LIVE_AT_ASSIGNMENT) {
       const pct = x.answered ? Math.round((x.right / x.answered) * 100) : null;
       const pctCls = pct >= 80 ? 'p-hi' : pct >= 60 ? 'p-mid' : pct >= 40 ? 'p-low' : 'p-bad';
       return `<div class="live-row${x.waiting ? ' waiting' : ''}">
-        <div><div class="live-name">${escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
+        <div><div class="live-name">${at.body === 'liveBody' && x.game ? `<button type="button" class="live-name-btn" data-live-game="${escHtml(x.game)}" data-live-who="${escHtml(x.name)}" title="Open ${escHtml(x.name)}'s window">${escHtml(x.name)}</button>` : escHtml(x.name)}</div><div class="live-when">last move ${clock(x.at)} · ${ago(x.at)}</div></div>
         <div class="live-where">${x.step ? `<small>${escHtml(x.step)}</small>` : ''}${escHtml(x.where)}
           ${x.detail ? `<small class="live-detail">${escHtml(x.detail)}</small>` : ''}
           ${x.waiting ? '<div class="live-wait">⏸ Waiting for you to say they can go on</div>' : ''}
           <small>${halfStr(x.right)} of ${x.answered} right${x.done ? '' : ' so far'}${pct == null ? '' : `<span class="live-pct ${pctCls}">${pct}%</span>`}</small></div>
         <div><div class="live-chips">${chips || (x.unboxed || x.answered ? '' : '<span class="live-when">no questions answered yet</span>')}${x.unboxed ? `<span class="live-when live-unboxed">+${x.unboxed} right on the older page (no box)</span>` : ''}</div>
           ${box}
-          ${missed.length ? `<div class="live-missed"><div class="live-missed-title">Missed so far</div><ul>${missed.map(l => `<li>${l}</li>`).join('')}</ul></div>` : ''}</div>
+          ${missed.length ? `<div class="live-missed"><div class="live-missed-title">Missed so far</div><ul>${missed.map((l, k) => `<li class="lm-tap" data-live-body="${escHtml(at.body)}" data-live-name="${escHtml(x.name)}" data-live-id="${escHtml(missedIds[k])}" title="Tap: open this question">${l}</li>`).join('')}</ul></div>` : ''}</div>
       </div>`;
     }).join('');
     document.getElementById(at.body).innerHTML = `
@@ -8238,7 +8308,7 @@ function buildSkillReport(data) {
     if (!done.length) return;
     if (heatmapAttempt === 2 && done.length < 2) return;
     const sess = heatmapAttempt === 2 ? done[done.length - 1] : done[0];
-    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions(sess.wrongQuestions, {})), picks: parsePicks(sess.wrongQuestions), hints: new Set(hintOpensOf([sess])) });
+    attempts.push({ name: student.name, missed: new Set(parseWrongQuestions(sess.wrongQuestions, {})), picks: parsePicks(sess.wrongQuestions), hints: new Set(hintOpensOf([sess])), v: tryVersion(sess), said: missWordsOf(sess) });
   });
   if (!attempts.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
@@ -8275,6 +8345,13 @@ function buildSkillReport(data) {
       skills.map(s => bar(std + '|' + s.skill, 'sub', escHtml(s.skill), rowFor(s.ids))).join('');
   }).join('');
   renderSkillHighlights();
+  // 11/26: the box that was open stays open after the 30 s update
+  if (skillOpen && skillOpen.game === currentGame && skillReportRows[skillOpen.key]) {
+    if (skillOpen.inline) {
+      const r = [...document.querySelectorAll('#skillReportBody .skill-row')].find(x => x.dataset.key === skillOpen.key);
+      if (r) showSkillReportDetail(skillOpen.key, r, true); else skillOpen = null;
+    } else showSkillReportDetail(skillOpen.key, skillOpen.where, true);
+  }
 
   document.getElementById('skillReportSubtitle').textContent =
     `% of scored parts answered correctly · ${attempts.length} student${attempts.length > 1 ? 's' : ''} · ${heatmapAttempt === 2 ? '2nd Try (retakers only)' : '1st Try'} · click a row for each student`;
@@ -8327,7 +8404,7 @@ function skillQuestionCards(row) {
   const { attempts, bank } = skillReportContext;
   // Who missed each question and what they chose (only attempts that saved their pick)
   row.ids.forEach(id => {
-    skillQuestionPicks[id] = attempts.filter(a => a.missed.has(id)).map(a => ({ name: a.name, picked: a.picks[id] }));
+    skillQuestionPicks[id] = attempts.filter(a => a.missed.has(id)).map(a => ({ name: a.name, picked: a.picks[id], v: a.v, said: (a.said || {})[id] || '' }));
   });
   return row.ids.map(id => {
     const m = /^\(([^)]+)\)\s*(?:\[([^\]]+)\]\s*)?(.*)$/.exec(bank[id] || '') || [];
@@ -8385,6 +8462,7 @@ function renderQuestionByQuestion(student) {
     const missed = new Set(parseWrongQuestions(sess.wrongQuestions, {}));
     const picks  = parsePicks(sess.wrongQuestions);
     const right  = parts.filter(id => !missed.has(id)).length;
+    const v      = tryVersion(sess), said = missWordsOf(sess);   // 11/26: a retry's version and the words it saw
 
     const skills = {};
     parts.forEach(id => {
@@ -8397,7 +8475,7 @@ function renderQuestionByQuestion(student) {
       .sort((a, b) => a[1].right / a[1].total - b[1].right / b[1].total || a[0].localeCompare(b[0]))
       .map(([s, v]) => {
         const pct = Math.round(v.right / v.total * 100);
-        return `<span class="qbq-skill" style="background:${factCellColor(pct)};border-color:${skillBarColor(pct)}">${escHtml(s)} <b>${v.right}/${v.total}</b></span>`;
+        return `<button type="button" class="qbq-skill" data-skill="${escHtml(s)}" onclick="jumpQbqSkill(this)" title="Tap: its questions" style="background:${factCellColor(pct)};border-color:${skillBarColor(pct)}">${escHtml(s)} <b>${v.right}/${v.total}</b></button>`;
       }).join('');
 
     const rows = parts.map(id => {
@@ -8405,10 +8483,10 @@ function renderQuestionByQuestion(student) {
       const pick = !ok && picks[id] != null ? ` <span class="qbq-pick">— picked: ${escHtml(picks[id])}</span>` : '';
       return `<div class="qbq-row ${ok ? 'ok' : 'miss'}" title="Click to see the answer choices"
         data-qid="${escHtml(id)}" data-name="${escHtml(student.name)}" data-pick="${!ok && picks[id] != null ? escHtml(picks[id]) : ''}"
-        data-missed="${ok ? '' : '1'}" onclick="toggleQbqChoices(this)">
+        data-missed="${ok ? '' : '1'}" data-v="${v}" data-said="${escHtml(said[id] || '')}" onclick="toggleQbqChoices(this)">
         <span class="qbq-mark">${ok ? '✅' : '❌'}</span>
         <span class="qbq-id">${escHtml(id)}</span>
-        <span class="qbq-text">${L.passage ? `<span class="qbq-passage">${escHtml(L.passage)} · </span>` : ''}${escHtml(L.text)}${pick}</span>
+        <span class="qbq-text">${L.passage ? `<span class="qbq-passage">${escHtml(L.passage)} · </span>` : ''}${escHtml(!ok && v > 1 && said[id] ? said[id] : L.text)}${pick}</span>
         <span class="qbq-skilltag">${escHtml(L.skill)}</span>
       </div>`;
     }).join('');
@@ -8421,7 +8499,7 @@ function renderQuestionByQuestion(student) {
     const gapNote = gap > 0 && Number(sess.total) === parts.length
       ? `<div class="qx-note" style="margin-bottom:6px;">Saved score is ${sess.score}/${sess.total}: ${gap} question${gap > 1 ? 's were' : ' was'} asked again after they left and came back, and answered right the second time — the list shows their first answer.</div>` : '';
     return `<div class="qbq-attempt">
-      <div class="qbq-head">Attempt ${i + 1}${finished.length > 1 && i === finished.length - 1 ? ' (latest)' : ''} · <b>${right} of ${parts.length} right</b>${when ? ` <span class="qbq-when">${formatSessionDate(when)}</span>` : ''}</div>${gapNote}
+      <div class="qbq-head">Attempt ${i + 1}${finished.length > 1 && i === finished.length - 1 ? ' (latest)' : ''}${v > 1 ? ` · version ${v}` : ''} · <b>${right} of ${parts.length} right</b>${when ? ` <span class="qbq-when">${formatSessionDate(when)}</span>` : ''}</div>${gapNote}
       <div class="qbq-skills">${skillChips}</div>
       <details class="qbq-list" ${i === finished.length - 1 ? 'open' : ''}><summary>Every question (${right} ✅ · ${parts.length - right} ❌)</summary>${rows}</details>
     </div>`;
@@ -8472,12 +8550,11 @@ function toggleQbqChoices(rowEl) {
   box.innerHTML = `<div class="qx" data-qid="${escHtml(id)}"><div class="qx-note">Loading answer choices…</div></div>`;
   rowEl.insertAdjacentElement('afterend', box);
   // Only this student's answer: their pick if they missed it (and it was saved), nothing extra if right
-  const picks = rowEl.dataset.missed ? [{ name: rowEl.dataset.name, picked: rowEl.dataset.pick || null }] : [];
+  // 11/26: their version (the try's log, else the words their miss saved)
+  const v = Number(rowEl.dataset.v) || 0;
+  const picks = rowEl.dataset.missed ? [{ name: rowEl.dataset.name, picked: rowEl.dataset.pick || null, v, said: rowEl.dataset.said || '' }] : [];
   loadReviewForm(cfg.site, cfg.form).then(data => {
-    const found = findReviewElement(data, id);
-    box.querySelector('.qx').innerHTML = found
-      ? reviewElementHtml(found, picks).replace(/👈 picked by [^<]*/g, '👈 their answer')
-      : '<div class="qx-note">Answer choices not found for this question.</div>';
+    box.querySelector('.qx').innerHTML = questionBoxHtml(data, id, picks, { single: true, v }).replace(/👈 picked by [^<]*/g, '👈 their answer');
   }).catch(() => {
     box.querySelector('.qx').innerHTML = '<div class="qx-note">Couldn’t load the answer choices — check the connection and try again.</div>';
   });
@@ -9210,37 +9287,47 @@ function choiceText(html) {
   return t.value.replace(/\s+/g, ' ').trim();
 }
 
-function reviewElementHtml(found, picks = []) {
+function reviewElementHtml(found, picks = [], { showQ = false } = {}) {
   // Content comes from Mr. O's own review files and is written as HTML (e.g. &#9723;).
   const { kind, el, item, passage } = found;
   const known = picks.filter(p => p.picked != null);
   const pickedBy = ans => known.filter(p => choiceText(p.picked) === choiceText(ans)).map(p => p.name);
-  const who = names => names.length ? `<div class="qx-who">👈 picked by ${names.map(escHtml).join(', ')}</div>` : '';
+  // 11/26: the question in this version's own words, when the box shows a version (questionBoxHtml)
+  const q = showQ && el && el.q && kind !== 'grid' && kind !== 'symbol' ? `<div class="qx-line qx-q">${el.q}</div>` : '';
+  // the wrong choice most picked (2 or more), marked
+  const topOf = counts => { const m = Math.max(0, ...counts); return m >= 2 ? m : 0; };
   let body = '';
   if (kind === 'multi') {
     // a saved pick is every choice the student held, joined with " / "
     const heldBy = ans => known.filter(p => String(p.picked).split(' / ').some(x => choiceText(x) === choiceText(ans))).map(p => p.name);
-    body = `<div class="qx-line">Choose ${el.pick} — all ${el.pick} needed for the point.</div><ol class="qx-choices">` + (el.choices || []).map(c => {
+    const top = topOf((el.choices || []).filter(c => !(el.answers || []).includes(c)).map(c => heldBy(c).length));
+    body = q + `<div class="qx-line">Choose ${el.pick} — all ${el.pick} needed for the point.</div><ol class="qx-choices">` + (el.choices || []).map(c => {
       const right = (el.answers || []).includes(c);
       const names = heldBy(c);
-      return `<li class="${right ? 'qx-right' : names.length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${who(names)}</li>`;
+      return `<li class="${right ? 'qx-right' : names.length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${choicePickLine(names, !right && top && names.length === top)}</li>`;
     }).join('') + '</ol>';
   } else if (kind === 'mc') {
-    body = '<ol class="qx-choices">' + (el.choices || []).map(c => {
+    const top = topOf((el.choices || []).filter(c => c !== el.answer).map(c => pickedBy(c).length));
+    body = q + '<ol class="qx-choices">' + (el.choices || []).map(c => {
       const right = c === el.answer;
-      return `<li class="${right ? 'qx-right' : pickedBy(c).length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${right ? '' : who(pickedBy(c))}</li>`;
+      const names = right ? [] : pickedBy(c);
+      return `<li class="${right ? 'qx-right' : names.length ? 'qx-wrong' : ''}">${c}${right ? ' <span class="qx-tag">✅ correct</span>' : ''}${choicePickLine(names, top && names.length === top, slipTagHtml(el, choiceText(c)))}</li>`;
     }).join('') + '</ol>';
   } else if (kind === 'grid') {
     const wrongAns = (item.cols || ['True', 'False']).find(c => c !== el.answer);
+    const names = wrongAns ? pickedBy(wrongAns) : [];
     body = `<div class="qx-line">${item.q}</div><div class="qx-line">“${el.text}” → <span class="qx-right qx-pill">${escHtml(el.answer)} ✅</span></div>` +
-      (wrongAns ? who(pickedBy(wrongAns)).replace('👈 picked by', `👈 answered ${escHtml(wrongAns)}:`) : '');
+      (!names.length ? '' : names.length === 1 ? `<div class="qx-who">👈 answered ${escHtml(wrongAns)}: ${escHtml(names[0])}</div>`
+        : `<div class="qx-who qx-group">👈 answered ${escHtml(wrongAns)} · <b class="qx-n">${names.length}</b> ${names.map(escHtml).join(', ')}</div>`);
   } else if (kind === 'symbol') {
-    const wrongPicks = ['<', '>', '='].filter(s => s !== choiceText(el.answer))
-      .map(s => pickedBy(s).length ? `<div class="qx-who">👈 chose ${escHtml(s)}: ${pickedBy(s).map(escHtml).join(', ')}</div>` : '').join('');
+    const wrong = ['<', '>', '='].filter(s => s !== choiceText(el.answer));
+    const top = topOf(wrong.map(s => pickedBy(s).length));
+    const wrongPicks = wrong.map(s => { const names = pickedBy(s); return names.length
+      ? `<div class="qx-who${names.length > 1 ? ' qx-group' : ''}${top && names.length === top ? ' qx-top' : ''}">👈 chose ${escHtml(s)}: ${names.length > 1 ? `<b class="qx-n">${names.length}</b> ` : ''}${names.map(escHtml).join(', ')}${top && names.length === top ? MOST_PICKED : ''}</div>` : ''; }).join('');
     body = `<div class="qx-line">${el.q}</div><div class="qx-line">Correct: <span class="qx-right qx-pill">${el.answer} ✅</span></div>${wrongPicks}`;
   } else {
-    body = `<div class="qx-line">Correct answer: <span class="qx-right qx-pill">${el.answer ?? '—'} ✅</span></div>` +
-      known.map(p => `<div class="qx-who">👈 ${escHtml(p.name)} answered ${escHtml(p.picked)}</div>`).join('');
+    // a typed answer: the same answer once, with how many and who (6,378 = 6378), the mistake the site names for it
+    body = q + `<div class="qx-line">Correct answer: <span class="qx-right qx-pill">${el.answer ?? '—'} ✅</span></div>` + typedPickLines(known, el);
   }
   const unrecorded = picks.length - known.length;
   if (picks.length && unrecorded) {
@@ -9256,13 +9343,520 @@ function fillQuestionExtras(container, site, form) {
   if (!site || !slots.length) { slots.forEach(s => s.remove()); return; }
   loadReviewForm(site, form).then(data => {
     slots.forEach(slot => {
-      const found = findReviewElement(data, slot.dataset.qid);
-      slot.innerHTML = found ? reviewElementHtml(found, skillQuestionPicks[slot.dataset.qid] || []) : '<div class="qx-note">Answer choices not found for this question.</div>';
+      slot.innerHTML = questionBoxHtml(data, slot.dataset.qid, skillQuestionPicks[slot.dataset.qid] || []);   // 11/26: each student's version
     });
   }).catch(() => {
     slots.forEach(slot => { slot.innerHTML = '<div class="qx-note">Couldn’t load the answer choices — check the connection and try again.</div>'; });
   });
 }
+
+// ═══════════════════════════════════════════════════
+//  🔎 EVERY QUESTION BOX: EACH STUDENT'S OWN VERSION · THE PICKS COUNTED (11/26)
+// ═══════════════════════════════════════════════════
+// Marcos 11/26, after the side-by-side with Mrs. Wright's Class Scores ("Yes, all of them"): a Warm-Up or Practice
+// retry has its own numbers (versions 1–4), so a question box shows the question each student SAW — the try's log
+// says which ({ e:'start', v }, every math site); a try saved before that is matched by the words its miss saved.
+// The same pick is one line with how many and who (6,378 = 6378); the wrong answer most picked is marked when 2 or
+// more students picked it; the mistake the site names for that pick rides along ("Did not regroup").
+const pickKey = s => choiceText(s).replace(/,/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+const NO_QUESTION_HTML = '<div class="qx-note">Answer choices not found for this question.</div>';
+const MOST_PICKED = ' <span class="qx-most">most-picked wrong answer</span>';
+function tryVersion(sess) {
+  const s = eventsOf(sess).find(e => e && e.e === 'start' && Number(e.v) > 0);
+  return s ? Number(s.v) : 0;   // 0 = the try's log does not say
+}
+// each miss's own words, by question: "[W03] (Skill) 360 + 83 = □ … (picked: 343)" → { W03: '360 + 83 = □ …' }
+function missWordsOf(sess) {
+  const out = {};
+  liveMissEntries(String((sess && sess.wrongQuestions) || '').replace(/^\[⚠️ FAST:[^\]]*\]\s*/, ''), false)
+    .forEach(m => { if (m.text) out[m.id] = m.text; });
+  return out;
+}
+const elWords = f => (f.kind === 'grid' ? (f.el && f.el.text) : (f.el && (f.el.q || f.el.text))) || '';
+// the version a pick's student had: the try's log, else the version whose words match what the miss saved, else 1
+function versionOfPick(versions, id, p) {
+  if (p.v > 0 && p.v <= versions.length) return p.v;
+  if (p.said) {
+    const want = pickKey(p.said);
+    const i = versions.findIndex(list => { const f = findReviewElement(list || [], id); return f && pickKey(elWords(f)) === want; });
+    if (i >= 0) return i + 1;
+  }
+  return 1;
+}
+// The question box for `id`. No versions: as before. Versions: one part per version a student had, their picks under
+// it, labeled; `single` = one student's own box ("The version Ava had: version 2"); `v` = their version when they got
+// it right (no pick to place them).
+function questionBoxHtml(data, id, picks = [], { single = false, v = 0 } = {}) {
+  const versions = data && Array.isArray(data.versions) && data.versions.length > 1 ? data.versions : null;
+  if (!versions) {
+    const f = findReviewElement(data, id);
+    return f ? reviewElementHtml(f, picks) : NO_QUESTION_HTML;
+  }
+  const byV = new Map();
+  picks.forEach(p => { const n = versionOfPick(versions, id, p); if (!byV.has(n)) byV.set(n, []); byV.get(n).push(p); });
+  if (!byV.size) byV.set(v > 0 && v <= versions.length ? v : 1, []);
+  const html = [...byV.keys()].sort((a, b) => a - b).map(n => {
+    const f = findReviewElement(versions[n - 1] || [], id);
+    if (!f) return '';
+    const who = byV.get(n);
+    const names = who.map(p => escHtml(p.name));
+    const label = single ? (names.length ? `The version ${names[0]} had: version ${n}` : `The version they had: version ${n}`)
+      : names.length ? `Version ${n} · ${names.join(', ')} had this one` : `Version ${n} of this question · each retry has its own numbers`;
+    return `<div class="qx-ver"><div class="qx-ver-head">${label}</div>${reviewElementHtml(f, who, { showQ: true })}</div>`;
+  }).join('');
+  return html || NO_QUESTION_HTML;
+}
+// the picks, the same answer counted once: [{ text, names }] most first
+function pickGroups(known) {
+  const m = new Map();
+  known.forEach(p => {
+    const k = pickKey(p.picked);
+    if (!m.has(k)) m.set(k, { text: String(p.picked), names: [] });
+    m.get(k).names.push(p.name);
+  });
+  return [...m.values()].sort((a, b) => b.names.length - a.names.length || a.text.localeCompare(b.text));
+}
+// the mistake the site names for a pick ("Did not regroup"), from the question's own slips
+function slipTagHtml(el, pick) {
+  const slips = el && el.slips;
+  if (!slips || pick == null) return '';
+  const k = Object.keys(slips).find(x => x === pick || pickKey(x) === pickKey(pick));
+  const tag = k && slips[k] && slips[k].tag;
+  return tag ? ` <span class="qx-slip">${escHtml(tag)}</span>` : '';
+}
+// a typed answer's picks: "👈 Ava answered 343" alone; "👈 answered 6,378 · 2 · Ava, Leo" for the same answer twice
+function typedPickLines(known, el) {
+  const groups = pickGroups(known);
+  const top = groups.length && groups[0].names.length >= 2 ? groups[0].names.length : 0;
+  return groups.map(g => {
+    const tag = slipTagHtml(el, g.text);
+    if (g.names.length === 1) return `<div class="qx-who">👈 ${escHtml(g.names[0])} answered ${escHtml(g.text)}${tag}</div>`;
+    const most = top && g.names.length === top;
+    return `<div class="qx-who qx-group${most ? ' qx-top' : ''}">👈 answered ${escHtml(g.text)}${tag} · <b class="qx-n">${g.names.length}</b> ${g.names.map(escHtml).join(', ')}${most ? MOST_PICKED : ''}</div>`;
+  }).join('');
+}
+// one choice's pickers: "👈 picked by Ava" · "👈 picked by 2: Ava, Leo" (+ most picked)
+function choicePickLine(names, most, tag = '') {
+  if (!names.length) return '';
+  if (names.length === 1) return `<div class="qx-who">👈 picked by ${escHtml(names[0])}${tag}</div>`;
+  return `<div class="qx-who qx-group${most ? ' qx-top' : ''}">👈 picked by <b class="qx-n">${names.length}</b>: ${names.map(escHtml).join(', ')}${tag}${most ? MOST_PICKED : ''}</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  🔁 OPEN BOXES STAY OPEN THROUGH THE 30 s UPDATE (11/26)
+// ═══════════════════════════════════════════════════
+// Before: the update drew the heat map and Standards & Skills again and the open box was gone. Now each page keeps
+// which box is open and opens it again, without moving the page.
+let heatOpen = null;    // { game, id }
+let skillOpen = null;   // { game, key, inline } or { game, key, where }
+
+// ═══════════════════════════════════════════════════
+//  🧮 CLASS GRID (11/26, Mrs. Wright's question heat map)
+// ═══════════════════════════════════════════════════
+// One row per student who finished (the heat map's try: 1st Try, or 2nd Try = their latest), one column per question
+// (a True/False table is one column, ✗ when any row was missed), ✓ / ✗, and % right at the bottom. Every box is a
+// button: a ✓ / ✗ opens that student's own question (their version, their pick, the right answer) under the grid; a
+// name opens their window; a % opens the question with everyone's answers. Student / Score sort the rows.
+let gridOpen = null;     // { game, kind: 'cell' | 'q', name, id }
+let gridSort = 'name';   // 'name' · 'score-down' · 'score-up'
+let gridRows = [], gridIds = [], gridToken = 0;
+function gridQuestionIds(game) {
+  const cfg = SKILL_REPORTS[game];
+  if (cfg && cfg.bank) {
+    return [...new Set(Object.keys(cfg.bank).filter(id => id[0] === cfg.form).map(id => id.replace(/\.\d+$/, '')))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  }
+  return gkQuestionsFor(game).map(q => q.id);
+}
+function gridRowOf(name, sess, ids) {
+  const parts = parseWrongQuestions(sess.wrongQuestions, {});
+  const missed = new Set(parts.map(id => id.replace(/\.\d+$/, '')));
+  const right = ids.filter(id => !missed.has(id)).length;
+  return { name, sess, missed, right, pct: ids.length ? Math.round(right / ids.length * 100) : 0 };
+}
+const gridHeat = pct => (pct >= 80 ? 'g-hi' : pct >= 60 ? 'g-mid' : pct >= 40 ? 'g-low' : 'g-bad');
+function buildClassGrid(data) {
+  const wrap = document.getElementById('classGridWrap');
+  if (!wrap) return;
+  const ids = gridQuestionIds(currentGame);
+  const { firstTries, secondTries } = heatTries(data || []);
+  const tries = heatmapAttempt === 2 ? secondTries : firstTries;
+  const rows = ids.length ? tries.map(t => gridRowOf(t.name, t.sess, ids)) : [];
+  gridRows = rows; gridIds = ids;
+  if (!rows.length) { wrap.style.display = 'none'; document.getElementById('classGridBody').innerHTML = ''; return; }
+  wrap.style.display = 'block';
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const sorted = [...rows].sort(gridSort === 'score-down' ? (a, b) => b.right - a.right || byName(a, b)
+    : gridSort === 'score-up' ? (a, b) => a.right - b.right || byName(a, b) : byName);
+  const colPct = ids.map(id => Math.round(rows.filter(r => !r.missed.has(id)).length / rows.length * 100));
+  const mine = gridOpen && gridOpen.game === currentGame ? gridOpen : null;
+  const isOpen = (kind, name, id) => !!mine && mine.kind === kind && mine.id === id && (kind === 'q' || mine.name === name);
+  document.getElementById('classGridSubtitle').textContent =
+    `${rows.length} student${rows.length === 1 ? '' : 's'} · ${heatmapAttempt === 2 ? '2nd Try (their latest)' : '1st Try'} · ✓ right · ✗ missed · tap any box`;
+  const scoreArrow = gridSort === 'score-down' ? ' ▼' : gridSort === 'score-up' ? ' ▲' : '';
+  document.getElementById('classGridBody').innerHTML = `<div class="cg-scroll"><table class="cg-table">
+    <thead><tr><th class="cg-name"><button type="button" class="cg-sort" data-cg-sort="name">Student${gridSort === 'name' ? ' ▲' : ''}</button></th>
+      ${ids.map(id => `<th>${escHtml(id)}</th>`).join('')}
+      <th class="cg-score-h"><button type="button" class="cg-sort" data-cg-sort="score">Score${scoreArrow}</button></th></tr></thead>
+    <tbody>${sorted.map(r => `<tr>
+      <th class="cg-name"><button type="button" class="cg-who" data-cg-name="${escHtml(r.name)}" title="Open ${escHtml(r.name)}'s window">${escHtml(r.name)}</button></th>
+      ${ids.map(id => {
+        const ok = !r.missed.has(id), open = isOpen('cell', r.name, id);
+        return `<td><button type="button" class="cg-cell ${ok ? 'ok' : 'miss'}${open ? ' open' : ''}" data-cg-cell="${escHtml(id)}" data-cg-name="${escHtml(r.name)}" aria-expanded="${open}" title="${escHtml(r.name)} · ${escHtml(id)} · ${ok ? 'right' : 'missed'}">${ok ? '✓' : '✗'}</button></td>`;
+      }).join('')}
+      <td class="cg-score">${r.right}/${ids.length} <span class="cg-pct ${gridHeat(r.pct)}">${r.pct}%</span></td></tr>`).join('')}</tbody>
+    <tfoot><tr><th class="cg-name">% right</th>${ids.map((id, i) => `<td><button type="button" class="cg-q ${gridHeat(colPct[i])}${isOpen('q', null, id) ? ' open' : ''}" data-cg-q="${escHtml(id)}" title="${escHtml(id)}: everyone's answers">${colPct[i]}</button></td>`).join('')}<td></td></tr></tfoot>
+  </table></div><div id="classGridBox"></div>`;
+  if (mine) fillGridBox();
+}
+// a try's pick for a part, placed for questionBoxHtml: { name, picked, v, said }
+const pickOfTry = (name, sess, id) => ({ name, picked: parsePicks(sess.wrongQuestions)[id] ?? null, v: tryVersion(sess), said: missWordsOf(sess)[id] || '' });
+// The parts behind a column: a True/False table's rows ("A12.1" …), else the column itself
+function partIdsOf(data, id) {
+  const items = data ? (Array.isArray(data) ? data : data.items || []) : [];
+  const item = items.find(q => q.id === id);
+  return item && item.type === 'grid' && Array.isArray(item.rows) ? item.rows.map((_, i) => `${id}.${i + 1}`) : [id];
+}
+// One question for some students (rows from gridRowOf — `single`: one student's own box): their own version, their
+// picks, counted. A True/False table is drawn once per version, each row with who answered it wrong.
+function gridQuestionHtml(data, id, rows, single) {
+  if (partIdsOf(data, id).length > 1) return tableBoxHtml(data, id, rows, single);
+  const who = rows.filter(r => r.missed.has(id)).map(r => pickOfTry(r.name, r.sess, id));
+  return single ? questionBoxHtml(data, id, who, { single: true, v: tryVersion(rows[0].sess) }) : questionBoxHtml(data, id, who);
+}
+function tableBoxHtml(data, id, rows, single) {
+  const own = data && Array.isArray(data.versions) && data.versions.length > 1;
+  const versions = own ? data.versions : [Array.isArray(data) ? data : (data && data.items) || []];
+  const byV = new Map();
+  rows.forEach(r => { const v = Math.min(Math.max(tryVersion(r.sess) || 1, 1), versions.length); if (!byV.has(v)) byV.set(v, []); byV.get(v).push(r); });
+  if (!byV.size) byV.set(1, []);
+  return [...byV.keys()].sort((a, b) => a - b).map(v => {
+    const item = (versions[v - 1] || []).find(q => q.id === id);
+    if (!item) return '';
+    const who = byV.get(v);
+    const label = !own ? '' : single ? `The version ${escHtml(who[0].name)} had: version ${v}`
+      : who.length ? `Version ${v} · ${who.map(r => escHtml(r.name)).join(', ')} had this one` : `Version ${v} of this question · each retry has its own numbers`;
+    const lines = item.rows.map((rw, i) => {
+      const pid = `${id}.${i + 1}`;
+      const names = who.filter(r => parseWrongQuestions(r.sess.wrongQuestions, {}).includes(pid)).map(r => r.name);
+      const wrongAns = (item.cols || ['True', 'False']).find(c => c !== rw.answer) || '';
+      const said = !names.length ? '' : single ? `<div class="qx-who">👈 they answered ${escHtml(wrongAns)}</div>`
+        : names.length === 1 ? `<div class="qx-who">👈 answered ${escHtml(wrongAns)}: ${escHtml(names[0])}</div>`
+        : `<div class="qx-who qx-group">👈 answered ${escHtml(wrongAns)} · <b class="qx-n">${names.length}</b> ${names.map(escHtml).join(', ')}</div>`;
+      return `<div class="qx-line${names.length ? ' qx-row-miss' : ''}">Row ${i + 1}: “${rw.text}” → <span class="qx-right qx-pill">${escHtml(rw.answer)} ✅</span></div>${said}`;
+    }).join('');
+    return `<div class="qx-ver">${label ? `<div class="qx-ver-head">${label}</div>` : ''}<div class="qx-line">${item.q}</div>${lines}${item.explanation ? `<div class="qx-why"><b>Why:</b> ${item.explanation}</div>` : ''}</div>`;
+  }).join('') || NO_QUESTION_HTML;
+}
+async function fillGridBox() {
+  const box = document.getElementById('classGridBox');
+  if (!box) return;
+  const open = gridOpen && gridOpen.game === currentGame ? gridOpen : null;
+  if (!open) { box.innerHTML = ''; return; }
+  const row = open.kind === 'cell' ? gridRows.find(r => r.name === open.name) : null;
+  if (open.kind === 'cell' && !row) { gridOpen = null; box.innerHTML = ''; return; }
+  const missedBy = gridRows.filter(r => r.missed.has(open.id)).sort((x, y) => x.name.localeCompare(y.name));   // A–Z
+  const tryWord = heatmapAttempt === 2 ? 'latest try' : '1st try';
+  const head = row
+    ? `${escHtml(row.name)} ${row.missed.has(open.id) ? '✗ missed' : '✓ got'} ${escHtml(open.id)} <span class="cg-box-sub">(${tryWord})</span>`
+    : `${escHtml(open.id)} · ${gridRows.length - missedBy.length} of ${gridRows.length} right <span class="cg-box-sub">(${tryWord})</span>`;
+  const whoLine = row ? '' : `<div class="cg-box-who">${missedBy.length ? `Missed by ${missedBy.map(r => `<button type="button" class="cg-who" data-cg-name="${escHtml(r.name)}">${escHtml(r.name)}</button>`).join(' ')}` : 'Nobody missed it.'}</div>`;
+  box.innerHTML = `<div class="cg-box"><div class="cg-box-head"><b>${head}</b><button type="button" class="cg-close" data-cg-close="1">✕ Close</button></div>${whoLine}<div class="qx cg-qx"><div class="qx-note">Loading the question…</div></div></div>`;
+  const slot = box.querySelector('.cg-qx');
+  const token = ++gridToken;
+  const people = row ? [row] : missedBy;
+  const cfg = SKILL_REPORTS[currentGame];
+  const gk = gkQuestionsFor(currentGame);
+  if (cfg && cfg.site) {
+    try {
+      const data = await loadReviewForm(cfg.site, cfg.form);
+      if (token !== gridToken) return;
+      slot.innerHTML = gridQuestionHtml(data, open.id, people, !!row);
+    } catch (e) { if (token === gridToken) slot.innerHTML = '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>'; }
+    return;
+  }
+  const q = gk.find(x => x.id === open.id);
+  const said = cfg && cfg.bank ? String(cfg.bank[open.id] || '').replace(/^\([^)]*\)\s*/, '') : '';
+  const known = people.filter(r => r.missed.has(open.id)).map(r => pickOfTry(r.name, r.sess, open.id)).filter(p => p.picked != null);
+  slot.innerHTML = (q ? `<div class="qx-line">${escHtml(q.text || '')}</div><div class="qx-line">Correct answer: <span class="qx-right qx-pill">${escHtml(q.answer ?? '—')} ✅</span></div>`
+    : said ? `<div class="qx-line">${escHtml(said)}</div>` : '') + typedPickLines(known, null) || NO_QUESTION_HTML;
+}
+function openGrid(next) {
+  const same = gridOpen && gridOpen.game === currentGame && gridOpen.kind === next.kind && gridOpen.id === next.id && gridOpen.name === next.name;
+  gridOpen = same ? null : { game: currentGame, ...next };
+  buildClassGrid(lastHeatmapData);
+}
+
+// ═══════════════════════════════════════════════════
+//  👆 MORE TO TAP (11/26, Marcos: "can we make more clickable" → "Yes, all of them")
+// ═══════════════════════════════════════════════════
+// 1 · a number card lists who is behind it, under the cards (a name: their window — the Overview: their profile; an
+//     assignment: its page) · 2 · a student's name, status or score opens their tries under their row · 3 · Right Now:
+//     a name opens their window, a "Missed so far" line opens that question · 4 · 🚦 a name opens their profile for the
+//     unit; a mistake lists the questions behind it · 5 · the student window: a skill jumps to its questions, Sessions
+//     and Tab Switches open the tries · 6 · the checklist's assignment names open that assignment.
+let statOpen = null;    // { where, game, label }
+const triesOpen = {};   // game → Set of names
+let stripOpen = null;   // { game, name, i, id }
+const statKey = label => String(label || '').replace(/\s+/g, ' ').trim();
+// who is behind each card: label → [{ text, note, act }] (act: ['detail', name] · ['profile', name] · ['game', game])
+function statLists(where) {
+  const L = {};
+  if (where === 'overviewStats') {
+    const games = overviewGames();
+    const rosterRows = g => (dashData[g] || []).filter(s => STUDENT_ROSTER.includes(s.name));
+    const label = g => GAME_LABELS[g] || g;
+    L['Students'] = () => STUDENT_ROSTER.map(n => ({ text: n, act: ['profile', n] }));
+    L['Completions'] = () => games.map(g => ({ g, n: rosterRows(g).filter(s => s.status === 'complete').length }))
+      .filter(x => x.n).sort((a, b) => b.n - a.n).map(x => ({ text: label(x.g), note: `${x.n} finished`, n: x.n, act: ['game', x.g] }));
+    L['In Progress'] = () => games.flatMap(g => rosterRows(g).filter(s => s.status === 'inprogress')
+      .map(s => ({ text: `${s.name} — ${label(g)}`, note: onQuestion(s) || '', n: 1, act: ['game', g, s.name] })));
+    L['Not Started'] = () => games.map(g => {
+      const r = rosterRows(g);
+      return { g, n: STUDENT_ROSTER.length - r.filter(s => s.status === 'complete').length - r.filter(s => s.status === 'inprogress').length };
+    }).filter(x => x.n > 0).sort((a, b) => b.n - a.n).map(x => ({ text: label(x.g), note: `${x.n} not started`, n: x.n, act: ['game', x.g] }));
+    L['Assignments'] = () => games.map(g => ({ text: label(g), act: ['game', g] }));
+    return L;
+  }
+  const game = currentGame;
+  const data = (dashData[game] || []).filter(s => s.name !== 'Mr. O (Teacher)');
+  const find = n => data.find(s => s.name === n);
+  const person = (n, note) => ({ text: n, note: note || '', act: find(n) ? ['detail', n] : null });
+  const rosterWith = fn => STUDENT_ROSTER.filter(n => fn(find(n), n));
+  const max = MAX_SCORES[game] || 100;
+  L['⚑ Flagged'] = () => data.filter(isFlagged).map(s => person(s.name));
+  if (INFP_GAMES.includes(game)) {
+    const w = n => (find(n) ? infpWhere(find(n)) : { state: 'notstarted', top: 0 });
+    L['Passed Level 1'] = () => rosterWith((s, n) => w(n).top >= 1).map(n => person(n, `passed level ${w(n).top}`));
+    L['Working'] = () => rosterWith((s, n) => w(n).state === 'working').map(n => person(n, `level ${w(n).level}`));
+    L['Need a Retry'] = () => rosterWith((s, n) => w(n).state === 'retry').map(n => person(n, `level ${w(n).level}`));
+    L['Not Started'] = () => rosterWith((s, n) => w(n).state === 'notstarted').map(n => person(n));
+    return L;
+  }
+  if (isStep(game)) {
+    const w = n => stepWhere(game, find(n));
+    const best = n => { const s = find(n); return s && s.bestScore ? `best ${s.bestScore}/${max}` : ''; };
+    const passed = n => !!find(n) && w(n).passed;
+    L['Passed'] = L['Finished'] = () => rosterWith((s, n) => passed(n)).map(n => person(n, best(n)));
+    L['Working'] = () => rosterWith((s, n) => !!s && w(n).state === 'working').map(n => person(n, onQuestion(find(n)) || ''));
+    L['Need a Retry'] = () => rosterWith((s, n) => !!s && w(n).state === 'retry').map(n => person(n, best(n)));
+    L['Not Started'] = () => rosterWith((s, n) => !s || w(n).state === 'notstarted').map(n => person(n));
+    return L;
+  }
+  const pctOf = s => shownPct(s, max);
+  L['Complete'] = () => data.filter(s => s.status === 'complete').map(s => person(s.name, `${pctOf(s)}%`));
+  L['In Progress'] = () => data.filter(s => s.status === 'inprogress').map(s => person(s.name, onQuestion(s) || ''));
+  L['Not Started'] = () => STUDENT_ROSTER.filter(n => { const s = find(n); return !s || (s.status !== 'complete' && s.status !== 'inprogress'); }).map(n => person(n));
+  const avg = () => data.filter(s => s.bestScore > 0 || soFarOf(s, max)).sort((a, b) => pctOf(a) - pctOf(b)).map(s => person(s.name, `${pctOf(s)}%`));
+  L['Class Avg'] = L['Class Avg · so far'] = avg;
+  L['High Score'] = () => { const top = Math.max(0, ...data.map(s => s.bestScore || 0)); return top ? data.filter(s => s.bestScore === top).map(s => person(s.name, `${Math.round(top / max * 100)}%`)) : []; };
+  return L;
+}
+// make the cards that have a list tappable, and draw the open list again
+function wireStats(where) {
+  const box = document.getElementById(where);
+  if (!box) return;
+  const lists = statLists(where);
+  box.querySelectorAll('.stat-card').forEach(card => {
+    const label = statKey((card.querySelector('.stat-label') || {}).textContent);
+    if (!lists[label]) return;
+    card.classList.add('stat-tap');
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.dataset.statWhere = where;
+    card.dataset.statLabel = label;
+    card.title = `Tap: who is behind ${label}`;
+    const open = statOpen && statOpen.where === where && statOpen.label === label && (where === 'overviewStats' || statOpen.game === currentGame);
+    card.classList.toggle('open', !!open);
+  });
+  drawStatList(where, lists);
+}
+function drawStatList(where, lists = statLists(where)) {
+  const box = document.getElementById(where);
+  if (!box) return;
+  let out = document.getElementById(where + 'List');
+  if (!out) { out = document.createElement('div'); out.id = where + 'List'; out.className = 'stat-list'; box.insertAdjacentElement('afterend', out); }
+  const open = statOpen && statOpen.where === where && (where === 'overviewStats' || statOpen.game === currentGame) ? statOpen : null;
+  const fn = open && lists[open.label];
+  if (!fn) { out.innerHTML = ''; out.style.display = 'none'; return; }
+  const items = fn();
+  out.style.display = 'block';
+  out.innerHTML = `<div class="sl-head"><b>${escHtml(open.label)}</b> · ${items.length ? `${items.reduce((t, x) => t + (x.n || 1), 0)}` : 'nobody'}` +
+    `<button type="button" class="cg-close" data-stat-close="${escHtml(where)}">✕ Close</button></div>` +
+    (items.length ? `<div class="sl-items">${items.map(x => x.act
+      ? `<button type="button" class="sl-item" data-sl-act="${escHtml(JSON.stringify(x.act))}">${escHtml(x.text)}${x.note ? ` <span class="sl-note">${escHtml(x.note)}</span>` : ''}</button>`
+      : `<span class="sl-item sl-plain">${escHtml(x.text)}${x.note ? ` <span class="sl-note">${escHtml(x.note)}</span>` : ''}</span>`).join('')}</div>` : '');
+}
+function openGame(game) { familyChooserOpen = null; currentGame = game; toggleView('assignment'); }
+// a student's window on another part of the same set: open that part's page first
+function openDetailOn(game, name) {
+  if (game && game !== currentGame && dashData[game]) { familyChooserOpen = null; currentGame = game; renderAssignment(); }
+  openDetail(name);
+}
+// 📋 a student's tries under their row
+function triesHtml(student) {
+  const max = MAX_SCORES[currentGame] || 100;
+  const ids = gridQuestionIds(currentGame);
+  const tries = (student.sessions || []).map((s, i) => ({ s, i })).reverse();   // newest first
+  return `<div class="tr-box"><div class="tr-head">${escHtml(student.name)} · ${tries.length} ${tries.length === 1 ? 'try' : 'tries'}, newest first${ids.length ? ' · tap a box for that question' : ''}</div>` +
+    tries.map(({ s, i }) => {
+      const done = s.status === 'complete';
+      const sf = soFarOfSession(s, max);
+      const pct = sf ? sf.pct : max ? Math.round((Number(s.score) || 0) / max * 100) : 0;
+      const v = tryVersion(s);
+      const row = ids.length ? gridRowOf(student.name, s, ids) : null;
+      const open = id => !!stripOpen && stripOpen.game === currentGame && stripOpen.name === student.name && stripOpen.i === i && stripOpen.id === id;
+      const strip = row && done ? `<div class="tr-strip">${ids.map(id => {
+        const ok = !row.missed.has(id);
+        return `<button type="button" class="tr-sq ${ok ? 'ok' : 'miss'}${open(id) ? ' open' : ''}" data-tr-name="${escHtml(student.name)}" data-tr-i="${i}" data-tr-id="${escHtml(id)}" title="${escHtml(id)} · ${ok ? 'right' : 'missed'}">${ok ? '✓' : '✗'}</button>`;
+      }).join('')}</div>` : '';
+      const isOpen = !!stripOpen && stripOpen.game === currentGame && stripOpen.name === student.name && stripOpen.i === i;
+      return `<div class="tr-try"><div class="tr-line"><b>${escHtml(s.form || `Try ${i + 1}`)}</b> · ${formatSessionDate(sessionDate(s))} · <b>${s.score}/${max}</b> (${pct}%${sf ? ` so far, ${sf.right} of ${sf.answered}` : ''}) · ⏱ ${s.elapsed != null ? formatTime(s.elapsed) : '—'} · left the page ${Number(s.tabSwitches) || 0}×${v > 1 ? ` · version ${v}` : ''} · ${done ? '✅ finished' : '🔄 still going'}</div>${strip}${isOpen ? `<div class="tr-qbox qx" data-tr-box="1"><div class="qx-note">Loading the question…</div></div>` : ''}</div>`;
+    }).join('') + '</div>';
+}
+function drawTriesRows() {
+  const body = document.getElementById('assignmentBody');
+  if (!body) return;
+  body.querySelectorAll('tr.tries-row').forEach(tr => tr.remove());
+  const set = triesOpen[currentGame];
+  const data = dashData[currentGame] || [];
+  body.querySelectorAll('tr[data-name]').forEach(tr => tr.classList.toggle('tries-open', !!set && set.has(tr.dataset.name)));
+  if (!set || !set.size) return;
+  [...body.querySelectorAll('tr[data-name]')].forEach(tr => {
+    if (!set.has(tr.dataset.name)) return;
+    const student = data.find(s => s.name === tr.dataset.name);
+    if (!student) return;
+    const row = document.createElement('tr');
+    row.className = 'tries-row';
+    row.innerHTML = `<td colspan="9">${triesHtml(student)}</td>`;
+    tr.insertAdjacentElement('afterend', row);
+  });
+  fillStripBox();
+}
+async function fillStripBox() {
+  const slot = document.querySelector('#assignmentBody .tr-qbox[data-tr-box]');
+  if (!slot || !stripOpen) return;
+  const student = (dashData[currentGame] || []).find(s => s.name === stripOpen.name);
+  const sess = student && student.sessions[stripOpen.i];
+  if (!sess) { slot.remove(); return; }
+  const ids = gridQuestionIds(currentGame);
+  const row = gridRowOf(student.name, sess, ids);
+  const cfg = SKILL_REPORTS[currentGame];
+  const token = ++gridToken;
+  if (cfg && cfg.site) {
+    try {
+      const data = await loadReviewForm(cfg.site, cfg.form);
+      if (token !== gridToken || !slot.isConnected) return;
+      slot.innerHTML = gridQuestionHtml(data, stripOpen.id, [row], true);
+    } catch (e) { slot.innerHTML = '<div class="qx-note">Couldn’t load the question — check the connection and try again.</div>'; }
+    return;
+  }
+  const q = gkQuestionsFor(currentGame).find(x => x.id === stripOpen.id);
+  const known = row.missed.has(stripOpen.id) ? [pickOfTry(student.name, sess, stripOpen.id)].filter(p => p.picked != null) : [];
+  slot.innerHTML = q ? `<div class="qx-line">${escHtml(q.text || '')}</div><div class="qx-line">Correct answer: <span class="qx-right qx-pill">${escHtml(q.answer ?? '—')} ✅</span></div>${typedPickLines(known, null)}`
+    : `<div class="qx-line">${escHtml(String((cfg && cfg.bank && cfg.bank[stripOpen.id]) || stripOpen.id).replace(/^\([^)]*\)\s*/, ''))}</div>${typedPickLines(known, null)}`;
+}
+// 📋 the student window: a skill jumps to its questions; Sessions / Tab Switches open the tries
+function jumpQbqSkill(btn) {
+  const block = btn.closest('.qbq-attempt');
+  if (!block) return;
+  const list = block.querySelector('details.qbq-list');
+  if (list) list.open = true;
+  const rows = [...block.querySelectorAll('.qbq-row')].filter(r => (r.querySelector('.qbq-skilltag') || {}).textContent === btn.dataset.skill);
+  rows.forEach(r => { r.classList.add('qbq-flash'); setTimeout(() => r.classList.remove('qbq-flash'), 2200); });
+  if (rows[0]) rows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function jumpDetailTries() {
+  const hidden = document.getElementById('detailTriesOne');
+  if (hidden) hidden.hidden = false;
+  const t = document.querySelector('#detailSessionBreak table');
+  if (!t) return;
+  t.classList.add('qbq-flash');
+  setTimeout(() => t.classList.remove('qbq-flash'), 2200);
+  t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// 🚦 a mistake's questions: "Behind it: W03 (2) · W07 (1)", each opening that question on the heat map
+function openHeatQuestion(id) {
+  const cell = [...document.querySelectorAll('#heatmapGrid .heat-cell')].find(c => c.dataset.qid === id);
+  if (cell && cell._show) { cell._show(false); return; }
+  const base = id.replace(/\.\d+$/, '');
+  if (gridIds.includes(base)) { openGrid({ kind: 'q', id: base, name: null }); document.getElementById('classGridWrap').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest ? e.target : null;
+  if (!t) return;
+  // 🧮 the class grid
+  const sort = t.closest('.cg-sort');
+  if (sort) { gridSort = sort.dataset.cgSort === 'name' ? 'name' : gridSort === 'score-down' ? 'score-up' : 'score-down'; buildClassGrid(lastHeatmapData); return; }
+  const cell = t.closest('.cg-cell');
+  if (cell) { openGrid({ kind: 'cell', name: cell.dataset.cgName, id: cell.dataset.cgCell }); return; }
+  const q = t.closest('.cg-q');
+  if (q) { openGrid({ kind: 'q', id: q.dataset.cgQ, name: null }); return; }
+  const who = t.closest('.cg-who');
+  if (who) { openDetail(who.dataset.cgName); return; }
+  if (t.closest('[data-cg-close]')) { gridOpen = null; buildClassGrid(lastHeatmapData); return; }
+  // 🔢 a number card · its list
+  const card = t.closest('.stat-card.stat-tap');
+  if (card) {
+    const where = card.dataset.statWhere, label = card.dataset.statLabel;
+    const same = statOpen && statOpen.where === where && statOpen.label === label && (where === 'overviewStats' || statOpen.game === currentGame);
+    statOpen = same ? null : { where, label, game: currentGame };
+    wireStats(where);
+    return;
+  }
+  const sc = t.closest('[data-stat-close]');
+  if (sc) { statOpen = null; wireStats(sc.dataset.statClose); return; }
+  const item = t.closest('.sl-item[data-sl-act]');
+  if (item) {
+    const [kind, v, who2] = JSON.parse(item.dataset.slAct);
+    if (kind === 'detail') openDetail(v);
+    else if (kind === 'profile') openProfile(v);
+    else if (kind === 'game') { openGame(v); if (who2) openDetail(who2); }
+    return;
+  }
+  // 📋 a student's tries
+  const sq = t.closest('.tr-sq');
+  if (sq) {
+    const next = { game: currentGame, name: sq.dataset.trName, i: Number(sq.dataset.trI), id: sq.dataset.trId };
+    const same = stripOpen && stripOpen.game === next.game && stripOpen.name === next.name && stripOpen.i === next.i && stripOpen.id === next.id;
+    stripOpen = same ? null : next;
+    drawTriesRows();
+    return;
+  }
+  const td = t.closest('#assignmentBody tr[data-name] > td');
+  if (td && td.cellIndex <= 3 && !t.closest('button, a, input, select')) {
+    const set = triesOpen[currentGame] = triesOpen[currentGame] || new Set();
+    const name = td.parentElement.dataset.name;
+    if (set.has(name)) set.delete(name); else set.add(name);
+    drawTriesRows();
+    return;
+  }
+  // 📍 Right Now: a name
+  const ln = t.closest('.live-name-btn');
+  if (ln) { openDetailOn(ln.dataset.liveGame, ln.dataset.liveWho); return; }
+  // 🚦 a name · a mistake's questions
+  const gate = t.closest('.nm-name[data-gate-profile]');
+  if (gate) { openProfile(gate.dataset.gateProfile, gateScope || undefined); return; }
+  const tag = t.closest('.nm-tag-btn');
+  if (tag) {
+    const box = tag.closest('.nm-row').querySelector('.nm-behind');
+    if (!box) return;
+    box.hidden = !box.hidden;
+    tag.setAttribute('aria-expanded', String(!box.hidden));
+    const k = currentGame + '|' + tag.dataset.nmTag;
+    if (box.hidden) nmOpen.delete(k); else nmOpen.add(k);
+    return;
+  }
+  const bq = t.closest('.nm-behind-q');
+  if (bq) { openHeatQuestion(bq.dataset.qid); return; }
+  // 📋 the student window
+  if (t.closest('.detail-stat-tap')) { jumpDetailTries(); return; }
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('stat-tap')) { e.preventDefault(); e.target.click(); }
+});
+let gateScope = null;     // 🚦 the unit's parts, for a name's profile
+const nmOpen = new Set(); // 🚦 the mistakes whose questions are showing: "<game>|<mistake>"
 
 // Same bands as factCellColor, in solid tones so a bar reads against its track.
 function skillBarColor(pct) {
@@ -9276,17 +9870,19 @@ function skillBarColor(pct) {
 // Students' scores on a skill / standard, then the questions behind it with answer choices
 // and picks. `where` is a container id (the top-3 boxes' slot) or the clicked standards row
 // itself — then the panel opens right under that row, and clicking the row again closes it.
-function showSkillReportDetail(key, where = 'skillReportDetail') {
+function showSkillReportDetail(key, where = 'skillReportDetail', quiet = false) {
   const row = skillReportRows[key];
   if (!row) return;
   let target;
   if (typeof where === 'string') {
     target = document.getElementById(where);
+    skillOpen = { game: currentGame, key, where };   // 11/26: opened again after the 30 s update
   } else {
     const open = document.getElementById('skillInlineDetail');
     const sameRow = open && open.dataset.key === key;
     if (open) open.remove();
-    if (sameRow) return;
+    if (sameRow) { skillOpen = null; return; }
+    skillOpen = { game: currentGame, key, inline: true };
     target = document.createElement('div');
     target.id = 'skillInlineDetail';
     target.dataset.key = key;
@@ -9295,8 +9891,8 @@ function showSkillReportDetail(key, where = 'skillReportDetail') {
   const list = [...row.perStudent].sort((a, b) => a.pct - b.pct || a.name.localeCompare(b.name));
   const below = list.filter(s => s.pct < SKILL_CUTOFF).length;
   const closeJs = typeof where === 'string'
-    ? `document.getElementById('${where}').innerHTML=''`
-    : `document.getElementById('skillInlineDetail').remove()`;
+    ? `skillOpen=null;document.getElementById('${where}').innerHTML=''`
+    : `skillOpen=null;document.getElementById('skillInlineDetail').remove()`;
   target.innerHTML = `
     <div style="background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:16px 18px;margin:8px 0 12px;box-shadow:var(--shadow);">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
@@ -9310,7 +9906,7 @@ function showSkillReportDetail(key, where = 'skillReportDetail') {
       <div style="font-size:.78rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 2px;">The ${row.parts} question${row.parts > 1 ? 's' : ''} behind it</div>
       ${skillQuestionCards(row)}
     </div>`;
-  target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (!quiet) target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   fillQuestionExtras(target, skillReportContext.site, skillReportContext.form);
 }
 
@@ -9354,10 +9950,10 @@ function parsePicks(str) {
 function tallyAttempt(attempts, questionTexts) {
   const missedBy = {}, picksBy = {};
   attempts.forEach(({ name, sess }) => {
-    const picks = parsePicks(sess.wrongQuestions);
+    const picks = parsePicks(sess.wrongQuestions), said = missWordsOf(sess);
     new Set(parseWrongQuestions(sess.wrongQuestions, questionTexts)).forEach(id => {
       (missedBy[id] = missedBy[id] || []).push(name);
-      (picksBy[id] = picksBy[id] || []).push({ name, picked: picks[id] });
+      (picksBy[id] = picksBy[id] || []).push({ name, picked: picks[id], v: tryVersion(sess), said: said[id] || '' });
     });
   });
   return { total: attempts.length, missedBy, picksBy };
@@ -9451,16 +10047,26 @@ function buildHeatmap(data) {
     cell.innerHTML = `<span class="q-num">${label}</span><span class="q-pct">${pct}%</span>${was}`;
     cell.title = `${label}: ${qText}\n${names.length}/${view.total} students missed this (${pct}%)`;
     cell.style.position = 'relative';
-    if (isIdBased) cell.onclick = () => showHeatmapDetail(id, qText, names.length, view.total, pct, names, view.picksBy[id] || []);
+    cell.dataset.qid = id;
+    if (isIdBased) {
+      cell._show = quiet => showHeatmapDetail(id, qText, names.length, view.total, pct, names, view.picksBy[id] || [], quiet);
+      cell.onclick = () => cell._show(false);
+    }
     grid.appendChild(cell);
   });
+  // 11/26: the box that was open stays open (the update, or the 1st / 2nd Try switch, drew the map again)
+  if (heatOpen && heatOpen.game === currentGame) {
+    const again = [...grid.children].find(c => c.dataset.qid === heatOpen.id);
+    if (again && again._show) again._show(true); else heatOpen = null;
+  }
 }
 
 // ── Heatmap question detail popup ──
-function showHeatmapDetail(id, qText, wrong, total, pct, studentNames, picks = []) {
+function showHeatmapDetail(id, qText, wrong, total, pct, studentNames, picks = [], quiet = false) {
   // Remove any existing popup
   const existing = document.getElementById('heatmapDetailPopup');
   if (existing) existing.remove();
+  heatOpen = { game: currentGame, id };   // 11/26: opened again after the 30 s update (quiet: the page does not move)
 
   const studentList = studentNames.length
     ? studentNames.map(n=>`<span class="wrong-q-chip student-jump" title="Open ${escHtml(n)}'s answer" data-name="${escHtml(n)}" data-ids="${escHtml(id)}" onclick="openDetailAt(this.dataset.name, [this.dataset.ids])">${escHtml(n)} ›</span>`).join('')
@@ -9483,7 +10089,7 @@ function showHeatmapDetail(id, qText, wrong, total, pct, studentNames, picks = [
         <span style="font-size:.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Question ${id}</span>
         <div style="font-size:.95rem;font-weight:800;color:var(--text);margin-top:4px;line-height:1.5;">${qText}</div>
       </div>
-      <button onclick="document.getElementById('heatmapDetailPopup').remove()"
+      <button onclick="heatOpen = null; document.getElementById('heatmapDetailPopup').remove()"
         style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;white-space:nowrap;flex-shrink:0;">✕ Close</button>
     </div>
     <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
@@ -9508,7 +10114,7 @@ function showHeatmapDetail(id, qText, wrong, total, pct, studentNames, picks = [
   // Insert popup right after the heatmap grid
   const grid = document.getElementById('heatmapGrid');
   grid.parentNode.insertBefore(popup, grid.nextSibling);
-  popup.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  if (!quiet) popup.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 // ═══════════════════════════════════════════════════
@@ -9533,9 +10139,9 @@ function openDetail(name) {
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--accent)">${student.bestScore}</div><div class="detail-stat-label">Best Score</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${maxScore}</div><div class="detail-stat-label">Max Possible</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${sfDetail ? sfDetail.pct : Math.round((student.bestScore/maxScore)*100)}%</div><div class="detail-stat-label">${sfDetail ? `Right so far (${sfDetail.right} of ${sfDetail.answered})` : 'Score %'}</div></div>
-    <div class="detail-stat"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
+    <div class="detail-stat detail-stat-tap" role="button" tabindex="0" title="Tap: every try"><div class="detail-stat-num">${student.sessions.length}</div><div class="detail-stat-label">Sessions</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--teal)">${bestSess?.elapsed!=null?formatTime(bestSess.elapsed):'—'}</div><div class="detail-stat-label">Time on Task</div></div>
-    <div class="detail-stat"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
+    <div class="detail-stat detail-stat-tap" role="button" tabindex="0" title="Tap: which tries"><div class="detail-stat-num" style="color:${totalTabSw>3?'var(--red)':'var(--green)'}">${totalTabSw}</div><div class="detail-stat-label">Tab Switches</div></div>
     <div class="detail-stat"><div class="detail-stat-num">${statusLabel(student.status)}</div><div class="detail-stat-label">Status${onQuestion(student) ? ' · ' + onQuestion(student) : ''}</div></div>
     <div class="detail-stat"><div class="detail-stat-num" style="color:var(--red)">${isFlagged(student)?'⚑ Yes':'—'}</div><div class="detail-stat-label">Flagged</div></div>
     ${WRITTEN_GAME_MAP[currentGame.toLowerCase()] ? (() => {
@@ -9580,7 +10186,7 @@ function openDetail(name) {
 
   // Session breakdown (show when more than 1 session)
   const sessBreakEl = document.getElementById('detailSessionBreak');
-  if (student.sessions.length > 1) {
+  {   // 11/26: always built — one try: folded until Sessions or Tab Switches is tapped
     const rows = student.sessions.map((s, i) => {
       const label   = s.form ? s.form : (i === 0 ? 'Original' : `Attempt ${i + 1}`);
       const sfTry   = soFarOfSession(s, maxScore);   // a try still going: right so far (11/18)
@@ -9597,10 +10203,12 @@ function openDetail(name) {
         <td style="padding:7px 10px;font-size:.82rem;font-weight:700;">${pct}%${sfTry ? ` so far (${sfTry.right} of ${sfTry.answered})` : ''}</td>
         <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);white-space:nowrap;">${dateStr}</td>
         <td style="padding:7px 10px;font-size:.82rem;color:var(--muted);">${timeStr}</td>
+        <td style="padding:7px 10px;font-size:.82rem;color:${(s.tabSwitches || 0) > 3 ? 'var(--red)' : 'var(--muted)'};">${Number(s.tabSwitches) || 0}</td>
         <td style="padding:7px 10px;">${done}</td>
       </tr>`;
     }).join('');
-    sessBreakEl.innerHTML = `
+    const one = student.sessions.length === 1;
+    sessBreakEl.innerHTML = (one ? '<div id="detailTriesOne" hidden>' : '') + `
       <div style="font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">📋 All Attempts</div>
       <table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
         <thead><tr style="background:var(--header-bg,var(--border));">
@@ -9609,13 +10217,11 @@ function openDetail(name) {
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">%</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Date</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">On Task</th>
+          <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Left the Page</th>
           <th style="padding:6px 10px;font-size:.72rem;text-align:left;color:var(--muted);">Status</th>
         </tr></thead>
         <tbody>${rows}</tbody>
-      </table>` + renderChronology(student);
-  } else {
-    // One attempt: no attempts table, but its timeline still belongs here
-    sessBreakEl.innerHTML = renderChronology(student);
+      </table>` + (one ? '</div>' : '') + renderChronology(student);
   }
   // Work on the earlier version of a rebuilt lesson: listed, labeled, never counted
   const earlierList = (archivedAttempts[currentGame] || {})[name];
@@ -10123,6 +10729,9 @@ function gatesHTML(game) {
   const noB = !unit.practiceB;
   const nA = noB ? 'the Practice' : 'Practice A', nA2 = noB ? 'Practice' : 'Practice A';
   const t = unitTallies(unit);
+  // 👆 11/26: a name opens the student's profile for this unit's parts
+  try { const title = familyLabel(familyOf(game) || game, games); gateScope = { games, title, label: g => formShortLabel(title, g) }; }
+  catch (e) { gateScope = { games, title: 'this unit', label: g => GAME_LABELS[g] || g }; }
   const stage = { stuckReview: [], stuckB: [], stuckA: [], stuckW: [], needZ: [], needA: [], readyTest: [], readyReview: [], readyB: [], readyA: [], none: [], tested: [] };
   STUDENT_ROSTER.forEach(n => { const [key, v] = unitStage(unit, t, n); stage[key].push([n, v]); });
   // two test forms (SBAC IAB): a student who finished Form A is ready for Form B; both finished = done
@@ -10136,7 +10745,7 @@ function gatesHTML(game) {
   const chip = (n, v, kind) => {
     const cls = kind === 'stuck' ? (v.tries >= 2 ? 'nm-repeat' : '') : kind === 'ok' ? 'nm-ready' : '';
     const detail = !v ? '' : kind === 'stuck' ? ` · best ${v.best.score}/${v.best.total} (${v.best.pct}%) · ${tries(v)}${v.pre ? ` · Pre-Warm-Up ${v.pre.best.score}/${v.pre.best.total}` : ''}` : ` · ${v.best.score}/${v.best.total} (${v.best.pct}%)`;
-    return `<span class="nm-name ${cls}" style="cursor:default">${escHtml(n)}${detail}</span>`;
+    return `<button type="button" class="nm-name ${cls}" data-gate-profile="${escHtml(n)}" title="Open ${escHtml(n)}'s profile for this unit">${escHtml(n)}${detail}</button>`;
   };
   const row = (label, sub, list, kind) => !list.length ? '' :
     `<div class="nm-row"><div class="nm-tag">${label}<span class="nm-count">${plural(list.length)}${sub ? ' · ' + sub : ''}</span></div>` +
@@ -10257,9 +10866,15 @@ function renderNeedsMe(cfg, data) {
       return { tag, list, repeat: list.filter(e => e[1].length > 1).length, total: list.reduce((t, e) => t + e[1].length, 0) };
     }).sort((a, b) => b.repeat - a.repeat || b.list.length - a.list.length || b.total - a.total || a.tag.localeCompare(b.tag));
     if (rows.length) {
-      html += `<div class="nm-head">By the mistake behind the wrong answer</div>` + rows.map(r =>
-        `<div class="nm-row"><div class="nm-tag">${escHtml(r.tag)}<span class="nm-count">${r.list.length} student${r.list.length > 1 ? 's' : ''} · ${r.total} time${r.total > 1 ? 's' : ''}</span></div>
-        <div class="nm-names">${r.list.map(([n, ids]) => chip(n, ids)).join('')}</div></div>`).join('');
+      // 👆 11/26: a mistake lists the questions behind it ("Behind it: W03 (2) · W07 (1)"), each opening that question
+      const behindOf = r => { const c = new Map(); r.list.forEach(([, ids]) => ids.forEach(id => c.set(id, (c.get(id) || 0) + 1)));
+        return [...c.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], undefined, { numeric: true })); };
+      html += `<div class="nm-head">By the mistake behind the wrong answer</div>` + rows.map(r => {
+        const open = nmOpen.has(currentGame + '|' + r.tag);
+        return `<div class="nm-row"><div class="nm-tag"><button type="button" class="nm-tag-btn" data-nm-tag="${escHtml(r.tag)}" aria-expanded="${open}" title="Tap: the questions behind this mistake">${escHtml(r.tag)}</button><span class="nm-count">${r.list.length} student${r.list.length > 1 ? 's' : ''} · ${r.total} time${r.total > 1 ? 's' : ''}</span></div>
+        <div class="nm-names">${r.list.map(([n, ids]) => chip(n, ids)).join('')}</div>
+        <div class="nm-behind"${open ? '' : ' hidden'}>Behind it: ${behindOf(r).map(([id, n]) => `<button type="button" class="nm-behind-q" data-qid="${escHtml(id)}">${escHtml(id)} <span>(${n})</span></button>`).join(' ')}</div></div>`;
+      }).join('');
     }
     if (words.size) {
       html += `<div class="nm-head">📖 Word help opened</div>` + [...words.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0])).map(([w, names]) =>
